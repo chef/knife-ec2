@@ -20,7 +20,7 @@ and more. Your configuration is specified in your knife.rb file, inside the
 
 === Configuration Example:
 In ~/.chef/knife.rb:
-  knife :aws_access_key_id     => "AAAAAAAAAAAAAAAAAAAAAA"
+  knife :aws_access_key_id     => "AAAAAAAAAAAAAAAAAAAAAA",
         :aws_secret_access_key => "Mjc0MzIyMDE5Mjk1MjcxNjczNDYxNjczMzg5Nzg5",
         :aws_ssh_key_id        => "mycorp-ssh-key"
 
