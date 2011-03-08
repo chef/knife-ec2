@@ -1,5 +1,7 @@
 = Knife EC2
-This is the official Opscode Knife plugin for Amazon EC2.
+This is the official Opscode Knife plugin for Amazon EC2. This plugin gives the 
+knife command line program the ability to create, bootstrap, and manage EC2 inst
+ances.
 
 == Installation
 This plugin is distributed as a Ruby Gem. To install it, run:
@@ -7,7 +9,20 @@ This plugin is distributed as a Ruby Gem. To install it, run:
 Depending on your system, you may need to run this command as root.
 
 == Configuration
-TODO
+Knife EC2 can be configured with your AWS credentials, favored availability zone
+and more. Your configuration is specified in your knife.rb file, inside the
+`knife` Hash. The following settings are available:
+* availability_zone
+* aws_ssh_key_id
+* aws_access_key_id
+* aws_secret_access_key
+* region
+
+=== Configuration Example:
+In ~/.chef/knife.rb:
+  knife :aws_access_key_id     => "AAAAAAAAAAAAAAAAAAAAAA"
+        :aws_secret_access_key => "Mjc0MzIyMDE5Mjk1MjcxNjczNDYxNjczMzg5Nzg5",
+        :aws_ssh_key_id        => "mycorp-ssh-key"
 
 == Usage
 TODO
