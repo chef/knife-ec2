@@ -1,0 +1,15 @@
+= Knife EC2
+This is the official Opscode Knife plugin for Amazon EC2.
+
+== Installation
+This plugin is distributed as a Ruby Gem. To install it, run:
+  gem install knife-ec2
+Depending on your system, you may need to run this command as root.
+
+== Configuration
+TODO
+
+== Usage
+TODO
+
+

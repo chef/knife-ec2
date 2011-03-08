@@ -1,0 +1,34 @@
+.rake_tasks~
+tags
+coverage
+rdoc
+pkg
+test/tmp
+test/version_tmp
+tmp
+pkg
+*.gem
+*.rbc
+lib/bundler/man
+spec/reports
+.config
+InstalledFiles
+.bundle
+
+# YARD artifacts
+.yardoc
+_yardoc
+doc/
+
+.DS_Store
+Icon?
+
+# Thumbnails
+._*
+
+# Files that might appear on external disk
+.Spotlight-V100
+.Trashes
+
+*.swp
+*.swo
