@@ -115,6 +115,14 @@ class Chef
         :description => "Full path to location of template to use",
         :default => false
 
+      option :ebs_size,
+        :long => "--ebs-size SIZE",
+        :description => "The size of the EBS volume in GB, for EBS-backed instances"
+
+      option :ebs_no_delete_on_term,
+        :long => "--ebs-no-delete-on-term",
+        :description => "Do not delete EBS volumn on instance termination"
+
       def h
         @highline ||= HighLine.new
       end
@@ -146,19 +154,49 @@ class Chef
 
         $stdout.sync = true
 
-        connection = Fog::AWS::Compute.new(
+        connection = Fog::Compute.new(
+          :provider => 'AWS',
           :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
           :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
           :region => Chef::Config[:knife][:region]
-        )
+                                      )
 
-        server = connection.servers.create(
+        ami = connection.images.get(config[:image])
+
+        server_def = {
           :image_id => config[:image],
           :groups => config[:security_groups],
           :flavor_id => config[:flavor],
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
           :availability_zone => Chef::Config[:knife][:availability_zone]
-        )
+        }
+      
+      if ami.root_device_type == "ebs"
+        ami_map = ami.block_device_mapping.first
+        ebs_size = begin
+                     if config[:ebs_size]
+                       Integer(config[:ebs_size]).to_s
+                     else
+                       ami_map["volumeSize"].to_s
+                     end
+                   rescue ArgumentError
+                     puts "--ebs-size must be an integer"
+                     msg opt_parser
+                     exit 1
+                   end
+        delete_term = if config[:ebs_no_delete_on_term]
+                        "false"
+                      else
+                        ami_map["deleteOnTermination"]
+                      end
+        server_def[:block_device_mapping] =
+          [{
+             'DeviceName' => ami_map["deviceName"],
+             'Ebs.VolumeSize' => ebs_size,
+             'Ebs.DeleteOnTermination' => delete_term
+           }]
+      end
+        server = connection.servers.create(server_def)
 
         puts "#{h.color("Instance ID", :cyan)}: #{server.id}"
         puts "#{h.color("Flavor", :cyan)}: #{server.flavor_id}"
@@ -175,7 +213,7 @@ class Chef
         puts("\n")
 
         puts "#{h.color("Public DNS Name", :cyan)}: #{server.dns_name}"
-        puts "#{h.color("Public IP Address", :cyan)}: #{server.ip_address}"
+        puts "#{h.color("Public IP Address", :cyan)}: #{server.public_ip_address}"
         puts "#{h.color("Private DNS Name", :cyan)}: #{server.private_dns_name}"
         puts "#{h.color("Private IP Address", :cyan)}: #{server.private_ip_address}"
 
@@ -193,10 +231,25 @@ class Chef
         puts "#{h.color("Security Groups", :cyan)}: #{server.groups.join(", ")}"
         puts "#{h.color("SSH Key", :cyan)}: #{server.key_name}"
         puts "#{h.color("Public DNS Name", :cyan)}: #{server.dns_name}"
-        puts "#{h.color("Public IP Address", :cyan)}: #{server.ip_address}"
+        puts "#{h.color("Public IP Address", :cyan)}: #{server.public_ip_address}"
         puts "#{h.color("Private DNS Name", :cyan)}: #{server.private_dns_name}"
         puts "#{h.color("Private IP Address", :cyan)}: #{server.private_ip_address}"
         puts "#{h.color("Run List", :cyan)}: #{@name_args.join(', ')}"
+        puts "#{h.color("Root Device Type", :cyan)}: #{server.root_device_type}"
+        if server.root_device_type == "ebs"
+          device_map = server.block_device_mapping.first
+          puts "#{h.color("Root Volume ID", :cyan)}: #{device_map['volumeId']}"
+          puts "#{h.color("Root Device Name", :cyan)}: #{device_map['deviceName']}"
+          puts "#{h.color("Root Device Delete on Terminate", :cyan)}: #{device_map['deleteOnTermination']}"
+          if config[:ebs_size]
+            if ami.block_device_mapping.first['volumeSize'].to_i < config[:ebs_size].to_i
+              puts ("#{h.color("Warning", :yellow)}: #{config[:ebs_size]}GB " +
+                    "EBS volume size is larger than size set in AMI of " +
+                    "#{ami.block_device_mapping.first['volumeSize']}GB.\n" +
+                    "Use file system tools to make use of the increased volume size.")
+            end
+          end
+        end
       end
 
       def bootstrap_for_node(server)
