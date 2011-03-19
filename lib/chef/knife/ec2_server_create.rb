@@ -6,9 +6,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,12 +34,14 @@ class Chef
         :short => "-f FLAVOR",
         :long => "--flavor FLAVOR",
         :description => "The flavor of server (m1.small, m1.medium, etc)",
+        :proc => Proc.new { |f| Chef::Config[:knife][:flavor] = f },
         :default => "m1.small"
 
       option :image,
         :short => "-i IMAGE",
         :long => "--image IMAGE",
-        :description => "The AMI for the server"
+        :description => "The AMI for the server",
+        :proc => Proc.new { |i| Chef::Config[:knife][:image] = i }
 
       option :security_groups,
         :short => "-G X,Y,Z",
@@ -70,8 +72,8 @@ class Chef
         :short => "-x USERNAME",
         :long => "--ssh-user USERNAME",
         :description => "The ssh username",
-        :default => "root" 
- 
+        :default => "root"
+
       option :ssh_password,
         :short => "-P PASSWORD",
         :long => "--ssh-password PASSWORD",
@@ -81,18 +83,18 @@ class Chef
         :short => "-I IDENTITY_FILE",
         :long => "--identity-file IDENTITY_FILE",
         :description => "The SSH identity file used for authentication"
- 
+
       option :aws_access_key_id,
         :short => "-A ID",
         :long => "--aws-access-key-id KEY",
         :description => "Your AWS Access Key ID",
-        :proc => Proc.new { |key| Chef::Config[:knife][:aws_access_key_id] = key } 
+        :proc => Proc.new { |key| Chef::Config[:knife][:aws_access_key_id] = key }
 
       option :aws_secret_access_key,
         :short => "-K SECRET",
         :long => "--aws-secret-access-key SECRET",
         :description => "Your AWS API Secret Access Key",
-        :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key } 
+        :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
 
       option :prerelease,
         :long => "--prerelease",
@@ -108,11 +110,13 @@ class Chef
         :short => "-d DISTRO",
         :long => "--distro DISTRO",
         :description => "Bootstrap a distro using a template",
+        :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d },
         :default => "ubuntu10.04-gems"
 
       option :template_file,
         :long => "--template-file TEMPLATE",
         :description => "Full path to location of template to use",
+        :proc => Proc.new { |t| Chef::Config[:knife][:template_file] = t },
         :default => false
 
       option :ebs_size,
@@ -146,7 +150,7 @@ class Chef
         tcp_socket && tcp_socket.close
       end
 
-      def run 
+      def run
         require 'fog'
         require 'highline'
         require 'net/ssh/multi'
@@ -158,19 +162,19 @@ class Chef
           :provider => 'AWS',
           :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
           :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-          :region => Chef::Config[:knife][:region]
-                                      )
+          :region => locate_config_value(:region)
+        )
 
-        ami = connection.images.get(config[:image])
+        ami = connection.images.get(locate_config_value(:image))
 
         server_def = {
-          :image_id => config[:image],
+          :image_id => locate_config_value(:image),
           :groups => config[:security_groups],
-          :flavor_id => config[:flavor],
+          :flavor_id => locate_config_value(:flavor),
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
           :availability_zone => Chef::Config[:knife][:availability_zone]
         }
-      
+
       if ami.root_device_type == "ebs"
         ami_map = ami.block_device_mapping.first
         ebs_size = begin
@@ -204,7 +208,7 @@ class Chef
         puts "#{h.color("Availability Zone", :cyan)}: #{server.availability_zone}"
         puts "#{h.color("Security Groups", :cyan)}: #{server.groups.join(", ")}"
         puts "#{h.color("SSH Key", :cyan)}: #{server.key_name}"
-     
+
         print "\n#{h.color("Waiting for server", :magenta)}"
 
         # wait for it to be ready to do stuff
@@ -230,11 +234,6 @@ class Chef
         puts "#{h.color("Availability Zone", :cyan)}: #{server.availability_zone}"
         puts "#{h.color("Security Groups", :cyan)}: #{server.groups.join(", ")}"
         puts "#{h.color("SSH Key", :cyan)}: #{server.key_name}"
-        puts "#{h.color("Public DNS Name", :cyan)}: #{server.dns_name}"
-        puts "#{h.color("Public IP Address", :cyan)}: #{server.public_ip_address}"
-        puts "#{h.color("Private DNS Name", :cyan)}: #{server.private_dns_name}"
-        puts "#{h.color("Private IP Address", :cyan)}: #{server.private_ip_address}"
-        puts "#{h.color("Run List", :cyan)}: #{@name_args.join(', ')}"
         puts "#{h.color("Root Device Type", :cyan)}: #{server.root_device_type}"
         if server.root_device_type == "ebs"
           device_map = server.block_device_mapping.first
@@ -250,6 +249,11 @@ class Chef
             end
           end
         end
+        puts "#{h.color("Public DNS Name", :cyan)}: #{server.dns_name}"
+        puts "#{h.color("Public IP Address", :cyan)}: #{server.public_ip_address}"
+        puts "#{h.color("Private DNS Name", :cyan)}: #{server.private_dns_name}"
+        puts "#{h.color("Private IP Address", :cyan)}: #{server.private_ip_address}"
+        puts "#{h.color("Run List", :cyan)}: #{@name_args.join(', ')}"
       end
 
       def bootstrap_for_node(server)
@@ -260,13 +264,17 @@ class Chef
         bootstrap.config[:identity_file] = config[:identity_file]
         bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
         bootstrap.config[:prerelease] = config[:prerelease]
-        bootstrap.config[:distro] = config[:distro]
+        bootstrap.config[:distro] = locate_config_value(:distro)
         bootstrap.config[:use_sudo] = true
-        bootstrap.config[:template_file] = config[:template_file]
+        bootstrap.config[:template_file] = locate_config_value(:template_file)
         bootstrap.config[:environment] = config[:environment]
         bootstrap
       end
 
+      def locate_config_value(key)
+        key = key.to_sym
+        Chef::Config[:knife][key] || config[key]
+      end
     end
   end
 end
