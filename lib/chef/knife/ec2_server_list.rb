@@ -6,9 +6,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,13 +29,13 @@ class Chef
         :short => "-A ID",
         :long => "--aws-access-key-id KEY",
         :description => "Your AWS Access Key ID",
-        :proc => Proc.new { |key| Chef::Config[:knife][:aws_access_key_id] = key } 
+        :proc => Proc.new { |key| Chef::Config[:knife][:aws_access_key_id] = key }
 
       option :aws_secret_access_key,
         :short => "-K SECRET",
         :long => "--aws-secret-access-key SECRET",
         :description => "Your AWS API Secret Access Key",
-        :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key } 
+        :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
 
       option :region,
         :long => "--region REGION",
@@ -47,7 +47,7 @@ class Chef
         @highline ||= HighLine.new
       end
 
-      def run 
+      def run
         require 'fog'
         require 'highline'
         require 'net/ssh/multi'
@@ -55,15 +55,16 @@ class Chef
 
         $stdout.sync = true
 
-        connection = Fog::AWS::Compute.new(
+        connection = Fog::Compute.new(
+          :provider => 'AWS',
           :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
           :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-          :region => Chef::Config[:knife][:region]
+          :region => Chef::Config[:knife][:region] || config[:region]
         )
 
-        server_list = [ 
-          h.color('Instance ID', :bold), 
-          h.color('Public IP', :bold), 
+        server_list = [
+          h.color('Instance ID', :bold),
+          h.color('Public IP', :bold),
           h.color('Private IP', :bold),
           h.color('Flavor', :bold),
           h.color('Image', :bold),
@@ -72,8 +73,8 @@ class Chef
         ]
         connection.servers.all.each do |server|
           server_list << server.id.to_s
-          server_list << (server.ip_address == nil ? "" : server.ip_address)
-          server_list << (server.private_ip_address == nil ? "" : server.private_ip_address) 
+          server_list << (server.ip_address == nil ? "" : server.public_ip_address)
+          server_list << (server.private_ip_address == nil ? "" : server.private_ip_address)
           server_list << (server.flavor_id == nil ? "" : server.flavor_id)
           server_list << (server.image_id == nil ? "" : server.image_id)
           server_list << server.groups.join(", ")
