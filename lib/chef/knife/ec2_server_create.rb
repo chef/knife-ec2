@@ -38,7 +38,7 @@ class Chef
         :default => "m1.small"
 
       option :image,
-        :short => "-i IMAGE",
+        :short => "-I IMAGE",
         :long => "--image IMAGE",
         :description => "The AMI for the server",
         :proc => Proc.new { |i| Chef::Config[:knife][:image] = i }
@@ -80,7 +80,7 @@ class Chef
         :description => "The ssh password"
 
       option :identity_file,
-        :short => "-I IDENTITY_FILE",
+        :short => "-i IDENTITY_FILE",
         :long => "--identity-file IDENTITY_FILE",
         :description => "The SSH identity file used for authentication"
 
