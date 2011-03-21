@@ -26,7 +26,7 @@ class Chef
   class Knife
     class Ec2ServerCreate < Knife
 
-      banner "knife ec2 server create [RUN LIST...] (options)"
+      banner "knife ec2 server create (options)"
 
       attr_accessor :initial_sleep_delay
 
@@ -126,6 +126,13 @@ class Chef
       option :ebs_no_delete_on_term,
         :long => "--ebs-no-delete-on-term",
         :description => "Do not delete EBS volumn on instance termination"
+
+      option :run_list,
+        :short => "-r RUN_LIST",
+        :long => "--run-list RUN_LIST",
+        :description => "Comma separated list of roles/recipes to apply",
+        :proc => lambda { |o| o.split(/[\s,]+/) },
+        :default => []
 
       def h
         @highline ||= HighLine.new
@@ -259,7 +266,7 @@ class Chef
       def bootstrap_for_node(server)
         bootstrap = Chef::Knife::Bootstrap.new
         bootstrap.name_args = [server.dns_name]
-        bootstrap.config[:run_list] = @name_args
+        bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:ssh_user] = config[:ssh_user]
         bootstrap.config[:identity_file] = config[:identity_file]
         bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
