@@ -134,6 +134,18 @@ class Chef
         :proc => lambda { |o| o.split(/[\s,]+/) },
         :default => []
 
+      option :subnet_id,
+        :short => "-s SUBNET-ID",
+        :long => "--subnet SUBNET-ID",
+        :description => "create node in this Virtual Private Cloud Subnet ID (implies VPC mode)",
+        :default => false
+
+      option :no_host_key_verify,
+        :long => "--no-host-key-verify",
+        :description => "Disable host key verification",
+        :boolean => true,
+        :default => false
+
       def h
         @highline ||= HighLine.new
       end
@@ -181,6 +193,7 @@ class Chef
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
           :availability_zone => Chef::Config[:knife][:availability_zone]
         }
+        server_def[:subnet_id] = config[:subnet_id] if config[:subnet_id]
 
       if ami.root_device_type == "ebs"
         ami_map = ami.block_device_mapping.first
@@ -215,22 +228,34 @@ class Chef
         puts "#{h.color("Availability Zone", :cyan)}: #{server.availability_zone}"
         puts "#{h.color("Security Groups", :cyan)}: #{server.groups.join(", ")}"
         puts "#{h.color("SSH Key", :cyan)}: #{server.key_name}"
+        puts "#{h.color("Subnet ID", :cyan)}: #{server.subnet_id}" if vpc_mode?
 
         print "\n#{h.color("Waiting for server", :magenta)}"
+
+        display_name = if vpc_mode?
+          server.private_ip_address
+        else
+          server.dns_name
+        end
 
         # wait for it to be ready to do stuff
         server.wait_for { print "."; ready? }
 
         puts("\n")
 
-        puts "#{h.color("Public DNS Name", :cyan)}: #{server.dns_name}"
-        puts "#{h.color("Public IP Address", :cyan)}: #{server.public_ip_address}"
-        puts "#{h.color("Private DNS Name", :cyan)}: #{server.private_dns_name}"
+        if !vpc_mode?
+          puts "#{h.color("Public DNS Name", :cyan)}: #{server.dns_name}"
+          puts "#{h.color("Public IP Address", :cyan)}: #{server.ip_address}"
+          puts "#{h.color("Private DNS Name", :cyan)}: #{server.private_dns_name}"
+        end
         puts "#{h.color("Private IP Address", :cyan)}: #{server.private_ip_address}"
 
         print "\n#{h.color("Waiting for sshd", :magenta)}"
 
-        print(".") until tcp_test_ssh(server.dns_name) { sleep @initial_sleep_delay ||= 10; puts("done") }
+        print(".") until tcp_test_ssh(display_name) {
+          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+          puts("done")
+        }
 
         bootstrap_for_node(server).run
 
@@ -240,7 +265,15 @@ class Chef
         puts "#{h.color("Image", :cyan)}: #{server.image_id}"
         puts "#{h.color("Availability Zone", :cyan)}: #{server.availability_zone}"
         puts "#{h.color("Security Groups", :cyan)}: #{server.groups.join(", ")}"
+        if vpc_mode?
+          puts "#{h.color("Subnet ID", :cyan)}: #{server.subnet_id}"
+        else
+          puts "#{h.color("Public DNS Name", :cyan)}: #{server.dns_name}"
+          puts "#{h.color("Public IP Address", :cyan)}: #{server.ip_address}"
+          puts "#{h.color("Private DNS Name", :cyan)}: #{server.private_dns_name}"
+        end
         puts "#{h.color("SSH Key", :cyan)}: #{server.key_name}"
+        puts "#{h.color("Private IP Address", :cyan)}: #{server.private_ip_address}"
         puts "#{h.color("Root Device Type", :cyan)}: #{server.root_device_type}"
         if server.root_device_type == "ebs"
           device_map = server.block_device_mapping.first
@@ -256,16 +289,12 @@ class Chef
             end
           end
         end
-        puts "#{h.color("Public DNS Name", :cyan)}: #{server.dns_name}"
-        puts "#{h.color("Public IP Address", :cyan)}: #{server.public_ip_address}"
-        puts "#{h.color("Private DNS Name", :cyan)}: #{server.private_dns_name}"
-        puts "#{h.color("Private IP Address", :cyan)}: #{server.private_ip_address}"
         puts "#{h.color("Run List", :cyan)}: #{@name_args.join(', ')}"
       end
 
       def bootstrap_for_node(server)
         bootstrap = Chef::Knife::Bootstrap.new
-        bootstrap.name_args = [server.dns_name]
+        bootstrap.name_args = [vpc_mode? ? server.private_ip_address : server.dns_name ]
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:ssh_user] = config[:ssh_user]
         bootstrap.config[:identity_file] = config[:identity_file]
@@ -275,6 +304,8 @@ class Chef
         bootstrap.config[:use_sudo] = true
         bootstrap.config[:template_file] = locate_config_value(:template_file)
         bootstrap.config[:environment] = config[:environment]
+        # may be needed for vpc_mode
+        bootstrap.config[:no_host_key_verify] = config[:no_host_key_verify]
         bootstrap
       end
 
@@ -282,6 +313,13 @@ class Chef
         key = key.to_sym
         Chef::Config[:knife][key] || config[key]
       end
+
+      def vpc_mode?
+        # Amazon Virtual Private Cloud requires a subnet_id. If
+        # present, do a few things differently
+        !!config[:subnet_id]
+      end
+
     end
   end
 end

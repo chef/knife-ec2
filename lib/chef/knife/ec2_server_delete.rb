@@ -63,16 +63,16 @@ class Chef
         @name_args.each do |instance_id|
           server = connection.servers.get(instance_id)
 
-          puts "#{h.color("Instance ID", :cyan)}: #{server.id}"
-          puts "#{h.color("Flavor", :cyan)}: #{server.flavor_id}"
-          puts "#{h.color("Image", :cyan)}: #{server.image_id}"
-          puts "#{h.color("Availability Zone", :cyan)}: #{server.availability_zone}"
-          puts "#{h.color("Security Groups", :cyan)}: #{server.groups.join(", ")}"
-          puts "#{h.color("SSH Key", :cyan)}: #{server.key_name}"
-          puts "#{h.color("Public DNS Name", :cyan)}: #{server.dns_name}"
-          puts "#{h.color("Public IP Address", :cyan)}: #{server.public_ip_address}"
-          puts "#{h.color("Private DNS Name", :cyan)}: #{server.private_dns_name}"
-          puts "#{h.color("Private IP Address", :cyan)}: #{server.private_ip_address}"
+          msg("Instance ID", server.id)
+          msg("Flavor", server.flavor_id)
+          msg("Image", server.image_id)
+          msg("Availability Zone", server.availability_zone)
+          msg("Security Groups", server.groups.join(", "))
+          msg("SSH Key", server.key_name)
+          msg("Public DNS Name", server.dns_name)
+          msg("Public IP Address", server.ip_address)
+          msg("Private DNS Name", server.private_dns_name)
+          msg("Private IP Address", server.private_ip_address)
 
           puts "\n"
           confirm("Do you really want to delete this server")
@@ -82,6 +82,13 @@ class Chef
           Chef::Log.warn("Deleted server #{server.id}")
         end
       end
+
+      def msg(label, value)
+        if value && !value.empty?
+          puts "#{h.color(label, :cyan)}: #{value}"
+        end
+      end
+
     end
   end
 end
