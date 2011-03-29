@@ -23,19 +23,26 @@ class Chef
   class Knife
     class Ec2InstanceData < Knife
 
-      banner "knife ec2 instance data [RUN LIST...] (options)"
+      banner "knife ec2 instance data (options)"
 
       option :edit,
         :short => "-e",
         :long => "--edit",
         :description => "Edit the instance data"
 
+      option :run_list,
+        :short => "-r RUN_LIST",
+        :long => "--run-list RUN_LIST",
+        :description => "Comma separated list of roles/recipes to apply",
+        :proc => lambda { |o| o.split(/[\s,]+/) },
+        :default => []
+
       def run
         data = {
           "chef_server" => Chef::Config[:chef_server_url],
           "validation_client_name" => Chef::Config[:validation_client_name],
           "validation_key" => IO.read(Chef::Config[:validation_key]),
-          "attributes" => { "run_list" => @name_args }
+          "attributes" => { "run_list" => config[:run_list] }
         }
         data = edit_data(data) if config[:edit]
         output(data)
