@@ -13,7 +13,6 @@ Gem::Specification.new do |s|
   s.email = "adam@opscode.com"
   s.homepage = "http://wiki.opscode.com/display/chef"
 
-  s.add_dependency "chef", ">= 0.9.14"
   s.add_dependency "fog", "~> 0.6.0"
   s.add_dependency "net-ssh", "~> 2.1.3"
   s.add_dependency "net-ssh-multi", "~> 1.0.1"
