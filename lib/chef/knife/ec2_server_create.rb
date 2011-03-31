@@ -249,14 +249,15 @@ class Chef
 
         if !vpc_mode?
           puts "#{h.color("Public DNS Name", :cyan)}: #{server.dns_name}"
-          puts "#{h.color("Public IP Address", :cyan)}: #{server.ip_address}"
+          puts "#{h.color("Public IP Address", :cyan)}: #{server.public_ip_address}"
           puts "#{h.color("Private DNS Name", :cyan)}: #{server.private_dns_name}"
         end
         puts "#{h.color("Private IP Address", :cyan)}: #{server.private_ip_address}"
 
         print "\n#{h.color("Waiting for sshd", :magenta)}"
 
-        print(".") until tcp_test_ssh(display_name) {
+        ip_to_test = vpc_mode? ? server.private_ip_address : server.public_ip_address
+        print(".") until tcp_test_ssh(ip_to_test) {
           sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
           puts("done")
         }
@@ -273,7 +274,7 @@ class Chef
           puts "#{h.color("Subnet ID", :cyan)}: #{server.subnet_id}"
         else
           puts "#{h.color("Public DNS Name", :cyan)}: #{server.dns_name}"
-          puts "#{h.color("Public IP Address", :cyan)}: #{server.ip_address}"
+          puts "#{h.color("Public IP Address", :cyan)}: #{server.public_ip_address}"
           puts "#{h.color("Private DNS Name", :cyan)}: #{server.private_dns_name}"
         end
         puts "#{h.color("SSH Key", :cyan)}: #{server.key_name}"

@@ -70,7 +70,7 @@ class Chef
           msg("Security Groups", server.groups.join(", "))
           msg("SSH Key", server.key_name)
           msg("Public DNS Name", server.dns_name)
-          msg("Public IP Address", server.ip_address)
+          msg("Public IP Address", server.public_ip_address)
           msg("Private DNS Name", server.private_dns_name)
           msg("Private IP Address", server.private_ip_address)
 
