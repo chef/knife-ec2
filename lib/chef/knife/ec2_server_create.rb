@@ -26,6 +26,14 @@ class Chef
   class Knife
     class Ec2ServerCreate < Knife
 
+      deps do
+        Chef::Knife::Bootstrap.load_deps
+        require 'fog'
+        require 'highline'
+        require 'net/ssh/multi'
+        require 'readline'
+      end
+
       banner "knife ec2 server create (options)"
 
       attr_accessor :initial_sleep_delay
@@ -170,10 +178,6 @@ class Chef
       end
 
       def run
-        require 'fog'
-        require 'highline'
-        require 'net/ssh/multi'
-        require 'readline'
 
         $stdout.sync = true
 
