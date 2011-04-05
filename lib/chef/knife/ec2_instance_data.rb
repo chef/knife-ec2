@@ -17,11 +17,14 @@
 #
 
 require 'chef/knife'
-require 'chef/json_compat'
 
 class Chef
   class Knife
     class Ec2InstanceData < Knife
+      
+      deps do
+        require 'chef/json_compat'
+      end
 
       banner "knife ec2 instance data (options)"
 
@@ -45,7 +48,7 @@ class Chef
           "attributes" => { "run_list" => config[:run_list] }
         }
         data = edit_data(data) if config[:edit]
-        output(data)
+        ui.output(data)
       end
     end
   end

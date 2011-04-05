@@ -17,11 +17,17 @@
 #
 
 require 'chef/knife'
-require 'chef/json_compat'
 
 class Chef
   class Knife
     class Ec2ServerDelete < Knife
+
+      deps do
+        require 'fog'
+        require 'net/ssh/multi'
+        require 'readline'
+        require 'chef/json_compat'
+      end
 
       banner "knife ec2 server delete SERVER [SERVER] (options)"
 
@@ -43,16 +49,7 @@ class Chef
         :default => "us-east-1",
         :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
 
-      def h
-        @highline ||= HighLine.new
-      end
-
       def run
-        require 'fog'
-        require 'highline'
-        require 'net/ssh/multi'
-        require 'readline'
-
         connection = Fog::Compute.new(
           :provider => 'AWS',
           :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
@@ -79,13 +76,13 @@ class Chef
 
           server.destroy
 
-          Chef::Log.warn("Deleted server #{server.id}")
+          ui.warn("Deleted server #{server.id}")
         end
       end
 
       def msg(label, value)
         if value && !value.empty?
-          puts "#{h.color(label, :cyan)}: #{value}"
+          puts "#{ui.color(label, :cyan)}: #{value}"
         end
       end
 

@@ -17,11 +17,17 @@
 #
 
 require 'chef/knife'
-require 'chef/json_compat'
 
 class Chef
   class Knife
     class Ec2ServerList < Knife
+
+      deps do
+        require 'fog'
+        require 'net/ssh/multi'
+        require 'readline'
+        require 'chef/json_compat'
+      end
 
       banner "knife ec2 server list (options)"
 
@@ -43,16 +49,7 @@ class Chef
         :default => "us-east-1",
         :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
 
-      def h
-        @highline ||= HighLine.new
-      end
-
       def run
-        require 'fog'
-        require 'highline'
-        require 'net/ssh/multi'
-        require 'readline'
-
         $stdout.sync = true
 
         connection = Fog::Compute.new(
@@ -63,24 +60,24 @@ class Chef
         )
 
         server_list = [
-          h.color('Instance ID', :bold),
-          h.color('Public IP', :bold),
-          h.color('Private IP', :bold),
-          h.color('Flavor', :bold),
-          h.color('Image', :bold),
-          h.color('Security Groups', :bold),
-          h.color('State', :bold)
+          ui.color('Instance ID', :bold),
+          ui.color('Public IP', :bold),
+          ui.color('Private IP', :bold),
+          ui.color('Flavor', :bold),
+          ui.color('Image', :bold),
+          ui.color('Security Groups', :bold),
+          ui.color('State', :bold)
         ]
         connection.servers.all.each do |server|
           server_list << server.id.to_s
-          server_list << (server.ip_address == nil ? "" : server.public_ip_address)
+          server_list << (server.public_ip_address == nil ? "" : server.public_ip_address)
           server_list << (server.private_ip_address == nil ? "" : server.private_ip_address)
           server_list << (server.flavor_id == nil ? "" : server.flavor_id)
           server_list << (server.image_id == nil ? "" : server.image_id)
           server_list << server.groups.join(", ")
           server_list << server.state
         end
-        puts h.list(server_list, :columns_across, 7)
+        puts ui.list(server_list, :columns_across, 7)
 
       end
     end
