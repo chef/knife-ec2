@@ -184,6 +184,11 @@ class Chef
 
         ami = connection.images.get(locate_config_value(:image))
 
+        if ami.nil?
+          ui.error("You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'.")
+          exit 1
+        end
+
         server_def = {
           :image_id => locate_config_value(:image),
           :groups => config[:security_groups],
