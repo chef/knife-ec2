@@ -75,7 +75,7 @@ class Chef
           server_list << (server.flavor_id == nil ? "" : server.flavor_id)
           server_list << (server.image_id == nil ? "" : server.image_id)
           server_list << server.groups.join(", ")
-          server_list << server.state
+          server_list << (server.state == nil ? "" : server.state)
         end
         puts ui.list(server_list, :columns_across, 7)
 
