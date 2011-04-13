@@ -293,6 +293,7 @@ class Chef
             end
           end
         end
+        puts "#{ui.color("Environment", :cyan)}: #{config[:environment]}"
         puts "#{ui.color("Run List", :cyan)}: #{config[:run_list].join(', ')}"
       end
 
