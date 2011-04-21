@@ -106,6 +106,11 @@ class Chef
         :long => "--prerelease",
         :description => "Install the pre-release chef gems"
 
+      option :bootstrap_version,
+        :long => "--bootstrap-version VERSION",
+        :description => "The version of Chef to install",
+        :proc => Proc.new { |v| Chef::Config[:knife][:bootstrap_version] = v }
+
       option :region,
         :long => "--region REGION",
         :description => "Your AWS region",
@@ -305,6 +310,7 @@ class Chef
         bootstrap.config[:identity_file] = config[:identity_file]
         bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
         bootstrap.config[:prerelease] = config[:prerelease]
+        bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:distro] = locate_config_value(:distro)
         bootstrap.config[:use_sudo] = true
         bootstrap.config[:template_file] = locate_config_value(:template_file)
