@@ -27,7 +27,7 @@ If your knife.rb file will be checked into a SCM system (ie readable by others) 
 You also have the option of passing your AWS API Key/Secret into the individual knife subcommands using the <tt>-A</tt> (or <tt>--aws-access-key-id</tt>) <tt>-K</tt> (or <tt>--aws-secret-access-key</tt>) command options
 
     # provision a new m1.small Ubuntu 10.04 webserver
-    knife ec2 server create 'role[webserver]' -i ami-7000f019 -f m1.small -A 'Your AWS Access Key ID' -K "Your AWS Secret Access Key"
+    knife ec2 server create 'role[webserver]' -I ami-7000f019 -f m1.small -A 'Your AWS Access Key ID' -K "Your AWS Secret Access Key"
 
 Additionally the following options may be set in your `knife.rb`:
 
