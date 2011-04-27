@@ -156,6 +156,12 @@ class Chef
         :description => "Disable host key verification",
         :boolean => true,
         :default => false
+      
+      option :ephemeral,
+        :long => "--ephemeral EPHEMERAL_DEVICES",
+        :description => "Comma separated list of device locations (eg - /dev/sdb) to map ephemeral devices",
+        :proc => lambda { |o| o.split(/[\s,]+/) },
+        :default => []
 
       def tcp_test_ssh(hostname)
         tcp_socket = TCPSocket.new(hostname, 22)
@@ -228,6 +234,10 @@ class Chef
              'Ebs.DeleteOnTermination' => delete_term
            }]
       end
+        (config[:ephemeral] || []).each_with_index do |device_name, i|
+          server_def[:block_device_mapping] << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
+        end
+
         server = connection.servers.create(server_def)
 
         puts "#{ui.color("Instance ID", :cyan)}: #{server.id}"
