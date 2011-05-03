@@ -102,6 +102,10 @@ class Chef
         :description => "Your AWS API Secret Access Key",
         :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
 
+      option :fog_credential_name,
+        :long => "--fog-credentials",
+        :description => "Load the specified set of fog credentials from your fog authentication file"
+
       option :prerelease,
         :long => "--prerelease",
         :description => "Install the pre-release chef gems"
@@ -114,7 +118,6 @@ class Chef
       option :region,
         :long => "--region REGION",
         :description => "Your AWS region",
-        :default => "us-east-1",
         :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
 
       option :distro,
@@ -180,12 +183,20 @@ class Chef
 
         $stdout.sync = true
 
-        connection = Fog::Compute.new(
-          :provider => 'AWS',
-          :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
-          :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-          :region => locate_config_value(:region)
-        )
+        if config[:fog_credential_name]
+          Fog.credential = config[:fog_credential_name].to_sym
+          connection = Fog::Compute.new(
+            :provider => 'AWS',
+            :region => locate_config_value(:region) || Fog.credentials[:region]
+          )
+        else
+          connection = Fog::Compute.new(
+            :provider => 'AWS',
+            :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
+            :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
+            :region => locate_config_value(:region)
+          )
+        end
 
         ami = connection.images.get(locate_config_value(:image))
 
