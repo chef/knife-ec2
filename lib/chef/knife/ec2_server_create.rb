@@ -172,6 +172,10 @@ class Chef
       rescue Errno::ECONNREFUSED
         sleep 2
         false
+      # This happens on EC2 quite often
+      rescue Errno::EHOSTUNREACH
+        sleep 2
+        false
       ensure
         tcp_socket && tcp_socket.close
       end
