@@ -44,7 +44,7 @@ class Chef
         :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
 
       option :fog_credential_name,
-        :long => "--fog-credentials",
+        :long => "--fog-credentials CREDENTIALS",
         :description => "Load the specified set of fog credentials from your fog authentication file"
 
       option :region,
