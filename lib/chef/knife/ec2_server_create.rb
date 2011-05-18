@@ -266,7 +266,7 @@ class Chef
 
         print "\n#{ui.color("Waiting for sshd", :magenta)}"
 
-        ip_to_test = vpc_mode? ? server.private_ip_address : server.public_ip_address
+        ip_to_test = vpc_mode? ? server.private_ip_address : server.dns_name
         print(".") until tcp_test_ssh(ip_to_test) {
           sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
           puts("done")
