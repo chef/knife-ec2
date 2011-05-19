@@ -157,6 +157,10 @@ class Chef
         :boolean => true,
         :default => false
 
+      option :user_data,
+        :long => "--user-data",
+        :description => "File path to user data script"
+
       def tcp_test_ssh(hostname)
         tcp_socket = TCPSocket.new(hostname, 22)
         readable = IO.select([tcp_socket], nil, nil, 5)
@@ -208,6 +212,7 @@ class Chef
           :availability_zone => Chef::Config[:knife][:availability_zone]
         }
         server_def[:subnet_id] = config[:subnet_id] if config[:subnet_id]
+        server_def[:user_data] = File.read(config[:user_data]) if config[:user_data]
 
       if ami.root_device_type == "ebs"
         ami_map = ami.block_device_mapping.first

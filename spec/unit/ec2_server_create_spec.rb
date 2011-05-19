@@ -74,6 +74,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:chef_node_name] = "blarf"
       @knife_ec2_create.config[:template_file] = '~/.chef/templates/my-bootstrap.sh.erb'
       @knife_ec2_create.config[:distro] = 'ubuntu-10.04-magic-sparkles'
+      @knife_ec2_create.config[:user_data] = '/tmp/user_data_file.sh'
 
       @bootstrap = @knife_ec2_create.bootstrap_for_node(@new_ec2_server)
     end
@@ -124,6 +125,10 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "configured the bootstrap to use the desired template" do
       @bootstrap.config[:template_file].should == '~/.chef/templates/my-bootstrap.sh.erb'
+    end
+
+    it "configured the bootstrap to pass user_data to the node" do
+      @bootstrap.config[:user_data].should == '/tmp/user_data_file.sh'
     end
   end
 
