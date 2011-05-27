@@ -60,16 +60,16 @@ class Chef
         @name_args.each do |instance_id|
           server = connection.servers.get(instance_id)
 
-          msg("Instance ID", server.id)
-          msg("Flavor", server.flavor_id)
-          msg("Image", server.image_id)
-          msg("Availability Zone", server.availability_zone)
-          msg("Security Groups", server.groups.join(", "))
-          msg("SSH Key", server.key_name)
-          msg("Public DNS Name", server.dns_name)
-          msg("Public IP Address", server.public_ip_address)
-          msg("Private DNS Name", server.private_dns_name)
-          msg("Private IP Address", server.private_ip_address)
+          msg_pair("Instance ID", server.id)
+          msg_pair("Flavor", server.flavor_id)
+          msg_pair("Image", server.image_id)
+          msg_pair("Availability Zone", server.availability_zone)
+          msg_pair("Security Groups", server.groups.join(", "))
+          msg_pair("SSH Key", server.key_name)
+          msg_pair("Public DNS Name", server.dns_name)
+          msg_pair("Public IP Address", server.public_ip_address)
+          msg_pair("Private DNS Name", server.private_dns_name)
+          msg_pair("Private IP Address", server.private_ip_address)
 
           puts "\n"
           confirm("Do you really want to delete this server")
@@ -80,7 +80,7 @@ class Chef
         end
       end
 
-      def msg(label, value)
+      def msg_pair(label, value)
         if value && !value.empty?
           puts "#{ui.color(label, :cyan)}: #{value}"
         end
