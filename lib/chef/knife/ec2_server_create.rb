@@ -318,7 +318,7 @@ class Chef
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:distro] = locate_config_value(:distro)
-        bootstrap.config[:use_sudo] = true
+        bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
         bootstrap.config[:template_file] = locate_config_value(:template_file)
         bootstrap.config[:environment] = config[:environment]
         # may be needed for vpc_mode
