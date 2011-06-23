@@ -43,19 +43,30 @@ class Chef
         :description => "Your AWS API Secret Access Key",
         :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
 
+      option :fog_credential_name,
+        :long => "--fog-credentials CREDENTIALS",
+        :description => "Load the specified set of fog credentials from your fog authentication file"
+
       option :region,
         :long => "--region REGION",
         :description => "Your AWS region",
-        :default => "us-east-1",
         :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
 
       def run
-        connection = Fog::Compute.new(
-          :provider => 'AWS',
-          :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
-          :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-          :region => Chef::Config[:knife][:region] || config[:region]
-        )
+        if config[:fog_credential_name]
+          Fog.credential = config[:fog_credential_name].to_sym
+          connection = Fog::Compute.new(
+            :provider => 'AWS',
+            :region => Chef::Config[:knife][:region] || config[:region] || Fog.credentials[:region]
+          )
+        else
+          connection = Fog::Compute.new(
+            :provider => 'AWS',
+            :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
+            :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
+            :region => Chef::Config[:knife][:region] || config[:region]
+          )
+        end
 
         @name_args.each do |instance_id|
           server = connection.servers.get(instance_id)
