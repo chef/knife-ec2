@@ -56,6 +56,12 @@ class Chef
         :default => ["default"],
         :proc => Proc.new { |groups| groups.split(',') }
 
+      option :tags,
+        :short => "-T A,B[,C,D,...]",
+        :long => "--tags A,B[,C,D...]",
+        :description => "The tags for this server",
+        :proc => Proc.new { |tags| tags.split(',') }
+
       option :availability_zone,
         :short => "-Z ZONE",
         :long => "--availability-zone ZONE",
@@ -200,6 +206,12 @@ class Chef
           exit 1
         end
 
+        tags = locate_config_value(:tags)
+        if !tags.nil? and tags.length % 2 == 1
+          ui.error("Tags should be entered in an even number (for key => value encoding)")
+          exit 1
+        end 
+
         server_def = {
           :image_id => locate_config_value(:image),
           :groups => config[:security_groups],
@@ -236,11 +248,21 @@ class Chef
       end
         server = connection.servers.create(server_def)
 
+        unless tags.nil?
+          hashed_tags = Hash[*tags]
+          hashed_tags["Name"] = locate_config_value(:chef_node_name) unless hashed_tags.keys.include? "Name"
+
+          hashed_tags.each_pair do |key, val|
+            connection.tags.create :key => key, :value => val, :resource_id => server.id
+          end
+        end
+
         puts "#{ui.color("Instance ID", :cyan)}: #{server.id}"
         puts "#{ui.color("Flavor", :cyan)}: #{server.flavor_id}"
         puts "#{ui.color("Image", :cyan)}: #{server.image_id}"
         puts "#{ui.color("Availability Zone", :cyan)}: #{server.availability_zone}"
         puts "#{ui.color("Security Groups", :cyan)}: #{server.groups.join(", ")}"
+        puts "#{ui.color("Tags", :cyan)}: #{hashed_tags}"
         puts "#{ui.color("SSH Key", :cyan)}: #{server.key_name}"
         puts "#{ui.color("Subnet ID", :cyan)}: #{server.subnet_id}" if vpc_mode?
 
@@ -280,6 +302,7 @@ class Chef
         puts "#{ui.color("Image", :cyan)}: #{server.image_id}"
         puts "#{ui.color("Availability Zone", :cyan)}: #{server.availability_zone}"
         puts "#{ui.color("Security Groups", :cyan)}: #{server.groups.join(", ")}"
+        puts "#{ui.color("Tags", :cyan)}: #{hashed_tags}"
         if vpc_mode?
           puts "#{ui.color("Subnet ID", :cyan)}: #{server.subnet_id}"
         else
