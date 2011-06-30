@@ -70,12 +70,12 @@ class Chef
         ]
         connection.servers.all.each do |server|
           server_list << server.id.to_s
-          server_list << (server.public_ip_address == nil ? "" : server.public_ip_address)
-          server_list << (server.private_ip_address == nil ? "" : server.private_ip_address)
-          server_list << (server.flavor_id == nil ? "" : server.flavor_id)
-          server_list << (server.image_id == nil ? "" : server.image_id)
+          server_list << server.public_ip_address.to_s
+          server_list << server.private_ip_address.to_s
+          server_list << server.flavor_id.to_s
+          server_list << server.image_id.to_s
           server_list << server.groups.join(", ")
-          server_list << (server.state == nil ? "" : server.state)
+          server_list << server.state.to_s
         end
         puts ui.list(server_list, :columns_across, 7)
 
