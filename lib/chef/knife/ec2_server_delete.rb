@@ -16,46 +16,17 @@
 # limitations under the License.
 #
 
-require 'chef/knife'
+require 'chef/knife/ec2_base'
 
 class Chef
   class Knife
     class Ec2ServerDelete < Knife
 
-      deps do
-        require 'fog'
-        require 'net/ssh/multi'
-        require 'readline'
-        require 'chef/json_compat'
-      end
+      include Knife::Ec2Base
 
       banner "knife ec2 server delete SERVER [SERVER] (options)"
 
-      option :aws_access_key_id,
-        :short => "-A ID",
-        :long => "--aws-access-key-id KEY",
-        :description => "Your AWS Access Key ID",
-        :proc => Proc.new { |key| Chef::Config[:knife][:aws_access_key_id] = key }
-
-      option :aws_secret_access_key,
-        :short => "-K SECRET",
-        :long => "--aws-secret-access-key SECRET",
-        :description => "Your AWS API Secret Access Key",
-        :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
-
-      option :region,
-        :long => "--region REGION",
-        :description => "Your AWS region",
-        :default => "us-east-1",
-        :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
-
       def run
-        connection = Fog::Compute.new(
-          :provider => 'AWS',
-          :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
-          :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-          :region => Chef::Config[:knife][:region] || config[:region]
-        )
 
         @name_args.each do |instance_id|
           server = connection.servers.get(instance_id)
@@ -63,9 +34,11 @@ class Chef
           msg_pair("Instance ID", server.id)
           msg_pair("Flavor", server.flavor_id)
           msg_pair("Image", server.image_id)
+          msg_pair("Region", connection.instance_variable_get(:@region))
           msg_pair("Availability Zone", server.availability_zone)
           msg_pair("Security Groups", server.groups.join(", "))
           msg_pair("SSH Key", server.key_name)
+          msg_pair("Root Device Type", server.root_device_type)
           msg_pair("Public DNS Name", server.dns_name)
           msg_pair("Public IP Address", server.public_ip_address)
           msg_pair("Private DNS Name", server.private_dns_name)
@@ -77,12 +50,6 @@ class Chef
           server.destroy
 
           ui.warn("Deleted server #{server.id}")
-        end
-      end
-
-      def msg_pair(label, value)
-        if value && !value.empty?
-          puts "#{ui.color(label, :cyan)}: #{value}"
         end
       end
 
