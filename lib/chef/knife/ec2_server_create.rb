@@ -169,6 +169,8 @@ class Chef
       def run
         $stdout.sync = true
 
+        validate!
+
         server_def = {
           :image_id => locate_config_value(:image),
           :groups => config[:security_groups],
@@ -299,6 +301,30 @@ class Chef
         # Amazon Virtual Private Cloud requires a subnet_id. If
         # present, do a few things differently
         !!config[:subnet_id]
+      end
+
+      def ami
+        @ami ||= connection.images.get(locate_config_value(:image))
+      end
+
+      def validate!
+        errors = []
+
+        [:image, :aws_ssh_key_id, :aws_access_key_id, :aws_secret_access_key].each do |k|
+          pretty_key = k.to_s.gsub(/_/, ' ').gsub(/\w+/){ |w| (w =~ /(ssh)|(aws)/i) ? w.upcase  : w.capitalize }
+          if Chef::Config[:knife][k].nil?
+            errors << "You did not provided a valid '#{pretty_key}' value."
+          end
+        end
+
+        if errors.each{|e| ui.error(e)}.any?
+          exit 1
+        end
+
+        if ami.nil?
+          ui.error("You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'.")
+          exit 1
+        end
       end
 
     end
