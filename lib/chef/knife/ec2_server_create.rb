@@ -1,6 +1,7 @@
 #
 # Author:: Adam Jacob (<adam@opscode.com>)
-# Copyright:: Copyright (c) 2010 Opscode, Inc.
+# Author:: Seth Chisamore (<schisamo@opscode.com>)
+# Copyright:: Copyright (c) 2010-2011 Opscode, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -167,13 +168,6 @@ class Chef
 
       def run
         $stdout.sync = true
-
-        ami = connection.images.get(locate_config_value(:image))
-
-        unless ami
-          ui.error("You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'.")
-          exit 1
-        end
 
         server_def = {
           :image_id => locate_config_value(:image),

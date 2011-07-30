@@ -1,6 +1,7 @@
 #
 # Author:: Adam Jacob (<adam@opscode.com>)
 # Author:: Daniel DeLeo (<dan@opscode.com>)
+# Author:: Seth Chisamore (<schisamo@opscode.com>)
 # Copyright:: Copyright (c) 2008, 2010 Opscode, Inc.
 # License:: Apache License, Version 2.0
 #
@@ -17,17 +18,12 @@
 # limitations under the License.
 #
 
-require 'rubygems'
-require 'rake/gempackagetask'
+require 'bundler'
+Bundler::GemHelper.install_tasks
+
+# require 'rubygems'
+# require 'rake/gempackagetask'
 require 'rake/rdoctask'
-
-GEM_NAME = "knife-ec2"
-
-spec = eval(File.read("knife-ec2.gemspec"))
-
-Rake::GemPackageTask.new(spec) do |pkg|
-  pkg.gem_spec = spec
-end
 
 begin
   require 'sdoc'
@@ -42,14 +38,6 @@ begin
   end
 rescue LoadError
   puts "sdoc is not available. (sudo) gem install sdoc to generate rdoc documentation."
-end
-
-task :install => :package do
-  sh %{gem install pkg/#{GEM_NAME}-#{KnifeEC2::VERSION} --no-rdoc --no-ri}
-end
-
-task :uninstall do
-  sh %{gem uninstall #{GEM_NAME} -x -v #{KnifeEC2::VERSION} }
 end
 
 begin
