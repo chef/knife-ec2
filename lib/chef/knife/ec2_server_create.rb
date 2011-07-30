@@ -308,18 +308,8 @@ class Chef
       end
 
       def validate!
-        errors = []
 
-        [:image, :aws_ssh_key_id, :aws_access_key_id, :aws_secret_access_key].each do |k|
-          pretty_key = k.to_s.gsub(/_/, ' ').gsub(/\w+/){ |w| (w =~ /(ssh)|(aws)/i) ? w.upcase  : w.capitalize }
-          if Chef::Config[:knife][k].nil?
-            errors << "You did not provided a valid '#{pretty_key}' value."
-          end
-        end
-
-        if errors.each{|e| ui.error(e)}.any?
-          exit 1
-        end
+        super([:image, :aws_ssh_key_id, :aws_access_key_id, :aws_secret_access_key])
 
         if ami.nil?
           ui.error("You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'.")

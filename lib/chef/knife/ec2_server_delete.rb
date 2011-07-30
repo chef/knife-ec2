@@ -29,6 +29,8 @@ class Chef
 
       def run
 
+        validate!
+
         @name_args.each do |instance_id|
 
           begin
