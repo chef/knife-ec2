@@ -30,6 +30,8 @@ class Chef
       def run
         $stdout.sync = true
 
+        validate!
+
         server_list = [
           ui.color('Instance ID', :bold),
           ui.color('Public IP', :bold),
