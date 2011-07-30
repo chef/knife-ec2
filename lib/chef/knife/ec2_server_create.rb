@@ -158,6 +158,9 @@ class Chef
         else
           false
         end
+      rescue SocketError
+        sleep 2
+        false
       rescue Errno::ETIMEDOUT
         false
       rescue Errno::EPERM
