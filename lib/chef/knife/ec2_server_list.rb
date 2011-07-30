@@ -36,6 +36,7 @@ class Chef
           ui.color('Private IP', :bold),
           ui.color('Flavor', :bold),
           ui.color('Image', :bold),
+          ui.color('SSH Key', :bold),
           ui.color('Security Groups', :bold),
           ui.color('State', :bold)
         ]
@@ -45,6 +46,7 @@ class Chef
           server_list << (server.private_ip_address == nil ? "" : server.private_ip_address)
           server_list << (server.flavor_id == nil ? "" : server.flavor_id)
           server_list << (server.image_id == nil ? "" : server.image_id)
+          server_list << server.key_name
           server_list << server.groups.join(", ")
           server_list << begin
             case server.state.downcase
@@ -57,7 +59,7 @@ class Chef
             end
           end
         end
-        puts ui.list(server_list, :columns_across, 7)
+        puts ui.list(server_list, :columns_across, 8)
 
       end
     end
