@@ -141,6 +141,13 @@ class Chef
         :boolean => true,
         :default => false
 
+      option :aws_user_data,
+        :long => "--user-data USER_DATA_FILE",
+        :short => "-u USER_DATA_FILE",
+        :description => "The EC2 User Data file to provision the instance with",
+        :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
+        :default => nil
+
       def tcp_test_ssh(hostname)
         tcp_socket = TCPSocket.new(hostname, 22)
         readable = IO.select([tcp_socket], nil, nil, 5)
@@ -179,6 +186,14 @@ class Chef
           :availability_zone => locate_config_value(:availability_zone)
         }
         server_def[:subnet_id] = config[:subnet_id] if config[:subnet_id]
+
+        if Chef::Config[:knife][:aws_user_data]
+          begin
+            server_def.merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
+          rescue
+            ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+          end
+        end
 
         if ami.root_device_type == "ebs"
           ami_map = ami.block_device_mapping.first
