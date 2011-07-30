@@ -176,7 +176,7 @@ class Chef
           :groups => config[:security_groups],
           :flavor_id => locate_config_value(:flavor),
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
-          :availability_zone => Chef::Config[:knife][:availability_zone]
+          :availability_zone => locate_config_value(:availability_zone)
         }
         server_def[:subnet_id] = config[:subnet_id] if config[:subnet_id]
 
