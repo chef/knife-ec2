@@ -44,20 +44,21 @@ class Chef
         ]
         connection.servers.all.each do |server|
           server_list << server.id.to_s
-          server_list << (server.public_ip_address == nil ? "" : server.public_ip_address)
-          server_list << (server.private_ip_address == nil ? "" : server.private_ip_address)
-          server_list << (server.flavor_id == nil ? "" : server.flavor_id)
-          server_list << (server.image_id == nil ? "" : server.image_id)
-          server_list << server.key_name
+          server_list << server.public_ip_address.to_s
+          server_list << server.private_ip_address.to_s
+          server_list << server.flavor_id.to_s
+          server_list << server.image_id.to_s
+          server_list << server.key_name.to_s
           server_list << server.groups.join(", ")
           server_list << begin
-            case server.state.downcase
+            state = server.state.to_s.downcase
+            case state
             when 'shutting-down','terminated','stopping','stopped'
-              ui.color(server.state.downcase, :red)
+              ui.color(state, :red)
             when 'pending'
-              ui.color(server.state.downcase, :yellow)
+              ui.color(state, :yellow)
             else
-              ui.color(server.state.downcase, :green)
+              ui.color(state, :green)
             end
           end
         end
