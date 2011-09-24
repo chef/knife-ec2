@@ -39,9 +39,7 @@ class Chef
         msg_pair("Nameservers", zone.nameservers.to_s)
         msg_pair("Records", zone.records.all.map do |record|
           { :ip => record.ip,
-            :name => record.name,
-            :ttl => record.ttl,
-            :type => record.type }
+            :name => record.name }
         end)
         msg_pair("Caller Reference", zone.caller_reference)
         msg_pair("Description", zone.description.to_s)

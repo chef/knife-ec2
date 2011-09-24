@@ -31,21 +31,19 @@ class Chef
       option :domain,
         :short => "-d DOMAIN",
         :long => "--domain DOMAIN",
-        :description => "Domain (without http or www) to be used for new dns zone",
-        :proc => Proc.new { |key| Chef::Config[:knife][:domain] = key }
+        :description => "Domain (without http or www) to be used for new dns zone"
 
       option :email,
         :short => "-e EMAIL",
         :long => "--email EMAIL",
-        :description => "Email to be used when creating a new dns zone",
-        :proc => Proc.new { |key| Chef::Config[:knife][:email] = key }
+        :description => "Email to be used when creating a new dns zone"
 
       option :caller_ref,
-        :long => "--caller-ref CALLER REFERENCE",
+        :long => "--caller-ref \"CALLER REF\"",
         :description => "Caller reference"
 
       option :description,
-        :long => "--description DESCRIPTION",
+        :long => "--description \"DESCRIPTION\"",
         :description => "Description"
 
       def run
@@ -58,12 +56,6 @@ class Chef
         msg_pair("Zone Id", zone.id)
         msg_pair("Domain", zone.domain)
         msg_pair("Nameservers", zone.nameservers.to_s)
-        msg_pair("Records", zone.records.all.map do |record|
-          { :ip => record.ip,
-            :name => record.name,
-            :ttl => record.ttl,
-            :type => record.type }
-        end)
         msg_pair("Caller Reference", zone.caller_reference)
         msg_pair("Description", zone.description.to_s)
         msg_pair("Change Info", zone.change_info.to_s)
@@ -73,9 +65,10 @@ class Chef
         zone_def = {
           :domain => locate_config_value(:domain)
         }
-        zone_def[:email] = locate_config_value(:email) if locate_config_value(:email)
-        zone_def[:caller_ref] = config[:caller_ref] if config[:caller_ref]
-        zone_def[:description] = config[:description] if config[:description]
+
+        [:email, :caller_ref, :description].each do |key|
+          zone_def[key] = config[key] if config[key]
+        end
 
         zone_def
       end
