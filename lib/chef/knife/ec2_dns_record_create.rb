@@ -22,57 +22,67 @@ require 'chef/knife/ec2_base'
 
 class Chef
   class Knife
-    class Ec2DnsShow < Knife
+    class Ec2DnsRecordCreate < Knife
 
       include Knife::Ec2Base
 
-      banner "knife ec2 dns show (options) [ZONE]"
+      banner "knife ec2 dns record create (options)"
 
       option :zone_id,
         :short => "-z ZONE_ID",
         :long => "--zone_id ZONE_ID",
-        :description => "Id of the zone to show",
+        :description => "Id of the zone to create a record in",
         :proc => Proc.new { |z| Chef::Config[:knife][:zone_id] = z }
+
+      option :ip,
+        :long => "--ip IP",
+        :description => "Ip entry of the record"
+
+      option :type,
+        :long => "--type TYPE",
+        :description => "Entry type",
+        :default => "CNAME"
+
+      option :name,
+        :long => "--name NAME",
+        :description => "Entry name"
 
       def run
         $stdout.sync = true
 
         validate!
 
-        record_list = [
-          ui.color('Ip', :bold),
-          ui.color('Name', :bold),
-          ui.color('Type', :bold),
-          ui.color('TTL', :bold)
-        ]
-        
-        zone.records.all.each do |record|
-          record_list << record.ip.to_s
-          record_list << record.name.to_s
-          record_list << record.type.to_s
-          record_list << record.ttl.to_s
-        end
+        record = zone.records.create(create_record_def)
 
-        msg_pair("Zone Id", zone.id)
-        msg_pair("Domain", zone.domain)
-        msg_pair("Nameservers", zone.nameservers.to_s)
-        msg_pair("Caller Reference", zone.caller_reference)
-        msg_pair("Description", zone.description.to_s)
-        msg_pair("Change Info", zone.change_info.to_s)
-        msg_pair("Records", "\n")
+        msg_pair("Id", record.id)
+        msg_pair("Status", record.status)
+        msg_pair("Ip", record.ip)
+        msg_pair("Name", record.name)
+        msg_pair("Type", record.type)
+        msg_pair("TTL", record.ttl)
+      end
 
-        puts ui.list(record_list, :columns_across, 4)
+      def create_record_def
+        { :ip => config[:ip],
+          :type => config[:type],
+          :name => config[:name] }
       end
 
       def zone
-        @zone ||= dns.zones.get(locate_config_value(:zone_id) || @name_args.first)
+        @zone ||= dns.zones.get(locate_config_value(:zone_id))
       end
-      
+
       def validate!
-        super
+
+        super([:zone_id, :aws_ssh_key_id, :aws_access_key_id, :aws_secret_access_key])
 
         if zone.nil?
           ui.error("You have not provided a valid dns zone id.")
+          exit 1
+        end
+
+        if [:ip, :name].any? { |key| config[key].nil? }
+          ui.error("Record ip and name are required, please specify them using appropriate command options. Record type defaults to \"CNAME\" and can be overriden using --type option")
           exit 1
         end
       end

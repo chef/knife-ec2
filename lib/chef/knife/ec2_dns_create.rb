@@ -31,7 +31,8 @@ class Chef
       option :domain,
         :short => "-d DOMAIN",
         :long => "--domain DOMAIN",
-        :description => "Domain (without http or www) to be used for new dns zone"
+        :description => "Domain (without http or www) to be used for new dns zone",
+        :proc => Proc.new { |d| Chef::Config[:knife][:domain] = d }
 
       option :email,
         :short => "-e EMAIL",

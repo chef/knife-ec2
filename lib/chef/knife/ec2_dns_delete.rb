@@ -26,7 +26,7 @@ class Chef
 
       include Knife::Ec2Base
 
-      banner "knife ec2 dns delete DOMAINS"
+      banner "knife ec2 dns delete ZONE1[,ZONE2[,ZONE3]]"
 
       def run
         $stdout.sync = true
@@ -36,16 +36,34 @@ class Chef
         @name_args.each do |zone_id|
           zone = dns.zones.get(zone_id)
 
+          if zone.nil?
+            ui.error("Unknown zone #{zone_id}.")
+            exit 1
+          end
+
+          record_list = [
+            ui.color('Ip', :bold),
+            ui.color('Name', :bold),
+            ui.color('Type', :bold),
+            ui.color('TTL', :bold)
+          ]
+
+          zone.records.all.each do |record|
+            record_list << record.ip.to_s
+            record_list << record.name.to_s
+            record_list << record.type.to_s
+            record_list << record.ttl.to_s
+          end
+
           msg_pair("Zone Id", zone.id)
           msg_pair("Domain", zone.domain)
           msg_pair("Nameservers", zone.nameservers.to_s)
-          msg_pair("Records", zone.records.all.map do |record|
-            { :ip => record.ip,
-              :name => record.name }
-          end)
           msg_pair("Caller Reference", zone.caller_reference)
           msg_pair("Description", zone.description.to_s)
           msg_pair("Change Info", zone.change_info.to_s)
+          msg_pair("Records", "\n")
+
+          puts ui.list(record_list, :columns_across, 4)
 
           puts "\n"
           confirm("Do you really want to delete this zone")
