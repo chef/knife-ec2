@@ -39,13 +39,22 @@ class Chef
           msg_pair("Zone Id", zone.id)
           msg_pair("Domain", zone.domain)
           msg_pair("Nameservers", zone.nameservers.to_s)
-          msg_pair("Records", zone.records.all.size.to_s)
+          msg_pair("Records", zone.records.all.map do |record|
+            { :ip => record.ip,
+              :name => record.name,
+              :ttl => record.ttl,
+              :type => record.type }
+          end)
           msg_pair("Caller Reference", zone.caller_reference)
           msg_pair("Description", zone.description.to_s)
           msg_pair("Change Info", zone.change_info.to_s)
 
           puts "\n"
           confirm("Do you really want to delete this zone")
+
+          zone.records.all.each do |record|
+            record.destroy
+          end
 
           zone.destroy
 
