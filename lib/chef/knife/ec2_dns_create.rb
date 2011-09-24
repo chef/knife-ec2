@@ -53,7 +53,20 @@ class Chef
 
         validate!
 
-        dns.zones.create(create_zone_def)
+        zone = dns.zones.create(create_zone_def)
+        
+        msg_pair("Zone Id", zone.id)
+        msg_pair("Domain", zone.domain)
+        msg_pair("Nameservers", zone.nameservers.to_s)
+        msg_pair("Records", zone.records.all.map do |record|
+          { :ip => record.ip,
+            :name => record.name,
+            :ttl => record.ttl,
+            :type => record.type }
+        end)
+        msg_pair("Caller Reference", zone.caller_reference)
+        msg_pair("Description", zone.description.to_s)
+        msg_pair("Change Info", zone.change_info.to_s)
       end
 
       def create_zone_def
