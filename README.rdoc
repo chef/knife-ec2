@@ -42,6 +42,8 @@ Additionally the following options may be set in your `knife.rb`:
 * region
 * distro
 * template_file
+* domain
+* zone_id
 
 = SUBCOMMANDS:
 
