@@ -37,16 +37,18 @@ class Chef
           ui.color('Zone Id', :bold),
           ui.color('Domain', :bold),
           ui.color('Records', :bold),
-          ui.color('Caller Reference', :bold)
+          ui.color('Caller Reference', :bold),
+          ui.color('Description', :bold)
         ]
 
         dns.zones.all.each do |zone|
-          zones_list << zone.id
-          zones_list << zone.domain
+          zones_list << zone.id.to_s
+          zones_list << zone.domain.to_s
           zones_list << zone.records.all.size.to_s
-          zones_list << zone.caller_reference
+          zones_list << zone.caller_reference.to_s || ""
+          zones_list << zone.description.to_s
         end
-        puts ui.list(zones_list, :columns_across, 4)
+        puts ui.list(zones_list, :columns_across, 5)
       end
     end
   end

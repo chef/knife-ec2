@@ -40,20 +40,36 @@ class Chef
         :description => "Email to be used when creating a new dns zone",
         :proc => Proc.new { |key| Chef::Config[:knife][:email] = key }
 
+      option :caller_ref,
+        :long => "--caller-ref CALLER REFERENCE",
+        :description => "Caller reference"
+
+      option :description,
+        :long => "--description DESCRIPTION",
+        :description => "Description"
+
       def run
         $stdout.sync = true
 
         validate!
 
-        dns.zones.create(
-          :domain => locate_config_value(:domain),
-          :email  => locate_config_value(:email)
-        )
+        dns.zones.create(create_zone_def)
+      end
+
+      def create_zone_def
+        zone_def = {
+          :domain => locate_config_value(:domain)
+        }
+        zone_def[:email] = locate_config_value(:email) if locate_config_value(:email)
+        zone_def[:caller_ref] = config[:caller_ref] if config[:caller_ref]
+        zone_def[:description] = config[:description] if config[:description]
+
+        zone_def
       end
 
       def validate!
 
-        super([:domain, :email, :aws_ssh_key_id, :aws_access_key_id, :aws_secret_access_key])
+        super([:domain, :aws_ssh_key_id, :aws_access_key_id, :aws_secret_access_key])
       end
     end
   end
