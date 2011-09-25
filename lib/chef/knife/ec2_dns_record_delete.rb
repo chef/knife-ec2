@@ -31,7 +31,7 @@ class Chef
       option :zone_id,
         :short => "-z ZONE_ID",
         :long => "--zone_id ZONE_ID",
-        :description => "Id of the zone to create a record in",
+        :description => "Id of the zone to delete records in",
         :proc => Proc.new { |z| Chef::Config[:knife][:zone_id] = z }
 
       option :ip,
