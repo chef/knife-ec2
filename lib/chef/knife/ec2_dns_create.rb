@@ -29,13 +29,12 @@ class Chef
       banner "knife ec2 dns create (options)"
 
       option :domain,
-        :short => "-d DOMAIN",
+        :short => "-D DOMAIN",
         :long => "--domain DOMAIN",
         :description => "Domain (without http or www) to be used for new dns zone",
         :proc => Proc.new { |d| Chef::Config[:knife][:domain] = d }
 
       option :email,
-        :short => "-e EMAIL",
         :long => "--email EMAIL",
         :description => "Email to be used when creating a new dns zone"
 
