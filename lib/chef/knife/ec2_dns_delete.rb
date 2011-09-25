@@ -33,7 +33,7 @@ class Chef
 
         validate!
 
-        @name_args.each do |zone_id|
+        zone_ids.each do |zone_id|
           zone = dns.zones.get(zone_id)
 
           if zone.nil?
@@ -76,6 +76,10 @@ class Chef
 
           ui.warn("Deleted zone #{zone.domain}")
         end
+      end
+
+      def zone_ids
+        @name_args
       end
     end
   end
