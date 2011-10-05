@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
   s.authors     = ["Adam Jacob","Seth Chisamore"]
   s.email       = ["adam@opscode.com","schisamo@opscode.com"]
   s.homepage = "http://wiki.opscode.com/display/chef"
-  s.summary = "Rackspace Support for Chef's Knife Command"
+  s.summary = "Amazon EC2 Support for Chef's Knife Command"
   s.description = s.summary
   s.extra_rdoc_files = ["README.rdoc", "LICENSE" ]
 
