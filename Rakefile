@@ -18,39 +18,30 @@
 # limitations under the License.
 #
 
-require 'bundler'
-Bundler::GemHelper.install_tasks
+require 'bundler/setup'
+require 'jeweler'
+require 'yard'
 
-# require 'rubygems'
-# require 'rake/gempackagetask'
-require 'rake/rdoctask'
+require 'rspec/core/rake_task'
 
-begin
-  require 'sdoc'
+task :default => :spec
 
-  Rake::RDocTask.new do |rdoc|
-    rdoc.title = "Chef Ruby API Documentation"
-    rdoc.main = "README.rdoc"
-    rdoc.options << '--fmt' << 'shtml' # explictly set shtml generator
-    rdoc.template = 'direct' # lighter template
-    rdoc.rdoc_files.include("README.rdoc", "LICENSE", "spec/tiny_server.rb", "lib/**/*.rb")
-    rdoc.rdoc_dir = "rdoc"
-  end
-rescue LoadError
-  puts "sdoc is not available. (sudo) gem install sdoc to generate rdoc documentation."
+YARD::Rake::YardocTask.new do |t|
+  t.files = ['lib/**/*.rb', 'LICENSE', 'README.md', 'spec/tiny_server.rb']
 end
 
-begin
-  require 'rspec/core/rake_task'
-
-  task :default => :spec
-
-  desc "Run all specs in spec directory"
-  RSpec::Core::RakeTask.new(:spec) do |t|
-    t.pattern = 'spec/unit/**/*_spec.rb'
-  end
-
-rescue LoadError
-  STDERR.puts "\n*** RSpec not available. (sudo) gem install rspec to run unit tests. ***\n\n"
+desc "Run all specs in spec directory"
+RSpec::Core::RakeTask.new(:spec) do |t|
+  t.pattern = 'spec/unit/**/*_spec.rb'
 end
 
+Jeweler::Tasks.new do |gem|
+    require "knife-ec2/version"
+    gem.name = "knife-ec2"
+    gem.version = Knife::Ec2::VERSION
+    gem.email = ["Adam Jacob","Seth Chisamore"]
+    gem.authors = ["adam@opscode.com","schisamo@opscode.com"]
+    gem.homepage = "http://wiki.opscode.com/display/chef"
+    gem.summary = "Amazon EC2 Support for Chef's Knife Command"
+    gem.description = "This is the official Opscode Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances."
+end
