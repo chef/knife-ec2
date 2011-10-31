@@ -4,3 +4,7 @@ source :rubygems
 gemspec
 
 gem 'rake'
+
+group :development do
+  gem 'rspec', '~> 2.7.0'
+end
