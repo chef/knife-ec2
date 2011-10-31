@@ -19,7 +19,6 @@
 require File.expand_path('../../spec_helper', __FILE__)
 
 require 'chef/knife/bootstrap'
-require 'fog/aws'
 
 describe Chef::Knife::Ec2ServerCreate do
   before do
