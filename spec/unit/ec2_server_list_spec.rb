@@ -25,6 +25,10 @@ describe Chef::Knife::Ec2ServerList do
     described_class.new
   end
   
+  specify do
+    should be_a_kind_of(Chef::Knife)
+  end
+  
   describe "#run" do
     subject do
       ec2_server_list.run

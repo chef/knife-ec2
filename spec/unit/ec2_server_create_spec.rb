@@ -21,6 +21,10 @@ require File.expand_path('../../spec_helper', __FILE__)
 require 'chef/knife/bootstrap'
 
 describe Chef::Knife::Ec2ServerCreate do
+  specify do
+    should be_a_kind_of(Chef::Knife)
+  end
+  
   before do
     @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
     @knife_ec2_create.initial_sleep_delay = 0
