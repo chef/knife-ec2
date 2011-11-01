@@ -32,3 +32,5 @@ Icon?
 
 *.swp
 *.swo
+
+Gemfile.lock
