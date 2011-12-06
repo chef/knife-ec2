@@ -53,7 +53,7 @@ Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap (usi
 
 == knife ec2 server delete
 
-Deletes an existing server in the currently configured AWS account.  <b>PLEASE NOTE</b> - this does not delete the associated node and client objects from the Chef server.
+Deletes an existing server in the currently configured AWS account.  <b>PLEASE NOTE</b> - By default, this does not delete the associated node and client objects from the Chef server.  To do so, add the <tt>--purge</tt> flag.
 
 == knife ec2 server list
 
