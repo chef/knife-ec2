@@ -36,7 +36,12 @@ class Chef
         :long => "--purge",
         :boolean => true,
         :default => false,
-        :description => "Destroy corresponding node and client on the Chef Server, in addition to destroying the EC2 node itself."
+        :description => "Destroy corresponding node and client on the Chef Server, in addition to destroying the EC2 node itself.  Assumes node and client have the same name as the server (if not, add the '--node-name' option)."
+
+      option :chef_node_name,
+        :short => "-N NAME",
+        :long => "--node-name NAME",
+        :description => "The name of the node and client to delete, if it differs from the server name.  Only has meaning when used with the '--purge' option."
 
       # Extracted from Chef::Knife.delete_object, because it has a
       # confirmation step built in... By specifying the '--purge'
@@ -44,9 +49,13 @@ class Chef
       # the user is already making their intent known.  It is not
       # necessary to make them confirm two more times.
       def destroy_item(klass, name, type_name)
-        object = klass.load(name)
-        object.destroy
-        ui.warn("Deleted #{type_name} #{name}")
+        begin
+          object = klass.load(name)
+          object.destroy
+          ui.warn("Deleted #{type_name} #{name}")
+        rescue Net::HTTPServerException
+          ui.warn("Could not find a #{type_name} named #{name} to delete!")
+        end
       end
 
       def run
@@ -79,8 +88,9 @@ class Chef
             ui.warn("Deleted server #{server.id}")
 
             if config[:purge]
-              destroy_item(Chef::Node, instance_id, "node")
-              destroy_item(Chef::ApiClient, instance_id, "client")
+              thing_to_delete = config[:chef_node_name] || instance_id
+              destroy_item(Chef::Node, thing_to_delete, "node")
+              destroy_item(Chef::ApiClient, thing_to_delete, "client")
             else
               ui.warn("Corresponding node and client for the #{instance_id} server were not deleted and remain registered with the Chef Server")
             end
@@ -94,4 +104,3 @@ class Chef
     end
   end
 end
-
