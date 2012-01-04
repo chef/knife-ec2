@@ -1,0 +1,88 @@
+PATH
+  remote: .
+  specs:
+    knife-ec2 (0.5.11)
+      chef (~> 0.10)
+      fog (~> 0.8.2)
+
+GEM
+  remote: http://rubygems.org/
+  specs:
+    builder (3.0.0)
+    bunny (0.7.8)
+    chef (0.10.8)
+      bunny (>= 0.6.0)
+      erubis
+      highline
+      json (>= 1.4.4, <= 1.6.1)
+      mixlib-authentication (>= 1.1.0)
+      mixlib-cli (>= 1.1.0)
+      mixlib-config (>= 1.1.2)
+      mixlib-log (>= 1.3.0)
+      moneta
+      net-ssh (~> 2.1.3)
+      net-ssh-multi (~> 1.1.0)
+      ohai (>= 0.6.0)
+      rest-client (>= 1.0.4, < 1.7.0)
+      treetop (~> 1.4.9)
+      uuidtools
+    diff-lcs (1.1.3)
+    erubis (2.7.0)
+    excon (0.6.6)
+    fog (0.8.2)
+      builder
+      excon (~> 0.6.1)
+      formatador (>= 0.1.3)
+      json
+      mime-types
+      net-ssh (>= 2.1.3)
+      nokogiri (>= 1.4.4)
+      ruby-hmac
+    formatador (0.2.1)
+    highline (1.6.9)
+    json (1.6.1)
+    mime-types (1.17.2)
+    mixlib-authentication (1.1.4)
+      mixlib-log
+    mixlib-cli (1.2.2)
+    mixlib-config (1.1.2)
+    mixlib-log (1.3.0)
+    moneta (0.6.0)
+    net-ssh (2.1.4)
+    net-ssh-gateway (1.1.0)
+      net-ssh (>= 1.99.1)
+    net-ssh-multi (1.1)
+      net-ssh (>= 2.1.4)
+      net-ssh-gateway (>= 0.99.0)
+    nokogiri (1.5.0)
+    ohai (0.6.10)
+      mixlib-cli
+      mixlib-config
+      mixlib-log
+      systemu (~> 2.2.0)
+      yajl-ruby
+    polyglot (0.3.3)
+    rest-client (1.6.7)
+      mime-types (>= 1.16)
+    rspec (2.7.0)
+      rspec-core (~> 2.7.0)
+      rspec-expectations (~> 2.7.0)
+      rspec-mocks (~> 2.7.0)
+    rspec-core (2.7.1)
+    rspec-expectations (2.7.0)
+      diff-lcs (~> 1.1.2)
+    rspec-mocks (2.7.0)
+    ruby-hmac (0.4.0)
+    systemu (2.2.0)
+    treetop (1.4.10)
+      polyglot
+      polyglot (>= 0.3.1)
+    uuidtools (2.1.2)
+    yajl-ruby (1.1.0)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  knife-ec2!
+  rspec (~> 2.7.0)
