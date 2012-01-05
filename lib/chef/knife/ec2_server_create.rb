@@ -56,6 +56,12 @@ class Chef
         :description => "The security groups for this server",
         :default => ["default"],
         :proc => Proc.new { |groups| groups.split(',') }
+      
+      option :tags,
+        :short => "-T T=V[,T=V,...]",
+        :long => "--tags Tag=Value[,Tag=Value...]",
+        :description => "The tags for this server",
+        :proc => Proc.new { |tags| tags.split(',') }
 
       option :availability_zone,
         :short => "-Z ZONE",
@@ -181,13 +187,24 @@ class Chef
         validate!
 
         server = connection.servers.create(create_server_def)
+         
+        unless tags.nil?
+          hashed_tags={}
+          tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val}
+          hashed_tags["Name"] = locate_config_value(:chef_node_name) unless hashed_tags.keys.include? "Name"
+                     
 
+          hashed_tags.each_pair do |key,val|
+            connection.tags.create :key => key, :value => val, :resource_id => server.id
+          end
+        end
         msg_pair("Instance ID", server.id)
         msg_pair("Flavor", server.flavor_id)
         msg_pair("Image", server.image_id)
         msg_pair("Region", connection.instance_variable_get(:@region))
         msg_pair("Availability Zone", server.availability_zone)
         msg_pair("Security Groups", server.groups.join(", "))
+        msg_pair("Tags", hashed_tags)
         msg_pair("SSH Key", server.key_name)
 
         print "\n#{ui.color("Waiting for server", :magenta)}"
@@ -224,6 +241,7 @@ class Chef
         msg_pair("Region", connection.instance_variable_get(:@region))
         msg_pair("Availability Zone", server.availability_zone)
         msg_pair("Security Groups", server.groups.join(", "))
+        msg_pair("Tags", hashed_tags)
         msg_pair("SSH Key", server.key_name)
         msg_pair("Root Device Type", server.root_device_type)
         if server.root_device_type == "ebs"
@@ -292,6 +310,16 @@ class Chef
         end
       end
       
+      def tags
+       tags = locate_config_value(:tags)
+        if !tags.nil? and tags.length != tags.to_s.count('=')
+          ui.error("Tags should be entered in a key = value pair")
+          exit 1
+        end     
+       tags
+      end
+      
+       
       def create_server_def
         server_def = {
           :image_id => locate_config_value(:image),
