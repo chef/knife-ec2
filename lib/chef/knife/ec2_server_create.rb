@@ -75,6 +75,11 @@ class Chef
         :description => "The AWS SSH key id",
         :proc => Proc.new { |key| Chef::Config[:knife][:aws_ssh_key_id] = key }
 
+      option :skip_ssh_test_with_delay,
+        :short => "-k DELAY",
+        :long => "--skip-ssh-test-with-delay DELAY",
+        :description => "Replace the ssh availability check with the specified delay in seconds."
+
       option :ssh_user,
         :short => "-x USERNAME",
         :long => "--ssh-user USERNAME",
@@ -206,14 +211,20 @@ class Chef
         end
         msg_pair("Private IP Address", server.private_ip_address)
 
-        print "\n#{ui.color("Waiting for sshd", :magenta)}"
-        
         fqdn = vpc_mode? ? server.private_ip_address : server.dns_name
         
-        print(".") until tcp_test_ssh(fqdn) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
-          puts("done")
-        }
+        if config.has_key?(:skip_ssh_test_with_delay)
+          delay = config[:skip_ssh_test_with_delay].to_i
+          print "\n#{ui.color("Skipping sshd check and waiting #{delay} seconds", :magenta)}"
+          sleep delay
+        else
+          print "\n#{ui.color("Waiting for sshd", :magenta)}"
+        
+          print(".") until tcp_test_ssh(fqdn) {
+            sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+            puts("done")
+          }
+        end
 
         bootstrap_for_node(server,fqdn).run
 
