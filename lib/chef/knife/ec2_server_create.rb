@@ -206,10 +206,10 @@ class Chef
 
         puts("\n")
         
-        # attach eip
-        connection.associate_address(server.id, eip.public_ip, nil, eip.allocation_id) if eip
-        
         if vpc_mode?
+          # attach eip
+          connection.associate_address(server.id, eip.public_ip, nil, eip.allocation_id) if eip
+
           msg_pair("Subnet ID", server.subnet_id)
           msg_pair("Public IP Address", eip.public_ip) if eip.public_ip
         else
