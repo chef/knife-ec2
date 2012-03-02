@@ -189,8 +189,6 @@ class Chef
 
         if vpc_mode? && create_server_def[:subnet_type] == "public"
           eip = make_public_subnet_eip
-          # attach it
-          connection.associate_address(server.id, eip.public_ip, nil, eip.allocation_id)
         end
 
         msg_pair("Instance ID", server.id)
@@ -207,6 +205,9 @@ class Chef
         server.wait_for { print "."; ready? }
 
         puts("\n")
+        
+        # attach eip
+        connection.associate_address(server.id, eip.public_ip, nil, eip.allocation_id) if eip
         
         if vpc_mode?
           msg_pair("Subnet ID", server.subnet_id)
