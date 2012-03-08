@@ -211,7 +211,7 @@ class Chef
           connection.associate_address(server.id, eip.public_ip, nil, eip.allocation_id) if eip
 
           msg_pair("Subnet ID", server.subnet_id)
-          msg_pair("Public IP Address", eip.public_ip) if eip.public_ip
+          msg_pair("Public IP Address", eip.public_ip) if eip
         else
           msg_pair("Public DNS Name", server.dns_name)
           msg_pair("Public IP Address", server.public_ip_address)
