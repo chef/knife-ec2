@@ -195,7 +195,10 @@ class Chef
 
         server = connection.servers.create(create_server_def)
 
-        unless tags.nil?
+        if tags.nil?
+          node_name = locate_config_value(:chef_node_name)
+          connection.tags.create :key => "Name", :value => node_name, :resource_id => server.id unless node_name.nil?
+        else
           hashed_tags={}
           tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val}
           hashed_tags["Name"] = locate_config_value(:chef_node_name) unless hashed_tags.keys.include? "Name"
