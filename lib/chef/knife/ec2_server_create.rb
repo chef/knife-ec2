@@ -107,6 +107,11 @@ class Chef
         :description => "The version of Chef to install",
         :proc => Proc.new { |v| Chef::Config[:knife][:bootstrap_version] = v }
 
+      option :bootstrap_proxy,
+        :long => "--bootstrap-proxy PROXY_URL",
+        :description => "The proxy server for the node being bootstrapped",
+        :proc => Proc.new { |p| Chef::Config[:knife][:bootstrap_proxy] = p }
+
       option :distro,
         :short => "-d DISTRO",
         :long => "--distro DISTRO",
@@ -189,6 +194,10 @@ class Chef
 
         server = connection.servers.create(create_server_def)
 
+        if vpc_mode? && create_server_def[:subnet_type] == "public"
+          eip = make_public_subnet_eip
+        end
+
         msg_pair("Instance ID", server.id)
         msg_pair("Flavor", server.flavor_id)
         msg_pair("Image", server.image_id)
@@ -205,7 +214,11 @@ class Chef
         puts("\n")
         
         if vpc_mode?
+          # attach eip
+          connection.associate_address(server.id, eip.public_ip, nil, eip.allocation_id) if eip
+
           msg_pair("Subnet ID", server.subnet_id)
+          msg_pair("Public IP Address", eip.public_ip) if eip
         else
           msg_pair("Public DNS Name", server.dns_name)
           msg_pair("Public IP Address", server.public_ip_address)
@@ -251,6 +264,7 @@ class Chef
         end
         if vpc_mode?
           msg_pair("Subnet ID", server.subnet_id)
+          msg_pair("Public IP Address", eip.public_ip) if eip
         else
           msg_pair("Public DNS Name", server.dns_name)
           msg_pair("Public IP Address", server.public_ip_address)
@@ -290,6 +304,10 @@ class Chef
         @ami ||= connection.images.get(locate_config_value(:image))
       end
 
+      def make_public_subnet_eip
+        connection.addresses.create(:domain => "vpc")
+      end
+
       def validate!
 
         super([:image, :aws_ssh_key_id, :aws_access_key_id, :aws_secret_access_key])
@@ -308,7 +326,10 @@ class Chef
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
           :availability_zone => locate_config_value(:availability_zone)
         }
-        server_def[:subnet_id] = config[:subnet_id] if config[:subnet_id]
+        server_def[:subnet_id]   = config[:subnet_id] if config[:subnet_id]
+        server_def[:subnet_type] = config[:subnet_type] if config[:subnet_type]
+
+
 
         if Chef::Config[:knife][:aws_user_data]
           begin
