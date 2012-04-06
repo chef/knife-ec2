@@ -25,7 +25,7 @@ describe Chef::Knife::Ec2ServerCreate do
     @knife_ec2_create.initial_sleep_delay = 0
     @knife_ec2_create.stub!(:tcp_test_ssh).and_return(true)
 
-    @ec2_connection = mock()
+    @ec2_compute = mock()
     @ec2_servers = mock()
     @new_ec2_server = mock()
 
@@ -50,9 +50,9 @@ describe Chef::Knife::Ec2ServerCreate do
     it "creates an EC2 instance and bootstraps it" do
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @ec2_servers.should_receive(:create).and_return(@new_ec2_server)
-      @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
+      @ec2_compute.should_receive(:servers).and_return(@ec2_servers)
 
-      Fog::AWS::Compute.should_receive(:new).and_return(@ec2_connection)
+      Fog::AWS::Compute.should_receive(:new).and_return(@ec2_compute)
 
       @knife_ec2_create.stub!(:puts)
       @knife_ec2_create.stub!(:print)

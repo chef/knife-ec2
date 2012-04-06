@@ -187,12 +187,12 @@ class Chef
 
         validate!
 
-        server = connection.servers.create(create_server_def)
+        server = compute.servers.create(create_server_def)
 
         msg_pair("Instance ID", server.id)
         msg_pair("Flavor", server.flavor_id)
         msg_pair("Image", server.image_id)
-        msg_pair("Region", connection.instance_variable_get(:@region))
+        msg_pair("Region", compute.instance_variable_get(:@region))
         msg_pair("Availability Zone", server.availability_zone)
         msg_pair("Security Groups", server.groups.join(", "))
         msg_pair("SSH Key", server.key_name)
@@ -228,7 +228,7 @@ class Chef
         msg_pair("Instance ID", server.id)
         msg_pair("Flavor", server.flavor_id)
         msg_pair("Image", server.image_id)
-        msg_pair("Region", connection.instance_variable_get(:@region))
+        msg_pair("Region", compute.instance_variable_get(:@region))
         msg_pair("Availability Zone", server.availability_zone)
         msg_pair("Security Groups", server.groups.join(", "))
         msg_pair("SSH Key", server.key_name)
@@ -287,7 +287,7 @@ class Chef
       end
 
       def ami
-        @ami ||= connection.images.get(locate_config_value(:image))
+        @ami ||= compute.images.get(locate_config_value(:image))
       end
 
       def validate!

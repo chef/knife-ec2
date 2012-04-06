@@ -2,7 +2,7 @@
 
 = DESCRIPTION:
 
-This is the official Opscode Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
+This is the official Opscode Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances, create hosted zones with Route53 and manage dns records.
 
 = INSTALLATION:
 
@@ -42,6 +42,8 @@ Additionally the following options may be set in your `knife.rb`:
 * region
 * distro
 * template_file
+* domain
+* zone_id
 
 = SUBCOMMANDS:
 
@@ -62,6 +64,34 @@ Outputs a list of all servers in the currently configured AWS account.  <b>PLEAS
 == knife ec2 instance data
 
 Generates instance metadata in meant to be used with Opscode's custom AMIs. This will read your knife configuration <tt>~/.chef/knife.rb</tt> for the validation certificate and Chef server URL to use and output in JSON format. The subcommand also accepts a list of roles/recipes that will be in the node's initial run list.
+
+== knife ec2 dns list
+
+Displays all hosted zones registered in AWS Route53.
+
+== knife ec2 dns create
+
+Creates a new hosted zone in Route53. Only --domain is required, can be set in knife configuration.
+
+== knife ec2 dns show
+
+Displays hosted zone information. <b>PLEASE NOTE</b> - If :zone_id is set in knife.rb and no zone id is passed to the command, it will be used to display hosted zone information.
+
+== knife ec2 dns delete
+
+Removes all supplied zone ids. Will display error if zone cannot be found.
+
+== knife ec2 dns record create
+
+Adds a new dns record. Hosted zone should be specified along with record type, ip and name.
+
+== knife ec2 dns record delete
+
+Removes all records from a given hosted zone, matching certain criteria.
+
+== knife ec2 dns assign
+
+Easily assign domains to ec2 instances, e.g. knife ec2 dns assign -I i-j63f2b96 -D www.example.com
 
 <b>PLEASE NOTE</b> - Using Opscode's custom AMIs reflect an older way of launching instances in EC2 for Chef and should be considered DEPRECATED. Leveraging this plugins's <tt>knife ec2 server create</tt> subcommands with a base AMIs directly from your Linux distribution (ie Ubuntu AMIs from Canonical) is much preferred and more flexible.  Although this subcommand will remain, the Opscode custom AMIs are currently out of date.
 

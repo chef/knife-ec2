@@ -42,7 +42,7 @@ class Chef
           ui.color('Security Groups', :bold),
           ui.color('State', :bold)
         ]
-        connection.servers.all.each do |server|
+        compute.servers.all.each do |server|
           server_list << server.id.to_s
           server_list << server.public_ip_address.to_s
           server_list << server.private_ip_address.to_s
