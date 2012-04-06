@@ -189,6 +189,7 @@ class Chef
         server = connection.servers.create(create_server_def)
 
         #tag it
+        tags = locate_config_value(:tags)
         unless tags.nil?
           hashed_tags = Hash[*tags]
           hashed_tags["Name"] = locate_config_value(:chef_node_name) unless hashed_tags.keys.include? "Name"
