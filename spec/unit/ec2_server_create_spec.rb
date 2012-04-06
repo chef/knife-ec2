@@ -71,6 +71,7 @@ describe Chef::Knife::Ec2ServerCreate do
     before do
       @knife_ec2_create.config[:ssh_user] = "ubuntu"
       @knife_ec2_create.config[:identity_file] = "~/.ssh/aws-key.pem"
+      @knife_ec2_create.config[:ssh_port] = 22
       @knife_ec2_create.config[:chef_node_name] = "blarf"
       @knife_ec2_create.config[:template_file] = '~/.chef/templates/my-bootstrap.sh.erb'
       @knife_ec2_create.config[:distro] = 'ubuntu-10.04-magic-sparkles'
@@ -92,6 +93,10 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "configures the bootstrap to use the correct ssh identity file" do
       @bootstrap.config[:identity_file].should == "~/.ssh/aws-key.pem"
+    end
+
+    it "configures the bootstrap to use the correct ssh_port number" do
+      @bootstrap.config[:ssh_port].should == 22
     end
 
     it "configures the bootstrap to use the configured node name if provided" do
