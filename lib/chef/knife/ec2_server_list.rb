@@ -39,7 +39,6 @@ class Chef
           ui.color('Flavor', :bold),
           ui.color('Image', :bold),
           ui.color('SSH Key', :bold),
-          ui.color('Security Groups', :bold),
           ui.color('State', :bold)
         ]
         connection.servers.all.each do |server|
@@ -49,7 +48,6 @@ class Chef
           server_list << server.flavor_id.to_s
           server_list << server.image_id.to_s
           server_list << server.key_name.to_s
-          server_list << server.groups.join(", ")
           server_list << begin
             state = server.state.to_s.downcase
             case state
@@ -62,7 +60,7 @@ class Chef
             end
           end
         end
-        puts ui.list(server_list, :columns_across, 8)
+        puts ui.list(server_list, :columns_across, 7)
 
       end
     end
