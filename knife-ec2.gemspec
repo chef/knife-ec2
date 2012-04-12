@@ -17,7 +17,6 @@ Gem::Specification.new do |s|
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.add_dependency "fog", "~> 0.8.2"
-  s.add_dependency "highline", ">= 1.6.9"
   s.add_dependency "chef", "~> 0.10"
   s.require_paths = ["lib"]
 
