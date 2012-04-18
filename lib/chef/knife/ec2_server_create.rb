@@ -154,6 +154,19 @@ class Chef
         :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
         :default => nil
 
+      option :tags,
+        :short => "-T T=V[,T=V,...]",
+        :long => "--tags Tag=Value[,Tag=Value...]",
+        :description => "The tags for this server",
+        :proc => Proc.new { |tags| tags.split(',') },
+        :default => nil
+
+      option :ephemeral,
+        :long => "--ephemeral EPHEMERAL_DEVICES",
+        :description => "Comma separated list of device locations (eg - /dev/sdb) to map ephemeral devices",
+        :proc => lambda { |o| o.split(/[\s,]+/) },
+        :default => []
+
       def tcp_test_ssh(hostname)
         tcp_socket = TCPSocket.new(hostname, config[:ssh_port])
         readable = IO.select([tcp_socket], nil, nil, 5)
@@ -189,6 +202,22 @@ class Chef
 
         server = connection.servers.create(create_server_def)
 
+        begin
+          if tags.nil?
+            node_name = locate_config_value(:chef_node_name)
+            connection.tags.create :key => "Name", :value => node_name, :resource_id => server.id unless node_name.nil?
+          else
+            hashed_tags={}
+            tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val}
+            hashed_tags["Name"] = locate_config_value(:chef_node_name) unless hashed_tags.keys.include? "Name"
+            hashed_tags.each_pair do |key,val|
+              connection.tags.create :key => key, :value => val, :resource_id => server.id
+            end
+          end
+        rescue StandardError
+          #nothing
+        end
+
         msg_pair("Instance ID", server.id)
         msg_pair("Flavor", server.flavor_id)
         msg_pair("Image", server.image_id)
@@ -203,7 +232,7 @@ class Chef
         server.wait_for { print "."; ready? }
 
         puts("\n")
-        
+
         if vpc_mode?
           msg_pair("Subnet ID", server.subnet_id)
         else
@@ -214,9 +243,9 @@ class Chef
         msg_pair("Private IP Address", server.private_ip_address)
 
         print "\n#{ui.color("Waiting for sshd", :magenta)}"
-        
+
         fqdn = vpc_mode? ? server.private_ip_address : server.dns_name
-        
+
         print(".") until tcp_test_ssh(fqdn) {
           sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
           puts("done")
@@ -299,7 +328,16 @@ class Chef
           exit 1
         end
       end
-      
+
+      def tags
+        tags = locate_config_value(:tags)
+        if !tags.nil? and tags.length != tags.to_s.count('=')
+          ui.error("Tags should be entered in a key = value pair")
+          exit 1
+        end
+        tags
+      end
+
       def create_server_def
         server_def = {
           :image_id => locate_config_value(:image),
@@ -342,8 +380,13 @@ class Chef
                'Ebs.VolumeSize' => ebs_size,
                'Ebs.DeleteOnTermination' => delete_term
              }]
+
+          (config[:ephemeral] || []).each_with_index do |device_name, i|
+            server_def[:block_device_mapping] << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
+          end
+
         end
-        
+
         server_def
       end
     end
