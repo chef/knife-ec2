@@ -6,9 +6,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,8 +34,8 @@ describe Chef::Knife::Ec2ServerCreate do
     }.each do |key, value|
       Chef::Config[:knife][key] = value
     end
-    
-    @ec2_connection = mock(Fog::AWS::Compute)
+
+    @ec2_connection = mock(Fog::Compute::AWS)
     @ec2_connection.stub_chain(:images, :get).and_return mock('ami', :root_device_type => 'not_ebs')
     @ec2_servers = mock()
     @new_ec2_server = mock()
@@ -64,7 +64,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @ec2_servers.should_receive(:create).and_return(@new_ec2_server)
       @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
 
-      Fog::AWS::Compute.should_receive(:new).and_return(@ec2_connection)
+      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
 
       @knife_ec2_create.stub!(:puts)
       @knife_ec2_create.stub!(:print)
