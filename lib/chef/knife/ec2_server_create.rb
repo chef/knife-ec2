@@ -178,6 +178,10 @@ class Chef
       rescue Errno::EHOSTUNREACH
         sleep 2
         false
+      # This happens on EC2 sometimes
+      rescue Errno::ENETUNREACH
+        sleep 2
+        false
       ensure
         tcp_socket && tcp_socket.close
       end
@@ -203,7 +207,7 @@ class Chef
         server.wait_for { print "."; ready? }
 
         puts("\n")
-        
+
         if vpc_mode?
           msg_pair("Subnet ID", server.subnet_id)
         else
@@ -214,9 +218,9 @@ class Chef
         msg_pair("Private IP Address", server.private_ip_address)
 
         print "\n#{ui.color("Waiting for sshd", :magenta)}"
-        
+
         fqdn = vpc_mode? ? server.private_ip_address : server.dns_name
-        
+
         print(".") until tcp_test_ssh(fqdn) {
           sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
           puts("done")
@@ -299,7 +303,7 @@ class Chef
           exit 1
         end
       end
-      
+
       def create_server_def
         server_def = {
           :image_id => locate_config_value(:image),
@@ -343,7 +347,7 @@ class Chef
                'Ebs.DeleteOnTermination' => delete_term
              }]
         end
-        
+
         server_def
       end
     end
