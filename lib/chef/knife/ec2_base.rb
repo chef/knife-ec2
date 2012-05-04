@@ -29,6 +29,7 @@ class Chef
         includer.class_eval do
 
           deps do
+            gem 'fog', '~> 1.3'
             require 'fog'
             require 'readline'
             require 'chef/json_compat'
