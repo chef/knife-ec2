@@ -154,6 +154,12 @@ class Chef
         :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
         :default => nil
 
+      option :tags,
+             :short => "-T A,B[,C,D,...]",
+             :long => "--tags A,B[,C,D...]",
+             :description => "The tags for this server",
+             :proc => Proc.new { |tags| tags.split(',') }
+
       def tcp_test_ssh(hostname)
         tcp_socket = TCPSocket.new(hostname, config[:ssh_port])
         readable = IO.select([tcp_socket], nil, nil, 5)
@@ -192,6 +198,16 @@ class Chef
         validate!
 
         server = connection.servers.create(create_server_def)
+
+        #tag it
+        tags = locate_config_value(:tags)
+        unless tags.nil?
+          hashed_tags = Hash[*tags]
+          hashed_tags["Name"] = locate_config_value(:chef_node_name) unless hashed_tags.keys.include? "Name"
+          hashed_tags.each_pair do |key, val|
+            connection.tags.create :key => key, :value => val, :resource_id => server.id
+            end
+        end
 
         msg_pair("Instance ID", server.id)
         msg_pair("Flavor", server.flavor_id)
@@ -302,6 +318,13 @@ class Chef
           ui.error("You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'.")
           exit 1
         end
+
+        tags = locate_config_value(:tags)
+        if !tags.nil? and tags.length % 2 == 1
+          ui.error("Tags should be entered in an even number (for key => value encoding)")
+          exit 1
+        end
+
       end
 
       def create_server_def
