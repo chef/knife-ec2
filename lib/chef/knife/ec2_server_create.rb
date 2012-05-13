@@ -199,16 +199,18 @@ class Chef
 
         server = connection.servers.create(create_server_def)
 
-        unless tags.nil?
-          hashed_tags={}
-          tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val}
-          hashed_tags["Name"] = locate_config_value(:chef_node_name) unless hashed_tags.keys.include? "Name"
+        hashed_tags={}
+        tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
 
-
-          hashed_tags.each_pair do |key,val|
-            connection.tags.create :key => key, :value => val, :resource_id => server.id
-          end
+        # Always set the Name tag
+        unless hashed_tags.keys.include? "Name"
+          hashed_tags["Name"] = locate_config_value(:chef_node_name) || server.id
         end
+
+        hashed_tags.each_pair do |key,val|
+          connection.tags.create :key => key, :value => val, :resource_id => server.id
+        end
+
         msg_pair("Instance ID", server.id)
         msg_pair("Flavor", server.flavor_id)
         msg_pair("Image", server.image_id)
