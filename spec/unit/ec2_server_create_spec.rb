@@ -36,6 +36,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     @ec2_connection = mock(Fog::Compute::AWS)
+    @ec2_connection.stub_chain(:tags).and_return mock('create', :create => true)
     @ec2_connection.stub_chain(:images, :get).and_return mock('ami', :root_device_type => 'not_ebs')
     @ec2_servers = mock()
     @new_ec2_server = mock()
@@ -58,7 +59,6 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "run" do
-
     it "creates an EC2 instance and bootstraps it" do
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @ec2_servers.should_receive(:create).and_return(@new_ec2_server)
@@ -74,6 +74,48 @@ describe Chef::Knife::Ec2ServerCreate do
       @bootstrap = Chef::Knife::Bootstrap.new
       Chef::Knife::Bootstrap.stub!(:new).and_return(@bootstrap)
       @bootstrap.should_receive(:run)
+      @knife_ec2_create.run
+    end
+  end
+  describe "when setting tags" do
+    before do
+      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
+      @knife_ec2_create.stub!(:bootstrap_for_node).and_return mock("bootstrap", :run => true)
+      @ec2_connection.stub!(:servers).and_return(@ec2_servers)
+      @new_ec2_server.stub!(:wait_for).and_return(true)
+      @ec2_servers.stub!(:create).and_return(@new_ec2_server)
+      @knife_ec2_create.stub!(:puts)
+      @knife_ec2_create.stub!(:print)
+    end
+
+    it "sets the Name tag to the instance id by default" do
+      @ec2_connection.tags.should_receive(:create).with(:key => "Name",
+                                                        :value => @new_ec2_server.id,
+                                                        :resource_id => @new_ec2_server.id)
+      @knife_ec2_create.run
+    end
+
+    it "sets the Name tag to the chef_node_name when given" do
+      @knife_ec2_create.config[:chef_node_name] = "wombat"
+      @ec2_connection.tags.should_receive(:create).with(:key => "Name",
+                                                        :value => "wombat",
+                                                        :resource_id => @new_ec2_server.id)
+      @knife_ec2_create.run
+    end
+
+    it "sets the Name tag to the specified name when given --tags Name=NAME" do
+      @knife_ec2_create.config[:tags] = ["Name=bobcat"]
+      @ec2_connection.tags.should_receive(:create).with(:key => "Name",
+                                                        :value => "bobcat",
+                                                        :resource_id => @new_ec2_server.id)
+      @knife_ec2_create.run
+    end
+
+    it "sets arbitrary tags" do
+      @knife_ec2_create.config[:tags] = ["foo=bar"]
+      @ec2_connection.tags.should_receive(:create).with(:key => "foo",
+                                                        :value => "bar",
+                                                        :resource_id => @new_ec2_server.id)
       @knife_ec2_create.run
     end
 
