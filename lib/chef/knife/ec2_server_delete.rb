@@ -31,6 +31,8 @@ class Chef
 
       banner "knife ec2 server delete SERVER [SERVER] (options)"
 
+      attr_reader :server
+
       option :purge,
         :short => "-P",
         :long => "--purge",
@@ -65,27 +67,27 @@ class Chef
         @name_args.each do |instance_id|
 
           begin
-            server = connection.servers.get(instance_id)
+            @server = connection.servers.get(instance_id)
 
-            msg_pair("Instance ID", server.id)
-            msg_pair("Flavor", server.flavor_id)
-            msg_pair("Image", server.image_id)
+            msg_pair("Instance ID", @server.id)
+            msg_pair("Flavor", @server.flavor_id)
+            msg_pair("Image", @server.image_id)
             msg_pair("Region", connection.instance_variable_get(:@region))
-            msg_pair("Availability Zone", server.availability_zone)
-            msg_pair("Security Groups", server.groups.join(", "))
-            msg_pair("SSH Key", server.key_name)
-            msg_pair("Root Device Type", server.root_device_type)
-            msg_pair("Public DNS Name", server.dns_name)
-            msg_pair("Public IP Address", server.public_ip_address)
-            msg_pair("Private DNS Name", server.private_dns_name)
-            msg_pair("Private IP Address", server.private_ip_address)
+            msg_pair("Availability Zone", @server.availability_zone)
+            msg_pair("Security Groups", @server.groups.join(", "))
+            msg_pair("SSH Key", @server.key_name)
+            msg_pair("Root Device Type", @server.root_device_type)
+            msg_pair("Public DNS Name", @server.dns_name)
+            msg_pair("Public IP Address", @server.public_ip_address)
+            msg_pair("Private DNS Name", @server.private_dns_name)
+            msg_pair("Private IP Address", @server.private_ip_address)
 
             puts "\n"
             confirm("Do you really want to delete this server")
 
-            server.destroy
+            @server.destroy
 
-            ui.warn("Deleted server #{server.id}")
+            ui.warn("Deleted server #{@server.id}")
 
             if config[:purge]
               thing_to_delete = config[:chef_node_name] || instance_id
