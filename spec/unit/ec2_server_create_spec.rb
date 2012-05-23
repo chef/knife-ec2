@@ -47,6 +47,7 @@ describe Chef::Knife::Ec2ServerCreate do
                            :availability_zone => 'us-west-1',
                            :key_name => 'my_ssh_key',
                            :groups => ['group1', 'group2'],
+                           :security_group_ids => ['sg-00aa11bb'],
                            :dns_name => 'ec2-75.101.253.10.compute-1.amazonaws.com',
                            :public_ip_address => '75.101.253.10',
                            :private_dns_name => 'ip-10-251-75-20.ec2.internal',
