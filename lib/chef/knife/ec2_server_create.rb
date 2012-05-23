@@ -36,6 +36,7 @@ class Chef
       banner "knife ec2 server create (options)"
 
       attr_accessor :initial_sleep_delay
+      attr_reader :server
 
       option :flavor,
         :short => "-f FLAVOR",
@@ -210,81 +211,81 @@ class Chef
 
         validate!
 
-        server = connection.servers.create(create_server_def)
+        @server = connection.servers.create(create_server_def)
 
         hashed_tags={}
         tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
 
         # Always set the Name tag
         unless hashed_tags.keys.include? "Name"
-          hashed_tags["Name"] = locate_config_value(:chef_node_name) || server.id
+          hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
         end
 
         hashed_tags.each_pair do |key,val|
-          connection.tags.create :key => key, :value => val, :resource_id => server.id
+          connection.tags.create :key => key, :value => val, :resource_id => @server.id
         end
 
-        msg_pair("Instance ID", server.id)
-        msg_pair("Flavor", server.flavor_id)
-        msg_pair("Image", server.image_id)
+        msg_pair("Instance ID", @server.id)
+        msg_pair("Flavor", @server.flavor_id)
+        msg_pair("Image", @server.image_id)
         msg_pair("Region", connection.instance_variable_get(:@region))
-        msg_pair("Availability Zone", server.availability_zone)
+        msg_pair("Availability Zone", @server.availability_zone)
 
         # If we don't specify a security group or security group id, Fog will
         # pick the appropriate default one. In case of a VPC we don't know the
         # default security group id at this point unless we look it up, hence
         # 'default' is printed if no id was specified.
         printed_security_groups = "default"
-        printed_security_groups = server.groups.join(", ") if server.groups 
-        msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (server.groups.nil? and server.security_group_ids)
+        printed_security_groups = @server.groups.join(", ") if @server.groups 
+        msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (@server.groups.nil? and @server.security_group_ids)
 
         printed_security_group_ids = "default"
-        printed_security_group_ids = server.security_group_ids.join(", ") if server.security_group_ids
-        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or server.security_group_ids
+        printed_security_group_ids = @server.security_group_ids.join(", ") if @server.security_group_ids
+        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or @server.security_group_ids
 
         msg_pair("Tags", hashed_tags)
-        msg_pair("SSH Key", server.key_name)
+        msg_pair("SSH Key", @server.key_name)
 
         print "\n#{ui.color("Waiting for server", :magenta)}"
 
         # wait for it to be ready to do stuff
-        server.wait_for { print "."; ready? }
+        @server.wait_for { print "."; ready? }
 
         puts("\n")
 
         if vpc_mode?
-          msg_pair("Subnet ID", server.subnet_id)
+          msg_pair("Subnet ID", @server.subnet_id)
         else
-          msg_pair("Public DNS Name", server.dns_name)
-          msg_pair("Public IP Address", server.public_ip_address)
-          msg_pair("Private DNS Name", server.private_dns_name)
+          msg_pair("Public DNS Name", @server.dns_name)
+          msg_pair("Public IP Address", @server.public_ip_address)
+          msg_pair("Private DNS Name", @server.private_dns_name)
         end
-        msg_pair("Private IP Address", server.private_ip_address)
+        msg_pair("Private IP Address", @server.private_ip_address)
 
         print "\n#{ui.color("Waiting for sshd", :magenta)}"
 
-        fqdn = vpc_mode? ? server.private_ip_address : server.dns_name
+        fqdn = vpc_mode? ? @server.private_ip_address : @server.dns_name
 
         print(".") until tcp_test_ssh(fqdn) {
           sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
           puts("done")
         }
 
-        bootstrap_for_node(server,fqdn).run
+        bootstrap_for_node(@server,fqdn).run
 
         puts "\n"
-        msg_pair("Instance ID", server.id)
-        msg_pair("Flavor", server.flavor_id)
-        msg_pair("Image", server.image_id)
+        msg_pair("Instance ID", @server.id)
+        msg_pair("Flavor", @server.flavor_id)
+        msg_pair("Image", @server.image_id)
         msg_pair("Region", connection.instance_variable_get(:@region))
-        msg_pair("Availability Zone", server.availability_zone)
-        msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (server.groups.nil? and server.security_group_ids)
-        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or server.security_group_ids
+        msg_pair("Availability Zone", @server.availability_zone)
+        msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (@server.groups.nil? and @server.security_group_ids)
+        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or @server.security_group_ids
         msg_pair("Tags", hashed_tags)
-        msg_pair("SSH Key", server.key_name)
-        msg_pair("Root Device Type", server.root_device_type)
-        if server.root_device_type == "ebs"
-          device_map = server.block_device_mapping.first
+        msg_pair("SSH Key", @server.key_name)
+        msg_pair("Root Device Type", @server.root_device_type)
+        if @server.root_device_type == "ebs"
+          device_map = @server.block_device_mapping.first
           msg_pair("Root Volume ID", device_map['volumeId'])
           msg_pair("Root Device Name", device_map['deviceName'])
           msg_pair("Root Device Delete on Terminate", device_map['deleteOnTermination'])
@@ -300,13 +301,13 @@ class Chef
           end
         end
         if vpc_mode?
-          msg_pair("Subnet ID", server.subnet_id)
+          msg_pair("Subnet ID", @server.subnet_id)
         else
-          msg_pair("Public DNS Name", server.dns_name)
-          msg_pair("Public IP Address", server.public_ip_address)
-          msg_pair("Private DNS Name", server.private_dns_name)
+          msg_pair("Public DNS Name", @server.dns_name)
+          msg_pair("Public IP Address", @server.public_ip_address)
+          msg_pair("Private DNS Name", @server.private_dns_name)
         end
-        msg_pair("Private IP Address", server.private_ip_address)
+        msg_pair("Private IP Address", @server.private_ip_address)
         msg_pair("Environment", config[:environment] || '_default')
         msg_pair("Run List", config[:run_list].join(', '))
         msg_pair("JSON Attributes",config[:json_attributes]) unless config[:json_attributes].empty?
