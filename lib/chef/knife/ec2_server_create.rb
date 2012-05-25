@@ -141,6 +141,14 @@ class Chef
         :proc => lambda { |o| o.split(/[\s,]+/) },
         :default => []
 
+      option :json_attributes,
+        :short => "-j JSON",
+        :long => "--json-attributes JSON",
+        :description => "A JSON string to be added to the first run of chef-client",
+        :proc => lambda { |o| JSON.parse(o) },
+        :default => {}
+
+
       option :subnet_id,
         :short => "-s SUBNET-ID",
         :long => "--subnet SUBNET-ID",
@@ -283,6 +291,7 @@ class Chef
         msg_pair("Private IP Address", server.private_ip_address)
         msg_pair("Environment", config[:environment] || '_default')
         msg_pair("Run List", config[:run_list].join(', '))
+        msg_pair("JSON Attributes",config[:json_attributes]) unless config[:json_attributes].empty?
       end
 
       def bootstrap_for_node(server,fqdn)
@@ -295,6 +304,7 @@ class Chef
         bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
+        bootstrap.config[:first_boot_attributes] = config[:json_attributes]
         bootstrap.config[:distro] = locate_config_value(:distro)
         bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
         bootstrap.config[:template_file] = locate_config_value(:template_file)

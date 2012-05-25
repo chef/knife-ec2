@@ -130,12 +130,17 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:template_file] = '~/.chef/templates/my-bootstrap.sh.erb'
       @knife_ec2_create.config[:distro] = 'ubuntu-10.04-magic-sparkles'
       @knife_ec2_create.config[:run_list] = ['role[base]']
+      @knife_ec2_create.config[:json_attributes] = "{'my_attributes':{'foo':'bar'}"
 
       @bootstrap = @knife_ec2_create.bootstrap_for_node(@new_ec2_server, @new_ec2_server.dns_name)
     end
 
     it "should set the bootstrap 'name argument' to the hostname of the EC2 server" do
       @bootstrap.name_args.should == ['ec2-75.101.253.10.compute-1.amazonaws.com']
+    end
+
+    it "should set the bootstrap 'first_boot_attributes' correctly" do
+      @bootstrap.config[:first_boot_attributes].should == "{'my_attributes':{'foo':'bar'}"
     end
 
     it "configures sets the bootstrap's run_list" do
