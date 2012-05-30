@@ -57,6 +57,12 @@ class Chef
         :default => ["default"],
         :proc => Proc.new { |groups| groups.split(',') }
 
+      option :security_group_ids,
+        :short => "-g X,Y,Z",
+        :long => "--group-ids X,Y,Z",
+        :description => "The security group ids to be associated with this server",
+        :proc => Proc.new { |group_ids| group_ids.split(',') }
+
       option :tags,
         :short => "-T T=V[,T=V,...]",
         :long => "--tags Tag=Value[,Tag=Value...]",
@@ -216,7 +222,8 @@ class Chef
         msg_pair("Image", server.image_id)
         msg_pair("Region", connection.instance_variable_get(:@region))
         msg_pair("Availability Zone", server.availability_zone)
-        msg_pair("Security Groups", server.groups.join(", "))
+        msg_pair("Security Groups", server.groups.join(", ")) if server.groups
+        msg_pair("Security Group IDs", server.security_group_ids.join(", ")) if server.security_group_ids
         msg_pair("Tags", hashed_tags)
         msg_pair("SSH Key", server.key_name)
 
@@ -336,12 +343,17 @@ class Chef
       def create_server_def
         server_def = {
           :image_id => locate_config_value(:image),
-          :groups => config[:security_groups],
           :flavor_id => locate_config_value(:flavor),
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
           :availability_zone => locate_config_value(:availability_zone)
         }
         server_def[:subnet_id] = config[:subnet_id] if config[:subnet_id]
+
+        if config[:security_group_ids]
+            server_def[:security_group_ids] = config[:security_group_ids]
+        else
+            server_def[:groups] = config[:security_groups]
+        end
 
         if Chef::Config[:knife][:aws_user_data]
           begin
