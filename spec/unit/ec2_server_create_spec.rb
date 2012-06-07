@@ -76,6 +76,7 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Knife::Bootstrap.stub!(:new).and_return(@bootstrap)
       @bootstrap.should_receive(:run)
       @knife_ec2_create.run
+      @knife_ec2_create.server.should_not == nil
     end
   end
   describe "when setting tags" do
