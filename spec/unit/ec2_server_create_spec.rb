@@ -194,12 +194,6 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.ui.stub!(:error)
     end
 
-    it "requires one or more security group ids when using a VPC" do
-      @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
-
-      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
-    end
-
     it "disallows security group names when using a VPC" do
       @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
       @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd'
@@ -212,12 +206,6 @@ describe Chef::Knife::Ec2ServerCreate do
   describe "when creating the server definition" do
     before do
       Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
-    end
-
-    it "defaults to the 'default' security group when not using a VPC" do
-      server_def = @knife_ec2_create.create_server_def
-
-      server_def[:groups].should == ['default']
     end
 
     it "sets the specified security group names" do
