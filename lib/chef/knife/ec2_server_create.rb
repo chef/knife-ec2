@@ -67,7 +67,7 @@ class Chef
         :short => "-Z ZONE",
         :long => "--availability-zone ZONE",
         :description => "The Availability Zone",
-        :default => "us-east-1b",
+        :default => "us-east-1c",
         :proc => Proc.new { |key| Chef::Config[:knife][:availability_zone] = key }
 
       option :chef_node_name,
