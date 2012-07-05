@@ -222,6 +222,7 @@ class Chef
         config[:ssh_port] = locate_config_value 'ssh_port'
         config[:availability_zone] = locate_config_value 'availability_zone'
         config[:region] = locate_config_value 'region'
+        config[:environment] = locate_config_value(:environment) || Chef::Config['environment']
 
         server = connection.servers.create(create_server_def)
 
