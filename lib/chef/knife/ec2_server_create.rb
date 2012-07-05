@@ -30,6 +30,9 @@ class Chef
         require 'readline'
         require 'chef/json_compat'
         require 'chef/knife/bootstrap'
+        require 'chef/knife/ssh'
+        require 'net/ssh'
+        require 'net/ssh/multi'
         Chef::Knife::Bootstrap.load_deps
       end
 
@@ -85,7 +88,8 @@ class Chef
         :short => "-x USERNAME",
         :long => "--ssh-user USERNAME",
         :description => "The ssh username",
-        :default => "root"
+        :default => "root",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_user] = key }
 
       option :ssh_password,
         :short => "-P PASSWORD",
@@ -98,6 +102,12 @@ class Chef
         :description => "The ssh port",
         :default => "22",
         :proc => Proc.new { |key| Chef::Config[:knife][:ssh_port] = key }
+
+      option :ssh_gateway,
+        :short => "-G GATEWAY",
+        :long => "--ssh-gateway GATEWAY",
+        :description => "The ssh gateway",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway] = key }
 
       option :identity_file,
         :short => "-i IDENTITY_FILE",
@@ -161,41 +171,57 @@ class Chef
         :default => nil
 
       def tcp_test_ssh(hostname)
-        tcp_socket = TCPSocket.new(hostname, config[:ssh_port])
-        readable = IO.select([tcp_socket], nil, nil, 5)
-        if readable
-          Chef::Log.debug("sshd accepting connections on #{hostname}, banner is #{tcp_socket.gets}")
-          yield
-          true
-        else
-          false
+
+        ssh_error_handler = Proc.new do |server|
+          Chef::Log.debug("Failed to connect to #{hostname}")
         end
-      rescue SocketError
-        sleep 2
-        false
-      rescue Errno::ETIMEDOUT
-        false
-      rescue Errno::EPERM
-        false
-      rescue Errno::ECONNREFUSED
-        sleep 2
-        false
-      # This happens on EC2 quite often
-      rescue Errno::EHOSTUNREACH
-        sleep 2
-        false
-      # This happens on EC2 sometimes
-      rescue Errno::ENETUNREACH
-        sleep 2
-        false
-      ensure
-        tcp_socket && tcp_socket.close
+
+        session = Net::SSH::Multi.start()
+        if config[:ssh_gateway]
+          gw_host, gw_user = config[:ssh_gateway].split('@').reverse
+          gw_host, gw_port = gw_host.split(':')
+          gw_opts = gw_port ? { :port => gw_port } : {}
+          session.via(gw_host, gw_user || config[:ssh_user], gw_opts)
+        end
+
+        hostspec = config[:ssh_user] + '@' + hostname + ':22'
+        session_opts = {}
+        session_opts[:keys] = File.expand_path(config[:identity_file]) if config[:identity_file]
+        session_opts[:password] = config[:ssh_password] if config[:ssh_password]
+        session_opts[:port] = Chef::Config[:knife][:ssh_port] || config[:ssh_port]
+        if config[:no_host_key_verify]
+          session_opts[:paranoid] = false
+          session_opts[:user_known_hosts_file] = "/dev/null"
+        end
+
+        connected = nil
+        begin
+          session.use(hostspec, session_opts)
+          session.open_channel do |ch|
+            ch.request_pty
+            ch.exec "ls" do |ch, success|
+              raise ArgumentError, "Cannot connect" unless success
+            end
+          end
+          connected = true
+          session && session.close
+          session.loop
+        rescue
+          connected = false
+        end
+        connected
       end
 
       def run
         $stdout.sync = true
 
         validate!
+
+        config[:ssh_gateway] = locate_config_value 'ssh_gateway'
+        config[:ssh_user] = locate_config_value 'ssh_user'
+        config[:ssh_port] = locate_config_value 'ssh_port'
+        config[:availability_zone] = locate_config_value 'availability_zone'
+        config[:region] = locate_config_value 'region'
 
         server = connection.servers.create(create_server_def)
 
@@ -289,6 +315,7 @@ class Chef
         bootstrap = Chef::Knife::Bootstrap.new
         bootstrap.name_args = [fqdn]
         bootstrap.config[:run_list] = config[:run_list]
+        bootstrap.config[:ssh_gateway] = config[:ssh_gateway] if config[:ssh_gateway]
         bootstrap.config[:ssh_user] = config[:ssh_user]
         bootstrap.config[:ssh_port] = config[:ssh_port]
         bootstrap.config[:identity_file] = config[:identity_file]
