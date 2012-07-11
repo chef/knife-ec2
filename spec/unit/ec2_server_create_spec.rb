@@ -47,6 +47,7 @@ describe Chef::Knife::Ec2ServerCreate do
                            :availability_zone => 'us-west-1',
                            :key_name => 'my_ssh_key',
                            :groups => ['group1', 'group2'],
+                           :security_group_ids => ['sg-00aa11bb'],
                            :dns_name => 'ec2-75.101.253.10.compute-1.amazonaws.com',
                            :public_ip_address => '75.101.253.10',
                            :private_dns_name => 'ip-10-251-75-20.ec2.internal',
@@ -189,6 +190,41 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "configured the bootstrap to use the desired template" do
       @bootstrap.config[:template_file].should == '~/.chef/templates/my-bootstrap.sh.erb'
+    end
+  end
+
+  describe "when validating the command-line parameters" do
+    before do
+      Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
+      @knife_ec2_create.ui.stub!(:error)
+    end
+
+    it "disallows security group names when using a VPC" do
+      @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
+      @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd'
+      @knife_ec2_create.config[:security_groups] = 'groupname'
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
+  end
+
+  describe "when creating the server definition" do
+    before do
+      Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
+    end
+
+    it "sets the specified security group names" do
+      @knife_ec2_create.config[:security_groups] = ['groupname']
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:groups].should == ['groupname']
+    end
+
+    it "sets the specified security group ids" do
+      @knife_ec2_create.config[:security_group_ids] = ['sg-aabbccdd']
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:security_group_ids].should == ['sg-aabbccdd']
     end
   end
 

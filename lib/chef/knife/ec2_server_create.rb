@@ -53,9 +53,14 @@ class Chef
       option :security_groups,
         :short => "-G X,Y,Z",
         :long => "--groups X,Y,Z",
-        :description => "The security groups for this server",
-        :default => ["default"],
+        :description => "The security groups for this server; not allowed when using VPC",
         :proc => Proc.new { |groups| groups.split(',') }
+
+      option :security_group_ids,
+        :short => "-g X,Y,Z",
+        :long => "--security-group-ids X,Y,Z",
+        :description => "The security group ids for this server; required when using VPC",
+        :proc => Proc.new { |security_group_ids| security_group_ids.split(',') }
 
       option :tags,
         :short => "-T T=V[,T=V,...]",
@@ -224,7 +229,19 @@ class Chef
         msg_pair("Image", server.image_id)
         msg_pair("Region", connection.instance_variable_get(:@region))
         msg_pair("Availability Zone", server.availability_zone)
-        msg_pair("Security Groups", server.groups.join(", "))
+
+        # If we don't specify a security group or security group id, Fog will
+        # pick the appropriate default one. In case of a VPC we don't know the
+        # default security group id at this point unless we look it up, hence
+        # 'default' is printed if no id was specified.
+        printed_security_groups = "default"
+        printed_security_groups = server.groups.join(", ") if server.groups 
+        msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (server.groups.nil? and server.security_group_ids)
+
+        printed_security_group_ids = "default"
+        printed_security_group_ids = server.security_group_ids.join(", ") if server.security_group_ids
+        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or server.security_group_ids
+
         msg_pair("Tags", hashed_tags)
         msg_pair("SSH Key", server.key_name)
 
@@ -261,7 +278,8 @@ class Chef
         msg_pair("Image", server.image_id)
         msg_pair("Region", connection.instance_variable_get(:@region))
         msg_pair("Availability Zone", server.availability_zone)
-        msg_pair("Security Groups", server.groups.join(", "))
+        msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (server.groups.nil? and server.security_group_ids)
+        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or server.security_group_ids
         msg_pair("Tags", hashed_tags)
         msg_pair("SSH Key", server.key_name)
         msg_pair("Root Device Type", server.root_device_type)
@@ -332,6 +350,12 @@ class Chef
           ui.error("You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'.")
           exit 1
         end
+        
+        if vpc_mode? and !!config[:security_groups]
+          ui.error("You are using a VPC, security groups specified with '-G' are not allowed, specify one or more security group ids with '-g' instead.")
+          exit 1
+        end
+
       end
 
       def tags
@@ -347,6 +371,7 @@ class Chef
         server_def = {
           :image_id => locate_config_value(:image),
           :groups => config[:security_groups],
+          :security_group_ids => config[:security_group_ids],
           :flavor_id => locate_config_value(:flavor),
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
           :availability_zone => locate_config_value(:availability_zone)
