@@ -149,8 +149,14 @@ class Chef
       option :json_attributes,
         :short => "-j JSON",
         :long => "--json-attributes JSON",
-        :description => "A JSON string to be added to the first run of chef-client",
-        :proc => lambda { |o| JSON.parse(o) },
+        :description => "A JSON string or a path to a JSON file to be added to the first run of chef-client",
+        :proc => lambda { |o| 
+                          if File.exists?(o) 
+                              o = File.read(o)
+                          end
+                          
+                          JSON.parse(o) 
+                        },
         :default => {}
 
 
