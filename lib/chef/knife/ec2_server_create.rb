@@ -161,8 +161,8 @@ class Chef
         :default => false
 
       option :no_host_key_verify,
-        :long => "--no-host-key-verify",
-        :description => "Disable host key verification",
+        :long => "--no-host-key-verification",
+        :description => "Indicates that host key verification is disabled",
         :boolean => true,
         :default => false
 
