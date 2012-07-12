@@ -160,11 +160,11 @@ class Chef
         :description => "create node in this Virtual Private Cloud Subnet ID (implies VPC mode)",
         :default => false
 
-      option :no_host_key_verify,
-        :long => "--no-host-key-verify",
-        :description => "Disable host key verification",
+      option :host_key_verify,
+        :long => "--[no-]host-key-verify",
+        :description => "Verify host key, enabled by default.",
         :boolean => true,
-        :default => false
+        :default => true
 
       option :aws_user_data,
         :long => "--user-data USER_DATA_FILE",
@@ -328,7 +328,7 @@ class Chef
         bootstrap.config[:template_file] = locate_config_value(:template_file)
         bootstrap.config[:environment] = config[:environment]
         # may be needed for vpc_mode
-        bootstrap.config[:no_host_key_verify] = config[:no_host_key_verify]
+        bootstrap.config[:host_key_verify] = config[:host_key_verify]
         bootstrap
       end
 
