@@ -63,6 +63,26 @@ Outputs a list of all servers in the currently configured AWS account.  <b>PLEAS
 
 Generates instance metadata in meant to be used with Opscode's custom AMIs. This will read your knife configuration <tt>~/.chef/knife.rb</tt> for the validation certificate and Chef server URL to use and output in JSON format. The subcommand also accepts a list of roles/recipes that will be in the node's initial run list.
 
+== knife ec2 address allocate
+
+Allocate an elastic ip to the currently configured AWS account.
+
+== knife ec2 address release
+
+Release (deallocate) an elastic ip, deleting it from the currently configured AWS account.
+
+== knife ec2 address associate
+
+Bind an elastic ip to an EC2 instance in the currently configured AWS account.
+
+== knife ec2 address disassociate
+
+Unbind an elastic ip address from an EC2 instance in the currently configured AWS account.
+
+== knife ec2 address list
+
+Show all IP addresses associated with the currently configured AWS account, each together with the instance with which it is bound (if any).
+
 <b>PLEASE NOTE</b> - Using Opscode's custom AMIs reflect an older way of launching instances in EC2 for Chef and should be considered DEPRECATED. Leveraging this plugins's <tt>knife ec2 server create</tt> subcommands with a base AMIs directly from your Linux distribution (ie Ubuntu AMIs from Canonical) is much preferred and more flexible.  Although this subcommand will remain, the Opscode custom AMIs are currently out of date.
 
 In-depth usage instructions can be found on the {Chef Wiki}[http://wiki.opscode.com/display/chef/Amazon+EC2+AMIs+with+Chef].
