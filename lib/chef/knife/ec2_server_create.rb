@@ -80,6 +80,10 @@ class Chef
         :long => "--node-name NAME",
         :description => "The Chef node name for your new node"
 
+      option :chef_node_name_prefix,
+        :long => "--node-name-prefix PREFIX",
+        :description => "The Chef node prefix for your new node, the node name will have the server id appended"
+
       option :ssh_key_name,
         :short => "-S KEY",
         :long => "--ssh-key KEY",
@@ -217,7 +221,7 @@ class Chef
 
         # Always set the Name tag
         unless hashed_tags.keys.include? "Name"
-          hashed_tags["Name"] = locate_config_value(:chef_node_name) || server.id
+          hashed_tags["Name"] = node_name(server)
         end
 
         hashed_tags.each_pair do |key,val|
@@ -319,7 +323,7 @@ class Chef
         bootstrap.config[:ssh_user] = config[:ssh_user]
         bootstrap.config[:ssh_port] = config[:ssh_port]
         bootstrap.config[:identity_file] = config[:identity_file]
-        bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
+        bootstrap.config[:chef_node_name] = node_name(server)
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:first_boot_attributes] = config[:json_attributes]
@@ -413,6 +417,14 @@ class Chef
         end
 
         server_def
+      end
+
+      def node_name(server)
+        if( locate_config_value(:chef_node_name_prefix) )
+          return "#{ locate_config_value(:chef_node_name_prefix) }#{ server.id }"
+        else 
+          return locate_config_value(:chef_node_name) || server.id
+        end
       end
     end
   end
