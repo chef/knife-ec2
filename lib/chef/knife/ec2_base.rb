@@ -67,7 +67,7 @@ class Chef
 
       def locate_config_value(key)
         key = key.to_sym
-        Chef::Config[:knife][key] || config[key]
+        config[key] || Chef::Config[:knife][key]
       end
 
       def msg_pair(label, value, color=:cyan)

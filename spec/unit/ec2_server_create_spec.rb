@@ -226,6 +226,30 @@ describe Chef::Knife::Ec2ServerCreate do
 
       server_def[:security_group_ids].should == ['sg-aabbccdd']
     end
+
+    it "sets the image id from CLI arguments over knife config" do
+      @knife_ec2_create.config[:image] = "ami-aaa"
+      Chef::Config[:knife][:image] = "ami-zzz"
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:image_id].should == "ami-aaa"
+    end
+
+    it "sets the flavor id from CLI arguments over knife config" do
+      @knife_ec2_create.config[:flavor] = "massive"
+      Chef::Config[:knife][:flavor] = "bitty"
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:flavor_id].should == "massive"
+    end
+
+    it "sets the availability zone from CLI arguments over knife config" do
+      @knife_ec2_create.config[:availability_zone] = "dis-one"
+      Chef::Config[:knife][:availability_zone] = "dat-one"
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:availability_zone].should == "dis-one"
+    end
   end
 
 end
