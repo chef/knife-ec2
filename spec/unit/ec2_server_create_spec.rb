@@ -214,6 +214,12 @@ describe Chef::Knife::Ec2ServerCreate do
       Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
     end
 
+    it "uses default values by default" do
+      server_def = @knife_ec2_create.create_server_def
+
+			server_def[:availability_zone].should == "us_east_1b"
+    end
+
     it "sets the availability zone from knife config over default" do
       Chef::Config[:knife][:availability_zone] = "da-first-one"
       server_def = @knife_ec2_create.create_server_def
