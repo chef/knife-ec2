@@ -174,6 +174,12 @@ class Chef
         :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
         :default => nil
 
+      option :server_connect_attribute,
+        :long => "--server-connect-attribute ATTRIBUTE",
+        :short => "-c ATTRIBUTE",
+        :description => "The EC2 server attribute to use for SSH connection",
+        :default => nil
+
       def tcp_test_ssh(hostname)
         tcp_socket = TCPSocket.new(hostname, config[:ssh_port])
         readable = IO.select([tcp_socket], nil, nil, 5)
@@ -264,14 +270,12 @@ class Chef
 
         print "\n#{ui.color("Waiting for sshd", :magenta)}"
 
-        fqdn = vpc_mode? ? @server.private_ip_address : @server.dns_name
-
-        print(".") until tcp_test_ssh(fqdn) {
+        print(".") until tcp_test_ssh(ssh_connect_host) {
           sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
           puts("done")
         }
 
-        bootstrap_for_node(@server,fqdn).run
+        bootstrap_for_node(@server,ssh_connect_host).run
 
         puts "\n"
         msg_pair("Instance ID", @server.id)
@@ -313,9 +317,9 @@ class Chef
         msg_pair("JSON Attributes",config[:json_attributes]) unless config[:json_attributes].empty?
       end
 
-      def bootstrap_for_node(server,fqdn)
+      def bootstrap_for_node(server,ssh_host)
         bootstrap = Chef::Knife::Bootstrap.new
-        bootstrap.name_args = [fqdn]
+        bootstrap.name_args = [ssh_host]
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:ssh_user] = config[:ssh_user]
         bootstrap.config[:ssh_port] = config[:ssh_port]
@@ -414,6 +418,14 @@ class Chef
         end
 
         server_def
+      end
+
+      def ssh_connect_host
+        @ssh_connect_host ||= if config[:server_connect_attribute]
+          server.send(config[:server_connect_attribute])
+        else
+          vpc_mode? ? server.private_ip_address : server.dns_name
+        end
       end
     end
   end
