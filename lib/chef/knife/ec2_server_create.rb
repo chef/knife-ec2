@@ -42,14 +42,13 @@ class Chef
         :short => "-f FLAVOR",
         :long => "--flavor FLAVOR",
         :description => "The flavor of server (m1.small, m1.medium, etc)",
-        :proc => Proc.new { |f| Chef::Config[:knife][:flavor] = f },
-        :default => "m1.small"
+        :proc => Proc.new { |f| Chef::Config[:knife][:flavor_default] = "m1.small" ; Chef::Config[:knife][:flavor] = f }
 
       option :image,
         :short => "-I IMAGE",
         :long => "--image IMAGE",
         :description => "The AMI for the server",
-        :proc => Proc.new { |i| Chef::Config[:knife][:image] = i }
+        :proc => Proc.new { |i| Chef::Config[:knife][:image_default] = "" ; Chef::Config[:knife][:image] = i }
 
       option :security_groups,
         :short => "-G X,Y,Z",
@@ -73,8 +72,7 @@ class Chef
         :short => "-Z ZONE",
         :long => "--availability-zone ZONE",
         :description => "The Availability Zone",
-        :default => "us-east-1b",
-        :proc => Proc.new { |key| Chef::Config[:knife][:availability_zone] = key }
+        :proc => Proc.new { |key| Chef::Config[:knife][:availability_zone_default] = "us_east_1b" ; Chef::Config[:knife][:availability_zone] = key }
 
       option :chef_node_name,
         :short => "-N NAME",
@@ -91,7 +89,7 @@ class Chef
         :short => "-x USERNAME",
         :long => "--ssh-user USERNAME",
         :description => "The ssh username",
-        :default => "root"
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_user_default] = "root" ; Chef::Config[:knife][:ssh_user] = key }
 
       option :ssh_password,
         :short => "-P PASSWORD",
@@ -102,8 +100,7 @@ class Chef
         :short => "-p PORT",
         :long => "--ssh-port PORT",
         :description => "The ssh port",
-        :default => "22",
-        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_port] = key }
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_port_default] = "22" ; Chef::Config[:knife][:ssh_port] = key }
 
       option :identity_file,
         :short => "-i IDENTITY_FILE",
@@ -123,14 +120,12 @@ class Chef
         :short => "-d DISTRO",
         :long => "--distro DISTRO",
         :description => "Bootstrap a distro using a template; default is 'chef-full'",
-        :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d },
-        :default => "chef-full"
+        :proc => Proc.new { |d| Chef::Config[:knife][:distro_default] = "chef-full" ; Chef::Config[:knife][:distro] = d }
 
       option :template_file,
         :long => "--template-file TEMPLATE",
         :description => "Full path to location of template to use",
-        :proc => Proc.new { |t| Chef::Config[:knife][:template_file] = t },
-        :default => false
+        :proc => Proc.new { |t| Chef::Config[:knife][:template_file] = t }
 
       option :ebs_size,
         :long => "--ebs-size SIZE",
@@ -159,7 +154,7 @@ class Chef
         :short => "-s SUBNET-ID",
         :long => "--subnet SUBNET-ID",
         :description => "create node in this Virtual Private Cloud Subnet ID (implies VPC mode)",
-        :default => false
+        :proc => Proc.new { |s| Chef::Config[:knife][:subnet_id] = s }
 
       option :host_key_verify,
         :long => "--[no-]host-key-verify",
@@ -218,7 +213,7 @@ class Chef
 
         # Always set the Name tag
         unless hashed_tags.keys.include? "Name"
-          hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
+          hashed_tags["Name"] = config[:chef_node_name] || @server.id
         end
 
         hashed_tags.each_pair do |key,val|
@@ -317,16 +312,16 @@ class Chef
         bootstrap = Chef::Knife::Bootstrap.new
         bootstrap.name_args = [fqdn]
         bootstrap.config[:run_list] = config[:run_list]
-        bootstrap.config[:ssh_user] = config[:ssh_user]
-        bootstrap.config[:ssh_port] = config[:ssh_port]
+        bootstrap.config[:ssh_user] = locate_config_value(:ssh_user,:ssh_user_default)
+        bootstrap.config[:ssh_port] = locate_config_value(:ssh_port,:ssh_port_default)
         bootstrap.config[:identity_file] = config[:identity_file]
         bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
         bootstrap.config[:prerelease] = config[:prerelease]
-        bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
+        bootstrap.config[:bootstrap_version] = config[:bootstrap_version]
         bootstrap.config[:first_boot_attributes] = config[:json_attributes]
-        bootstrap.config[:distro] = locate_config_value(:distro)
+        bootstrap.config[:distro] = locate_config_value(:distro,:distro_default)
         bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
-        bootstrap.config[:template_file] = locate_config_value(:template_file)
+        bootstrap.config[:template_file] = config[:template_file]
         bootstrap.config[:environment] = config[:environment]
         # may be needed for vpc_mode
         bootstrap.config[:host_key_verify] = config[:host_key_verify]
@@ -340,7 +335,7 @@ class Chef
       end
 
       def ami
-        @ami ||= connection.images.get(locate_config_value(:image))
+        @ami ||= connection.images.get(locate_config_value(:image,:image_default))
       end
 
       def validate!
@@ -360,7 +355,7 @@ class Chef
       end
 
       def tags
-       tags = locate_config_value(:tags)
+       tags = config[:tags]
         if !tags.nil? and tags.length != tags.to_s.count('=')
           ui.error("Tags should be entered in a key = value pair")
           exit 1
@@ -370,12 +365,12 @@ class Chef
 
       def create_server_def
         server_def = {
-          :image_id => locate_config_value(:image),
+          :image_id => locate_config_value(:image,:image_default),
           :groups => config[:security_groups],
           :security_group_ids => config[:security_group_ids],
-          :flavor_id => locate_config_value(:flavor),
+          :flavor_id => locate_config_value(:flavor,:flavor_default),
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
-          :availability_zone => locate_config_value(:availability_zone)
+          :availability_zone => locate_config_value(:availability_zone,:default_zone_value)
         }
         server_def[:subnet_id] = config[:subnet_id] if config[:subnet_id]
 

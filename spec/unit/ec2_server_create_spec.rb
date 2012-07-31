@@ -214,6 +214,20 @@ describe Chef::Knife::Ec2ServerCreate do
       Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
     end
 
+    it "sets the availability zone from knife config over default" do
+      Chef::Config[:knife][:availability_zone] = "da-first-one"
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:availability_zone].should == "da-first-one"
+    end
+
+    it "sets the flavor id from knife config over default" do
+      Chef::Config[:knife][:flavor] = "itty-bitty"
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:flavor_id].should == "itty-bitty"
+    end
+
     it "sets the specified security group names" do
       @knife_ec2_create.config[:security_groups] = ['groupname']
       server_def = @knife_ec2_create.create_server_def

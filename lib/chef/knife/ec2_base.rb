@@ -49,8 +49,7 @@ class Chef
           option :region,
             :long => "--region REGION",
             :description => "Your AWS region",
-            :default => "us-east-1",
-            :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
+            :proc => Proc.new { |key| Chef::Config[:knife][:region_default] = "us-east-1" ; Chef::Config[:knife][:region] = key }
         end
       end
 
@@ -60,14 +59,15 @@ class Chef
             :provider => 'AWS',
             :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
             :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-            :region => locate_config_value(:region)
+            :region => locate_config_value(:region,:region_default)
           )
         end
       end
 
-      def locate_config_value(key)
+      def locate_config_value(key, key_default)
         key = key.to_sym
-        config[key] || Chef::Config[:knife][key]
+        key_default = key_default.to_sym
+        config[key] || Chef::Config[:knife][key] || Chef::Config[:knife][key_default]
       end
 
       def msg_pair(label, value, color=:cyan)
