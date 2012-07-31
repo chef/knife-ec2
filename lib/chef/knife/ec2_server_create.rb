@@ -370,7 +370,7 @@ class Chef
           :security_group_ids => config[:security_group_ids],
           :flavor_id => locate_config_value(:flavor,:flavor_default),
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
-          :availability_zone => locate_config_value(:availability_zone,:default_zone_value)
+          :availability_zone => locate_config_value(:availability_zone,:availability_zone_default)
         }
         server_def[:subnet_id] = config[:subnet_id] if config[:subnet_id]
 
