@@ -42,8 +42,7 @@ class Chef
         :short => "-f FLAVOR",
         :long => "--flavor FLAVOR",
         :description => "The flavor of server (m1.small, m1.medium, etc)",
-        :proc => Proc.new { |f| Chef::Config[:knife][:flavor] = f },
-        :default => "m1.small"
+        :proc => Proc.new { |f| Chef::Config[:knife][:flavor] = f }
 
       option :image,
         :short => "-I IMAGE",
@@ -73,7 +72,6 @@ class Chef
         :short => "-Z ZONE",
         :long => "--availability-zone ZONE",
         :description => "The Availability Zone",
-        :default => "us-east-1b",
         :proc => Proc.new { |key| Chef::Config[:knife][:availability_zone] = key }
 
       option :chef_node_name,
@@ -154,12 +152,11 @@ class Chef
         :proc => lambda { |o| JSON.parse(o) },
         :default => {}
 
-
       option :subnet_id,
         :short => "-s SUBNET-ID",
         :long => "--subnet SUBNET-ID",
         :description => "create node in this Virtual Private Cloud Subnet ID (implies VPC mode)",
-        :default => false
+        :proc => Proc.new { |key| Chef::Config[:knife][:subnet_id] = key }
 
       option :host_key_verify,
         :long => "--[no-]host-key-verify",
@@ -336,7 +333,7 @@ class Chef
       def vpc_mode?
         # Amazon Virtual Private Cloud requires a subnet_id. If
         # present, do a few things differently
-        !!config[:subnet_id]
+        !!locate_config_value(:subnet_id)
       end
 
       def ami
@@ -372,12 +369,12 @@ class Chef
         server_def = {
           :image_id => locate_config_value(:image),
           :groups => config[:security_groups],
-          :security_group_ids => config[:security_group_ids],
+          :security_group_ids => locate_config_value(:security_group_ids),
           :flavor_id => locate_config_value(:flavor),
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
           :availability_zone => locate_config_value(:availability_zone)
         }
-        server_def[:subnet_id] = config[:subnet_id] if config[:subnet_id]
+        server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
 
         if Chef::Config[:knife][:aws_user_data]
           begin

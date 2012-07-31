@@ -49,7 +49,6 @@ class Chef
           option :region,
             :long => "--region REGION",
             :description => "Your AWS region",
-            :default => "us-east-1",
             :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
         end
       end
