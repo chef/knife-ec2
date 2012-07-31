@@ -105,6 +105,13 @@ class Chef
         :default => "22",
         :proc => Proc.new { |key| Chef::Config[:knife][:ssh_port] = key }
 
+      option :ssh_gateway,
+        :short => "-w GATEWAY",
+        :long => "--ssh-gateway GATEWAY",
+        :description => "The ssh gateway server",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway] = key }
+
+
       option :identity_file,
         :short => "-i IDENTITY_FILE",
         :long => "--identity-file IDENTITY_FILE",
@@ -319,6 +326,7 @@ class Chef
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:ssh_user] = config[:ssh_user]
         bootstrap.config[:ssh_port] = config[:ssh_port]
+        bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
         bootstrap.config[:identity_file] = config[:identity_file]
         bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
         bootstrap.config[:prerelease] = config[:prerelease]
