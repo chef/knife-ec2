@@ -32,6 +32,8 @@ class Chef
 
         validate!
 
+        Chef::Log.debug("Fetching server list from region '#{Chef::Config[:knife][:region]}' and availability_zone '#{Chef::Config[:knife][:availability_zone]}'")
+
         server_list = [
           ui.color('Instance ID', :bold),
           ui.color('Public IP', :bold),
