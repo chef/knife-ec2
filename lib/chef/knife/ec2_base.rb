@@ -62,6 +62,8 @@ class Chef
             :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
             :region => locate_config_value(:region)
           )
+          Chef::Log.debug("Using region '#{connection.instance_variable_get(:@region)}'")
+          connection
         end
       end
 
