@@ -187,8 +187,8 @@ class Chef
         :description => "The EC2 server attribute to use for SSH connection",
         :default => nil
 
-      def tcp_test_ssh(hostname)
-        tcp_socket = TCPSocket.new(hostname, config[:ssh_port])
+      def tcp_test_ssh(hostname, ssh_port)
+        tcp_socket = TCPSocket.new(hostname, ssh_port)
         readable = IO.select([tcp_socket], nil, nil, 5)
         if readable
           Chef::Log.debug("sshd accepting connections on #{hostname}, banner is #{tcp_socket.gets}")
@@ -277,10 +277,7 @@ class Chef
 
         print "\n#{ui.color("Waiting for sshd", :magenta)}"
 
-        print(".") until tcp_test_ssh(ssh_connect_host) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
-          puts("done")
-        }
+        wait_for_sshd(ssh_connect_host)
 
         bootstrap_for_node(@server,ssh_connect_host).run
 
@@ -426,6 +423,40 @@ class Chef
         end
 
         server_def
+      end
+
+      def wait_for_sshd(hostname)
+        config[:ssh_gateway] ? wait_for_tunnelled_sshd(hostname) : wait_for_direct_sshd(hostname, config[:ssh_port])
+      end
+
+      def wait_for_tunnelled_sshd(hostname)
+        print(".") until tunnel_test_ssh(ssh_connect_host) {
+          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+          puts("done")
+        }
+      end
+
+      def tunnel_test_ssh(hostname, &block)
+        gw_host, gw_user = config[:ssh_gateway].split('@').reverse
+        gw_host, gw_port = gw_host.split(':')
+        gateway = Net::SSH::Gateway.new(gw_host, gw_user, :port => gw_port || 22)
+        status = false
+        gateway.open(hostname, config[:ssh_port]) do |local_tunnel_port|
+          status = tcp_test_ssh('localhost', local_tunnel_port, &block)
+        end
+        status
+      rescue SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, IOError
+        sleep 2
+        false
+      rescue Errno::EPERM, Errno::ETIMEDOUT
+        false
+      end
+
+      def wait_for_direct_sshd(hostname, ssh_port)
+        print(".") until tcp_test_ssh(ssh_connect_host, ssh_port) {
+          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+          puts("done")
+        }
       end
 
       def ssh_connect_host
