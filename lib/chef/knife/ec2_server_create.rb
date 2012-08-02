@@ -197,23 +197,10 @@ class Chef
         else
           false
         end
-      rescue SocketError
+      rescue SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, IOError
         sleep 2
         false
-      rescue Errno::ETIMEDOUT
-        false
-      rescue Errno::EPERM
-        false
-      rescue Errno::ECONNREFUSED
-        sleep 2
-        false
-      # This happens on EC2 quite often
-      rescue Errno::EHOSTUNREACH
-        sleep 2
-        false
-      # This happens on EC2 sometimes
-      rescue Errno::ENETUNREACH
-        sleep 2
+      rescue Errno::EPERM, Errno::ETIMEDOUT
         false
       ensure
         tcp_socket && tcp_socket.close
