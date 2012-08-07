@@ -138,7 +138,11 @@ class Chef
 
       option :ebs_no_delete_on_term,
         :long => "--ebs-no-delete-on-term",
-        :description => "Do not delete EBS volumn on instance termination"
+        :description => "Do not delete EBS volume on instance termination"
+
+      option :ebs_optimized,
+        :long => "--ebs-optimized",
+        :description => "Provides dedicated EBS throughput and a software stack optimized for EBS I/O." 
 
       option :run_list,
         :short => "-r RUN_LIST",
