@@ -202,6 +202,10 @@ class Chef
       rescue Errno::ENETUNREACH
         sleep 2
         false
+      # This happens on some mobile phone networks
+      rescue Errno::ECONNRESET
+        sleep 2
+        false
       ensure
         tcp_socket && tcp_socket.close
       end
