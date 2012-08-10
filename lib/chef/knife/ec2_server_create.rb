@@ -267,6 +267,10 @@ class Chef
         false
       rescue Errno::EPERM, Errno::ETIMEDOUT
         false
+      # This happens on some mobile phone networks
+      rescue Errno::ECONNRESET
+        sleep 2
+        false
       ensure
         tcp_socket && tcp_socket.close
       end
