@@ -136,6 +136,14 @@ class Chef
         :long => "--ebs-size SIZE",
         :description => "The size of the EBS volume in GB, for EBS-backed instances"
 
+      option :ebs_type,
+        :long => "--ebs-type TYPE",
+        :description => "The volume type."
+
+      option :ebs_iops,
+        :long => "--ebs-iops IOPS",
+        :description => "The number of I/O operations per second (IOPS) that the volume supports."
+
       option :ebs_no_delete_on_term,
         :long => "--ebs-no-delete-on-term",
         :description => "Do not delete EBS volumn on instance termination"
@@ -299,6 +307,16 @@ class Chef
               msg_pair("Warning", volume_too_large_warning, :yellow)
             end
           end
+          if config[:ebs_type]
+            if config[:ebs_type] == "standard" || config[:ebs_type] == "io1" 
+              msg_pair("EBS is Optimized", Boolean(@server.ebs_optimized).to_s)
+              if config[:ebs_size] > 1000
+                msg_pair("Warning", "IOPS is larger then 1000, valid values are 1 to 1000", :yellow)
+              end
+            else
+              msg_pair("Warning", "Please select standard or io1 ONLY", :yellow)
+            end
+          end
         end
         if vpc_mode?
           msg_pair("Subnet ID", @server.subnet_id)
@@ -405,11 +423,29 @@ class Chef
                         else
                           ami_map["deleteOnTermination"]
                         end
+          ebs_type = if config[:ebs_type]
+                        config[:ebs_type]
+                      else
+                        ami_map["volumeType"]
+                      end
+          ebs_iops = begin
+                      if config[:ebs_iops]
+                        Integer(config[:ebs_iops]).to_s
+                      else
+                        ami_map["iops"].to_s
+                      end
+                    rescue ArgumentError
+                      puts "--ebs-iops must be an integer"
+                      msg opt_parser
+                      exit 1
+                    end
           server_def[:block_device_mapping] =
             [{
                'DeviceName' => ami_map["deviceName"],
                'Ebs.VolumeSize' => ebs_size,
-               'Ebs.DeleteOnTermination' => delete_term
+               'Ebs.DeleteOnTermination' => delete_term,
+               'Ebs.VolumeType' => ebs_type,
+               'Ebs.Iops' => ebs_iops
              }]
         end
 
