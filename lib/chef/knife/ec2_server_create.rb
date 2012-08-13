@@ -304,7 +304,7 @@ class Chef
             end
           end
           if config[:ebs_optimized]
-            msg_pair("EBS is Optimized", Boolean(@server.ebs_optimized).to_s)
+            msg_pair("EBS is Optimized", @server.ebs_optimized.to_s)
           end
         end
         if vpc_mode?
