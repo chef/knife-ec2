@@ -105,6 +105,13 @@ class Chef
         :default => "22",
         :proc => Proc.new { |key| Chef::Config[:knife][:ssh_port] = key }
 
+      option :ssh_gateway,
+        :short => "-w GATEWAY",
+        :long => "--ssh-gateway GATEWAY",
+        :description => "The ssh gateway server",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway] = key }
+
+
       option :identity_file,
         :short => "-i IDENTITY_FILE",
         :long => "--identity-file IDENTITY_FILE",
@@ -174,8 +181,14 @@ class Chef
         :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
         :default => nil
 
-      def tcp_test_ssh(hostname)
-        tcp_socket = TCPSocket.new(hostname, config[:ssh_port])
+      option :server_connect_attribute,
+        :long => "--server-connect-attribute ATTRIBUTE",
+        :short => "-c ATTRIBUTE",
+        :description => "The EC2 server attribute to use for SSH connection",
+        :default => nil
+
+      def tcp_test_ssh(hostname, ssh_port)
+        tcp_socket = TCPSocket.new(hostname, ssh_port)
         readable = IO.select([tcp_socket], nil, nil, 5)
         if readable
           Chef::Log.debug("sshd accepting connections on #{hostname}, banner is #{tcp_socket.gets}")
@@ -184,23 +197,10 @@ class Chef
         else
           false
         end
-      rescue SocketError
+      rescue SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, IOError
         sleep 2
         false
-      rescue Errno::ETIMEDOUT
-        false
-      rescue Errno::EPERM
-        false
-      rescue Errno::ECONNREFUSED
-        sleep 2
-        false
-      # This happens on EC2 quite often
-      rescue Errno::EHOSTUNREACH
-        sleep 2
-        false
-      # This happens on EC2 sometimes
-      rescue Errno::ENETUNREACH
-        sleep 2
+      rescue Errno::EPERM, Errno::ETIMEDOUT
         false
       ensure
         tcp_socket && tcp_socket.close
@@ -264,14 +264,9 @@ class Chef
 
         print "\n#{ui.color("Waiting for sshd", :magenta)}"
 
-        fqdn = vpc_mode? ? @server.private_ip_address : @server.dns_name
+        wait_for_sshd(ssh_connect_host)
 
-        print(".") until tcp_test_ssh(fqdn) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
-          puts("done")
-        }
-
-        bootstrap_for_node(@server,fqdn).run
+        bootstrap_for_node(@server,ssh_connect_host).run
 
         puts "\n"
         msg_pair("Instance ID", @server.id)
@@ -313,12 +308,13 @@ class Chef
         msg_pair("JSON Attributes",config[:json_attributes]) unless config[:json_attributes].empty?
       end
 
-      def bootstrap_for_node(server,fqdn)
+      def bootstrap_for_node(server,ssh_host)
         bootstrap = Chef::Knife::Bootstrap.new
-        bootstrap.name_args = [fqdn]
+        bootstrap.name_args = [ssh_host]
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:ssh_user] = config[:ssh_user]
         bootstrap.config[:ssh_port] = config[:ssh_port]
+        bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
         bootstrap.config[:identity_file] = config[:identity_file]
         bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
         bootstrap.config[:prerelease] = config[:prerelease]
@@ -414,6 +410,49 @@ class Chef
         end
 
         server_def
+      end
+
+      def wait_for_sshd(hostname)
+        config[:ssh_gateway] ? wait_for_tunnelled_sshd(hostname) : wait_for_direct_sshd(hostname, config[:ssh_port])
+      end
+
+      def wait_for_tunnelled_sshd(hostname)
+        print(".")
+        print(".") until tunnel_test_ssh(ssh_connect_host) {
+          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+          puts("done")
+        }
+      end
+
+      def tunnel_test_ssh(hostname, &block)
+        gw_host, gw_user = config[:ssh_gateway].split('@').reverse
+        gw_host, gw_port = gw_host.split(':')
+        gateway = Net::SSH::Gateway.new(gw_host, gw_user, :port => gw_port || 22)
+        status = false
+        gateway.open(hostname, config[:ssh_port]) do |local_tunnel_port|
+          status = tcp_test_ssh('localhost', local_tunnel_port, &block)
+        end
+        status
+      rescue SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, IOError
+        sleep 2
+        false
+      rescue Errno::EPERM, Errno::ETIMEDOUT
+        false
+      end
+
+      def wait_for_direct_sshd(hostname, ssh_port)
+        print(".") until tcp_test_ssh(ssh_connect_host, ssh_port) {
+          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+          puts("done")
+        }
+      end
+
+      def ssh_connect_host
+        @ssh_connect_host ||= if config[:server_connect_attribute]
+          server.send(config[:server_connect_attribute])
+        else
+          vpc_mode? ? server.private_ip_address : server.dns_name
+        end
       end
     end
   end
