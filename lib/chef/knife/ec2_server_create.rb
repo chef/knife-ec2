@@ -123,7 +123,6 @@ class Chef
         :long => "--distro DISTRO",
         :description => "Bootstrap a distro using a template; default is 'chef-full'",
         :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d },
-        :default => "chef-full"
 
       option :template_file,
         :long => "--template-file TEMPLATE",
@@ -320,7 +319,7 @@ class Chef
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
-        bootstrap.config[:distro] = locate_config_value(:distro)
+        bootstrap.config[:distro] = locate_config_value(:distro) || "chef-full"
         bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
         bootstrap.config[:template_file] = locate_config_value(:template_file)
         bootstrap.config[:environment] = config[:environment]
