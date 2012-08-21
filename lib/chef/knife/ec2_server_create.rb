@@ -78,7 +78,7 @@ class Chef
         :short => "-N NAME",
         :long => "--node-name NAME",
         :description => "The Chef node name for your new node",
-				:proc => Proc.new { |key| Chef::Config[:knife][:chef_node_name] = key }
+        :proc => Proc.new { |key| Chef::Config[:knife][:chef_node_name] = key }
 
       option :ssh_key_name,
         :short => "-S KEY",
