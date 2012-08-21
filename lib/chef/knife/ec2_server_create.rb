@@ -122,7 +122,7 @@ class Chef
         :short => "-d DISTRO",
         :long => "--distro DISTRO",
         :description => "Bootstrap a distro using a template; default is 'chef-full'",
-        :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d },
+        :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d }
 
       option :template_file,
         :long => "--template-file TEMPLATE",
