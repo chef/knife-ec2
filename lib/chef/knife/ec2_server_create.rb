@@ -137,7 +137,7 @@ class Chef
         :description => "The size of the EBS volume in GB, for EBS-backed instances"
 
       option :ebs_optimized,
-        :long => "--ebs_optimized",
+        :long => "--ebs-optimized",
         :description => "Enabled optimized EBS I/O"
 
       option :ebs_no_delete_on_term,
