@@ -214,7 +214,7 @@ class Chef
         @server = connection.servers.create(create_server_def)
 
         hashed_tags={}
-        tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
+        tags.map{ |t| key,val=t.split('='); hashed_tags[key] ? hashed_tags[key]+=",#{val}" : hashed_tags[key]=val} unless tags.nil?
 
         # Always set the Name tag
         unless hashed_tags.keys.include? "Name"
