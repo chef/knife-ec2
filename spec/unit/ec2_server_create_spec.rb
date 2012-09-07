@@ -251,6 +251,16 @@ describe Chef::Knife::Ec2ServerCreate do
 
       server_def[:availability_zone].should == "dis-one"
     end
+
+    it "adds the specified ephemeral device mappings" do
+      @knife_ec2_create.config[:ephemeral] = [ "/dev/sdb", "/dev/sdc", "/dev/sdd", "/dev/sde" ]
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:block_device_mapping].should == [{ "VirtualName" => "ephemeral0", "DeviceName" => "/dev/sdb" },
+                                                   { "VirtualName" => "ephemeral1", "DeviceName" => "/dev/sdc" },
+                                                   { "VirtualName" => "ephemeral2", "DeviceName" => "/dev/sdd" },
+                                                   { "VirtualName" => "ephemeral3", "DeviceName" => "/dev/sde" }]
+    end
   end
 
 end
