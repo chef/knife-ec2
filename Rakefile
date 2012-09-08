@@ -18,10 +18,11 @@
 # limitations under the License.
 #
 
+require 'rubygems'
+
 require 'bundler'
 Bundler::GemHelper.install_tasks
 
-# require 'rubygems'
 # require 'rake/gempackagetask'
 require 'rake/rdoctask'
 
