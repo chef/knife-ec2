@@ -192,6 +192,10 @@ describe Chef::Knife::Ec2ServerCreate do
     it "configured the bootstrap to use the desired template" do
       @bootstrap.config[:template_file].should == '~/.chef/templates/my-bootstrap.sh.erb'
     end
+
+    it "configured the bootstrap to set an ec2 hint (via Chef::Config)" do
+      Chef::Config[:knife][:hints]["ec2"].should_not be_nil
+    end
   end
 
   describe "when validating the command-line parameters" do

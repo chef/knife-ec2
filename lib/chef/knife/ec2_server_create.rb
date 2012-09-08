@@ -174,6 +174,15 @@ class Chef
         :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
         :default => nil
 
+      Chef::Config[:knife][:hints] ||= {"ec2" => {}}
+      option :hint,
+        :long => "--hint HINT_NAME[=HINT_FILE]",
+        :description => "Specify Ohai Hint to be set on the bootstrap target.  Use multiple --hint options to specify multiple hints.",
+        :proc => Proc.new { |h|
+           name, path = h.split("=")
+           Chef::Config[:knife][:hints][name] = path ? JSON.parse(::File.read(path)) : Hash.new
+        }
+
       def tcp_test_ssh(hostname)
         tcp_socket = TCPSocket.new(hostname, config[:ssh_port])
         readable = IO.select([tcp_socket], nil, nil, 5)
@@ -236,7 +245,7 @@ class Chef
         # default security group id at this point unless we look it up, hence
         # 'default' is printed if no id was specified.
         printed_security_groups = "default"
-        printed_security_groups = @server.groups.join(", ") if @server.groups 
+        printed_security_groups = @server.groups.join(", ") if @server.groups
         msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (@server.groups.nil? and @server.security_group_ids)
 
         printed_security_group_ids = "default"
@@ -351,7 +360,7 @@ class Chef
           ui.error("You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'.")
           exit 1
         end
-        
+
         if vpc_mode? and !!config[:security_groups]
           ui.error("You are using a VPC, security groups specified with '-G' are not allowed, specify one or more security group ids with '-g' instead.")
           exit 1
