@@ -193,7 +193,7 @@ class Chef
 
       option :server_connect_attribute,
         :long => "--server-connect-attribute ATTRIBUTE",
-        :short => "-c ATTRIBUTE",
+        :short => "-a ATTRIBUTE",
         :description => "The EC2 server attribute to use for SSH connection",
         :default => nil
 
