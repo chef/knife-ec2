@@ -280,6 +280,36 @@ class Chef
         password
       end
 
+      def check_windows_password_available(server_id)
+        response = connection.get_password_data(server_id)
+        if not response.body["passwordData"]
+          sleep 10
+          return false
+        end
+        response.body["passwordData"]
+      end
+
+      def fetch_windows_password(server)
+        if not locate_config_value(:winrm_password)
+          if locate_config_value(:identity_file)
+            print "\n#{ui.color("Waiting for Windows Admin password to be available", :magenta)}"
+            print(".") until check_windows_password_available(server.id) {
+              sleep 10
+              puts("done")
+            }
+            response = connection.get_password_data(server.id)
+            data = File.read(locate_config_value(:identity_file))
+            config[:winrm_password] = decrypt_admin_password(response.body["passwordData"], data)
+          else
+            ui.error("Cannot find SSH Identity file, required to fetch dynamically generated password")
+            exit 1
+          end
+        else
+          locate_config_value(:winrm_password)
+        end
+      end
+
+
       def run
         $stdout.sync = true
 
@@ -332,7 +362,7 @@ class Chef
         end
         msg_pair("Private IP Address", @server.private_ip_address)
 
-        fqdn = vpc_mode? ? @server.private_ip_address : @server.dns_name
+        fqdn = vpc_mode? or locate_config_value(:kerberos_realm) ? @server.private_ip_address : @server.dns_name
 
         #Check if Server is Windows or Linux
         image_info = connection.images.get(@server.image_id)
@@ -342,19 +372,7 @@ class Chef
             print "\n#{ui.color("Waiting for winrm", :magenta)}"
            #Fetch dynamically available password
             if not locate_config_value(:kerberos_realm)
-              if not locate_config_value(:winrm_password)
-                if locate_config_value(:identity_file)
-                  response = connection.get_password_data(@server.id)
-                  data = File.read(locate_config_value(:identity_file))
-                  if not response.body["passwordData"]
-                    ui.error("Cannot retrieve Administrator Password")
-                  exit 1
-                  config[:winrm_password] = decrypt_admin_password(response.body["passwordData"], data)
-                else
-                  ui.error("Cannot find SSH Identity file,required to fetch dynamically generated password")
-                  exit 1
-                end
-              end
+              fetch_windows_password(server)
             end
             print(".") until tcp_test_winrm(fqdn) {
               sleep 10
