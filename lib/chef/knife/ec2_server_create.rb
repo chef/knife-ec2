@@ -38,6 +38,9 @@ class Chef
       attr_accessor :initial_sleep_delay
       attr_reader :server
 
+      # Default time(seconds) for ssh service to start.
+      @ssh_timeout_default = 90
+
       option :flavor,
         :short => "-f FLAVOR",
         :long => "--flavor FLAVOR",
@@ -196,6 +199,11 @@ class Chef
         :short => "-c ATTRIBUTE",
         :description => "The EC2 server attribute to use for SSH connection",
         :default => nil
+
+      option :ssh_timeout,
+        :long => "--ssh-timeout SECONDS",
+        :description => "Time(Seconds) to wait till the SSH service is available",
+        :proc => Proc.new { |time| @ssh_timeout_default if time.to_i <= 0  }
 
       def tcp_test_ssh(hostname, ssh_port)
         tcp_socket = TCPSocket.new(hostname, ssh_port)
@@ -431,11 +439,18 @@ class Chef
       end
 
       def wait_for_tunnelled_sshd(hostname)
-        print(".")
-        print(".") until tunnel_test_ssh(ssh_connect_host) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
-          puts("done")
-        }
+        begin
+          Timeout::timeout(config[:ssh_timeout].to_i) do
+            print(".")
+            print(".") until tunnel_test_ssh(ssh_connect_host) {
+              sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+              puts("done")
+            }
+          end
+        rescue Timeout::Error
+          print "\n #{ui.error('Fail to establish SSH connection. Please check ssh port (default: 22) or try increasing timeout using option --ssh-timeout.')}"
+          exit 1
+        end
       end
 
       def tunnel_test_ssh(hostname, &block)
@@ -454,11 +469,19 @@ class Chef
         false
       end
 
+      # Wait for sshd to start
       def wait_for_direct_sshd(hostname, ssh_port)
-        print(".") until tcp_test_ssh(ssh_connect_host, ssh_port) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
-          puts("done")
-        }
+        begin
+          Timeout::timeout(config[:ssh_timeout].to_i) do
+            print(".") until tcp_test_ssh(ssh_connect_host, ssh_port) {
+              sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+              puts("done")
+            }
+          end
+        rescue Timeout::Error
+          print "\n #{ui.error('Fail to establish SSH connection. Please check ssh port (default: 22) or try increasing timeout using option --ssh-timeout.')}"
+          exit 1
+        end
       end
 
       def ssh_connect_host
