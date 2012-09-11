@@ -402,9 +402,7 @@ class Chef
         if config[:associate_eip]
           eips = connection.addresses.collect{|addr| addr if addr.domain == eip_scope}.compact
 
-          if eips.detect{|addr| addr.public_ip == config[:associate_eip] && addr.server_id == nil}
-            elastic_ip = config[:associate_eip]
-          else
+          unless eips.detect{|addr| addr.public_ip == config[:associate_eip] && addr.server_id == nil}
             ui.error("Elastic IP requested is not available.")
             exit 1
           end
