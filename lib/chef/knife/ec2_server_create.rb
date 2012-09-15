@@ -308,9 +308,9 @@ class Chef
               msg_pair("Warning", volume_too_large_warning, :yellow)
             end
           end
-          if config[:ebs_optimized]
-            msg_pair("EBS is Optimized", @server.ebs_optimized.to_s)
-          end
+        end
+        if config[:ebs_optimized]
+          msg_pair("EBS is Optimized", @server.ebs_optimized.to_s)
         end
         if vpc_mode?
           msg_pair("Subnet ID", @server.subnet_id)
@@ -400,6 +400,12 @@ class Chef
           end
         end
 
+        if config[:ebs_optimized]
+          server_def[:ebs_optimized] = "true"
+        else
+          server_def[:ebs_optimized] = "false"
+        end
+
         if ami.root_device_type == "ebs"
           ami_map = ami.block_device_mapping.first
           ebs_size = begin
@@ -418,11 +424,7 @@ class Chef
                         else
                           ami_map["deleteOnTermination"]
                         end
-          ebs_optimized = if config[:ebs_optimized]
-                          "true"
-                        else
-                          "false"
-                        end
+ 
           server_def[:block_device_mapping] =
             [{
                'DeviceName' => ami_map["deviceName"],
