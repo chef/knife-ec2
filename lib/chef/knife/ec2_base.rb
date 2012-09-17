@@ -46,10 +46,10 @@ class Chef
             :description => "Your AWS API Secret Access Key",
             :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
 
-          option :region,
+          option :aws_region,
             :long => "--region REGION",
             :description => "Your AWS region",
-            :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
+            :proc => Proc.new { |key| Chef::Config[:knife][:aws_region] = key }
         end
       end
 
@@ -59,7 +59,7 @@ class Chef
             :provider => 'AWS',
             :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
             :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-            :region => locate_config_value(:region)
+            :region => locate_config_value(:aws_region)
           )
         end
       end
