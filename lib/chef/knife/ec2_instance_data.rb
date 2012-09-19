@@ -29,7 +29,6 @@ class Chef
       banner "knife ec2 instance data (options)"
 
       option :edit,
-        :short => "-e",
         :long => "--edit",
         :description => "Edit the instance data"
 
