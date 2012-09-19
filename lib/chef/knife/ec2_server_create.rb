@@ -80,7 +80,7 @@ class Chef
         :description => "The Chef node name for your new node",
         :proc => Proc.new { |key| Chef::Config[:knife][:chef_node_name] = key }
 
-      option :ec2_ssh_key_name,
+      option :aws_ssh_key_id,
         :short => "-S KEY",
         :long => "--ssh-key KEY",
         :description => "The AWS SSH key id",
