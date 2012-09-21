@@ -37,7 +37,8 @@ describe Chef::Knife::Ec2ServerCreate do
 
     @ec2_connection = mock(Fog::Compute::AWS)
     @ec2_connection.stub_chain(:tags).and_return mock('create', :create => true)
-    @ec2_connection.stub_chain(:images, :get).and_return mock('ami', :root_device_type => 'not_ebs')
+    @ec2_connection.stub_chain(:images, :get).and_return mock('ami', :root_device_type => 'not_ebs',
+                                                              :platform => "linux")
     @ec2_servers = mock()
     @new_ec2_server = mock()
 
