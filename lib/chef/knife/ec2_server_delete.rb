@@ -98,7 +98,7 @@ class Chef
             end
 
           rescue NoMethodError
-            ui.error("Could not locate server '#{instance_id}'.  Please verify it was provisioned in the '#{locate_config_value(:region)}' region.")
+            ui.error("Could not locate server '#{instance_id}'.  Please verify it was provisioned in the '#{locate_config_value(:aws_region)}' region.")
           end
         end
       end

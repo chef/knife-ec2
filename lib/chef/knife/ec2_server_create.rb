@@ -46,25 +46,25 @@ class Chef
       attr_accessor :initial_sleep_delay
       attr_reader :server
 
-      option :flavor,
+      option :ec2_flavor,
         :short => "-f FLAVOR",
         :long => "--flavor FLAVOR",
         :description => "The flavor of server (m1.small, m1.medium, etc)",
-        :proc => Proc.new { |f| Chef::Config[:knife][:flavor] = f }
+        :proc => Proc.new { |f| Chef::Config[:knife][:ec2_flavor] = f }
 
-      option :image,
+      option :ec2_image,
         :short => "-I IMAGE",
         :long => "--image IMAGE",
         :description => "The AMI for the server",
-        :proc => Proc.new { |i| Chef::Config[:knife][:image] = i }
+        :proc => Proc.new { |i| Chef::Config[:knife][:ec2_image] = i }
 
-      option :security_groups,
+      option :ec2_security_groups,
         :short => "-G X,Y,Z",
         :long => "--groups X,Y,Z",
         :description => "The security groups for this server; not allowed when using VPC",
         :proc => Proc.new { |groups| groups.split(',') }
 
-      option :security_group_ids,
+      option :ec2_security_group_ids,
         :short => "-g X,Y,Z",
         :long => "--security-group-ids X,Y,Z",
         :description => "The security group ids for this server; required when using VPC",
@@ -76,11 +76,11 @@ class Chef
         :description => "The tags for this server",
         :proc => Proc.new { |tags| tags.split(',') }
 
-      option :availability_zone,
+      option :ec2_availability_zone,
         :short => "-Z ZONE",
         :long => "--availability-zone ZONE",
         :description => "The Availability Zone",
-        :proc => Proc.new { |key| Chef::Config[:knife][:availability_zone] = key }
+        :proc => Proc.new { |key| Chef::Config[:knife][:ec2_availability_zone] = key }
 
       option :chef_node_name,
         :short => "-N NAME",
@@ -88,37 +88,38 @@ class Chef
         :description => "The Chef node name for your new node",
         :proc => Proc.new { |key| Chef::Config[:knife][:chef_node_name] = key }
 
-      option :ssh_key_name,
+      option :aws_ssh_key_id,
         :short => "-S KEY",
         :long => "--ssh-key KEY",
         :description => "The AWS SSH key id",
         :proc => Proc.new { |key| Chef::Config[:knife][:aws_ssh_key_id] = key }
 
-      option :ssh_user,
+      option :ec2_ssh_user,
         :short => "-x USERNAME",
         :long => "--ssh-user USERNAME",
         :description => "The ssh username",
         :default => "root"
 
-      option :ssh_password,
+      option :ec2_ssh_password,
         :short => "-P PASSWORD",
         :long => "--ssh-password PASSWORD",
         :description => "The ssh password"
 
-      option :ssh_port,
+      option :ec2_ssh_port,
         :short => "-p PORT",
         :long => "--ssh-port PORT",
         :description => "The ssh port",
         :default => "22",
-        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_port] = key }
+        :proc => Proc.new { |key| Chef::Config[:knife][:ec2_ssh_port] = key }
 
-      option :ssh_gateway,
+      option :ec2_ssh_gateway,
         :short => "-w GATEWAY",
         :long => "--ssh-gateway GATEWAY",
         :description => "The ssh gateway server",
-        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway] = key }
+        :proc => Proc.new { |key| Chef::Config[:knife][:ec2_ssh_gateway] = key }
 
-      option :identity_file,
+
+      option :ec2_identity_file,
         :short => "-i IDENTITY_FILE",
         :long => "--identity-file IDENTITY_FILE",
         :description => "The SSH identity file used for authentication"
@@ -132,16 +133,16 @@ class Chef
         :description => "The version of Chef to install",
         :proc => Proc.new { |v| Chef::Config[:knife][:bootstrap_version] = v }
 
-      option :distro,
+      option :ec2_distro,
         :short => "-d DISTRO",
         :long => "--distro DISTRO",
         :description => "Bootstrap a distro using a template; default is 'chef-full'",
-        :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d }
+        :proc => Proc.new { |d| Chef::Config[:knife][:ec2_distro] = d }
 
-      option :template_file,
+      option :ec2_template_file,
         :long => "--template-file TEMPLATE",
         :description => "Full path to location of template to use",
-        :proc => Proc.new { |t| Chef::Config[:knife][:template_file] = t },
+        :proc => Proc.new { |t| Chef::Config[:knife][:ec2_template_file] = t },
         :default => false
 
       option :ebs_size,
@@ -483,13 +484,18 @@ class Chef
       def bootstrap_for_node(server,ssh_host)
         bootstrap = Chef::Knife::Bootstrap.new
         bootstrap.name_args = [ssh_host]
-        bootstrap.config[:ssh_user] = config[:ssh_user]
-        bootstrap.config[:ssh_port] = config[:ssh_port]
-        bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
-        bootstrap.config[:identity_file] = config[:identity_file]
-        bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
-        bootstrap.config[:first_boot_attributes] = config[:json_attributes]
-        bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
+        bootstrap.config[:run_list] = locate_config_value(:run_list) || []
+        bootstrap.config[:ssh_user] = config[:ec2_ssh_user]
+        bootstrap.config[:ssh_port] = config[:ec2_ssh_port]
+        bootstrap.config[:ssh_gateway] = config[:ec2_ssh_gateway]
+        bootstrap.config[:identity_file] = config[:ec2_identity_file]
+        bootstrap.config[:chef_node_name] = locate_config_value(:chef_node_name) || server.id
+        bootstrap.config[:prerelease] = config[:prerelease]
+        bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
+        bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
+        bootstrap.config[:distro] = locate_config_value(:ec2_distro) || "chef-full"
+        bootstrap.config[:use_sudo] = true unless config[:ec2_ssh_user] == 'root'
+        bootstrap.config[:template_file] = locate_config_value(:ec2_template_file)
         bootstrap.config[:environment] = config[:environment]
         # may be needed for vpc_mode
         bootstrap.config[:host_key_verify] = config[:host_key_verify]
@@ -503,19 +509,19 @@ class Chef
       end
 
       def ami
-        @ami ||= connection.images.get(locate_config_value(:image))
+        @ami ||= connection.images.get(locate_config_value(:ec2_image))
       end
 
       def validate!
 
-        super([:image, :aws_ssh_key_id, :aws_access_key_id, :aws_secret_access_key])
+        super([:ec2_image, :aws_ssh_key_id, :aws_access_key_id, :aws_secret_access_key])
 
         if ami.nil?
           ui.error("You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'.")
           exit 1
         end
 
-        if vpc_mode? and !!config[:security_groups]
+        if vpc_mode? and !!config[:ec2_security_groups]
           ui.error("You are using a VPC, security groups specified with '-G' are not allowed, specify one or more security group ids with '-g' instead.")
           exit 1
         end
@@ -533,12 +539,12 @@ class Chef
 
       def create_server_def
         server_def = {
-          :image_id => locate_config_value(:image),
-          :groups => config[:security_groups],
-          :security_group_ids => locate_config_value(:security_group_ids),
-          :flavor_id => locate_config_value(:flavor),
+          :image_id => locate_config_value(:ec2_image),
+          :groups => config[:ec2_security_groups],
+          :ec2_security_group_ids => locate_config_value(:ec2_security_group_ids),
+          :flavor_id => locate_config_value(:ec2_flavor),
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
-          :availability_zone => locate_config_value(:availability_zone)
+          :availability_zone => locate_config_value(:ec2_availability_zone)
         }
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
 
@@ -584,7 +590,7 @@ class Chef
       end
 
       def wait_for_sshd(hostname)
-        config[:ssh_gateway] ? wait_for_tunnelled_sshd(hostname) : wait_for_direct_sshd(hostname, config[:ssh_port])
+        config[:ec2_ssh_gateway] ? wait_for_tunnelled_sshd(hostname) : wait_for_direct_sshd(hostname, config[:ec2_ssh_port])
       end
 
       def wait_for_tunnelled_sshd(hostname)
@@ -600,7 +606,7 @@ class Chef
         gw_host, gw_port = gw_host.split(':')
         gateway = Net::SSH::Gateway.new(gw_host, gw_user, :port => gw_port || 22)
         status = false
-        gateway.open(hostname, config[:ssh_port]) do |local_tunnel_port|
+        gateway.open(hostname, config[:ec2_ssh_port]) do |local_tunnel_port|
           status = tcp_test_ssh('localhost', local_tunnel_port, &block)
         end
         status

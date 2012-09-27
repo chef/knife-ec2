@@ -27,7 +27,7 @@ describe Chef::Knife::Ec2ServerCreate do
     @knife_ec2_create.stub!(:tcp_test_ssh).and_return(true)
 
     {
-      :image => 'image',
+      :ec2_image => 'image',
       :aws_ssh_key_id => 'aws_ssh_key_id',
       :aws_access_key_id => 'aws_access_key_id',
       :aws_secret_access_key => 'aws_secret_access_key'
@@ -70,7 +70,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
       @knife_ec2_create.stub!(:puts)
       @knife_ec2_create.stub!(:print)
-      @knife_ec2_create.config[:image] = '12345'
+      @knife_ec2_create.config[:ec2_image] = '12345'
 
 
       @bootstrap = Chef::Knife::Bootstrap.new
@@ -126,13 +126,13 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "when configuring the bootstrap process" do
     before do
-      @knife_ec2_create.config[:ssh_user] = "ubuntu"
-      @knife_ec2_create.config[:identity_file] = "~/.ssh/aws-key.pem"
-      @knife_ec2_create.config[:ssh_port] = 22
-      @knife_ec2_create.config[:ssh_gateway] = 'bastion.host.com'
+      @knife_ec2_create.config[:ec2_ssh_user] = "ubuntu"
+      @knife_ec2_create.config[:ec2_identity_file] = "~/.ssh/aws-key.pem"
+      @knife_ec2_create.config[:ec2_ssh_port] = 22
+      @knife_ec2_create.config[:ec2_ssh_gateway] = 'bastion.host.com'
       @knife_ec2_create.config[:chef_node_name] = "blarf"
-      @knife_ec2_create.config[:template_file] = '~/.chef/templates/my-bootstrap.sh.erb'
-      @knife_ec2_create.config[:distro] = 'ubuntu-10.04-magic-sparkles'
+      @knife_ec2_create.config[:ec2_template_file] = '~/.chef/templates/my-bootstrap.sh.erb'
+      @knife_ec2_create.config[:ec2_distro] = 'ubuntu-10.04-magic-sparkles'
       @knife_ec2_create.config[:run_list] = ['role[base]']
       @knife_ec2_create.config[:json_attributes] = "{'my_attributes':{'foo':'bar'}"
 
@@ -212,8 +212,8 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "disallows security group names when using a VPC" do
       @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
-      @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd'
-      @knife_ec2_create.config[:security_groups] = 'groupname'
+      @knife_ec2_create.config[:ec2_security_group_ids] = 'sg-aabbccdd'
+      @knife_ec2_create.config[:ec2_security_groups] = 'groupname'
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
@@ -225,38 +225,38 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "sets the specified security group names" do
-      @knife_ec2_create.config[:security_groups] = ['groupname']
+      @knife_ec2_create.config[:ec2_security_groups] = ['groupname']
       server_def = @knife_ec2_create.create_server_def
 
       server_def[:groups].should == ['groupname']
     end
 
     it "sets the specified security group ids" do
-      @knife_ec2_create.config[:security_group_ids] = ['sg-aabbccdd']
+      @knife_ec2_create.config[:ec2_security_group_ids] = ['sg-aabbccdd']
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:security_group_ids].should == ['sg-aabbccdd']
+      server_def[:ec2_security_group_ids].should == ['sg-aabbccdd']
     end
 
     it "sets the image id from CLI arguments over knife config" do
-      @knife_ec2_create.config[:image] = "ami-aaa"
-      Chef::Config[:knife][:image] = "ami-zzz"
+      @knife_ec2_create.config[:ec2_image] = "ami-aaa"
+      Chef::Config[:knife][:ec2_image] = "ami-zzz"
       server_def = @knife_ec2_create.create_server_def
 
       server_def[:image_id].should == "ami-aaa"
     end
 
     it "sets the flavor id from CLI arguments over knife config" do
-      @knife_ec2_create.config[:flavor] = "massive"
-      Chef::Config[:knife][:flavor] = "bitty"
+      @knife_ec2_create.config[:ec2_flavor] = "massive"
+      Chef::Config[:knife][:ec2_flavor] = "bitty"
       server_def = @knife_ec2_create.create_server_def
 
       server_def[:flavor_id].should == "massive"
     end
 
     it "sets the availability zone from CLI arguments over knife config" do
-      @knife_ec2_create.config[:availability_zone] = "dis-one"
-      Chef::Config[:knife][:availability_zone] = "dat-one"
+      @knife_ec2_create.config[:ec2_availability_zone] = "dis-one"
+      Chef::Config[:knife][:ec2_availability_zone] = "dat-one"
       server_def = @knife_ec2_create.create_server_def
 
       server_def[:availability_zone].should == "dis-one"
