@@ -38,9 +38,6 @@ class Chef
       attr_accessor :initial_sleep_delay
       attr_reader :server
 
-      # Default time(seconds) for ssh service to start.
-      @ssh_timeout_default = 90
-
       option :flavor,
         :short => "-f FLAVOR",
         :long => "--flavor FLAVOR",
@@ -199,11 +196,6 @@ class Chef
         :short => "-c ATTRIBUTE",
         :description => "The EC2 server attribute to use for SSH connection",
         :default => nil
-
-      option :ssh_timeout,
-        :long => "--ssh-timeout SECONDS",
-        :description => "Time(Seconds) to wait till the SSH service is available",
-        :proc => Proc.new { |time| @ssh_timeout_default if time.to_i <= 0  }
 
       def tcp_test_ssh(hostname, ssh_port)
         tcp_socket = TCPSocket.new(hostname, ssh_port)
@@ -440,7 +432,7 @@ class Chef
 
       def wait_for_tunnelled_sshd(hostname)
         begin
-          Timeout::timeout(config[:ssh_timeout].to_i) do
+          Timeout::timeout(Chef::Config[:knife][:ssh_timeout] || 90) do
             print(".")
             print(".") until tunnel_test_ssh(ssh_connect_host) {
               sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
@@ -472,7 +464,7 @@ class Chef
       # Wait for sshd to start
       def wait_for_direct_sshd(hostname, ssh_port)
         begin
-          Timeout::timeout(config[:ssh_timeout].to_i) do
+          Timeout::timeout(Chef::Config[:knife][:ssh_timeout] || 90) do
             print(".") until tcp_test_ssh(ssh_connect_host, ssh_port) {
               sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
               puts("done")
