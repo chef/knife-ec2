@@ -22,6 +22,9 @@ class Chef
   class Knife
     module Ec2Base
 
+      # PREFIX for cloud-specific options, segregation from other plugins while using the same knife.rb
+      DEFAULT_CLOUD_PREFIX = "ec2_" unless const_defined?(:DEFAULT_CLOUD_PREFIX)
+
       # :nodoc:
       # Would prefer to do this in a rational way, but can't be done b/c of
       # Mixlib::CLI's design :(
@@ -66,7 +69,7 @@ class Chef
 
       def locate_config_value(key)
         key = key.to_sym
-        config[key] || Chef::Config[:knife][key]
+        config[key] || Chef::Config[:knife]["#{DEFAULT_CLOUD_PREFIX}#{key}".to_sym]  || Chef::Config[:knife][key]
       end
 
       def msg_pair(label, value, color=:cyan)
@@ -80,7 +83,7 @@ class Chef
 
         keys.each do |k|
           pretty_key = k.to_s.gsub(/_/, ' ').gsub(/\w+/){ |w| (w =~ /(ssh)|(aws)/i) ? w.upcase  : w.capitalize }
-          if Chef::Config[:knife][k].nil?
+          if locate_config_value(k).nil?
             errors << "You did not provide a valid '#{pretty_key}' value."
           end
         end
