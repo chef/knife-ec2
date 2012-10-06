@@ -358,7 +358,7 @@ class Chef
         end
         msg_pair("Private IP Address", @server.private_ip_address)
 
-        fqdn = vpc_mode? or locate_config_value(:kerberos_realm) ? @server.private_ip_address : @server.dns_name
+        fqdn = (vpc_mode? or locate_config_value(:kerberos_realm)) ? @server.private_ip_address : @server.dns_name
 
         #Check if Server is Windows or Linux
         image_info = connection.images.get(@server.image_id)

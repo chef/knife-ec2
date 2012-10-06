@@ -294,6 +294,25 @@ describe Chef::Knife::Ec2ServerCreate do
         @knife_ec2_create.stub!(:vpc_mode? => true)
         @knife_ec2_create.ssh_connect_host.should == 'private_ip'
       end
+      it 'should set the fqdn to private ip' do
+        @knife_ec2_create.stub!(:vpc_mode? => true)
+        @knife_ec2_create.ssh_connect_host.should == 'private_ip'
+        @new_ec2_server.should_receive(:wait_for).and_return(true)
+        @new_ec2_server.stub!(:subnet_id).and_return('fake_subnet')
+        @ec2_servers.should_receive(:create).and_return(@new_ec2_server)
+        @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
+
+        Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
+
+        @knife_ec2_create.stub!(:puts)
+        @knife_ec2_create.stub!(:print)
+        @knife_ec2_create.config[:image] = '12345'
+        @bootstrap = Chef::Knife::Bootstrap.new
+        Chef::Knife::Bootstrap.stub!(:new).and_return(@bootstrap)
+        @bootstrap.should_receive(:run)
+        @knife_ec2_create.should_receive(:bootstrap_for_node).with(@new_ec2_server,'private_ip').and_return(@bootstrap)
+        @knife_ec2_create.run
+      end
 
     end
 
