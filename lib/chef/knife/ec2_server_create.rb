@@ -431,7 +431,6 @@ class Chef
                'Ebs.VolumeSize' => ebs_size,
                'Ebs.DeleteOnTermination' => delete_term
              }]
-          server_def[:ebs_optimized] = ebs_optimized
         end
 
         (config[:ephemeral] || []).each_with_index do |device_name, i|
