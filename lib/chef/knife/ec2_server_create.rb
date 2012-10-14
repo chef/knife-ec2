@@ -424,14 +424,13 @@ class Chef
                         else
                           ami_map["deleteOnTermination"]
                         end
- 
+
           server_def[:block_device_mapping] =
             [{
                'DeviceName' => ami_map["deviceName"],
                'Ebs.VolumeSize' => ebs_size,
                'Ebs.DeleteOnTermination' => delete_term
              }]
-          server_def[:ebs_optimized] = ebs_optimized
         end
 
         (config[:ephemeral] || []).each_with_index do |device_name, i|
