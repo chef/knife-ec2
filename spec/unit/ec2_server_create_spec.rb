@@ -58,6 +58,10 @@ describe Chef::Knife::Ec2ServerCreate do
                            :key_name => 'my_ssh_key',
                            :groups => ['group1', 'group2'],
                            :security_group_ids => ['sg-00aa11bb'],
+                           :iam_instance_profile => {
+                             "arn" => "arn:aws:iam::123456789012:instance-profile/iam-test",
+                             "id" => "ABCD1234EFGH5678IJKL9"
+                           },
                            :dns_name => 'ec2-75.101.253.10.compute-1.amazonaws.com',
                            :public_ip_address => '75.101.253.10',
                            :private_dns_name => 'ip-10-251-75-20.ec2.internal',
@@ -532,6 +536,13 @@ describe Chef::Knife::Ec2ServerCreate do
 
       server_def[:subnet_id].should == 'subnet-1a2b3c4d'
       server_def[:private_ip_address].should == '10.0.0.10'
+    end
+
+    it "sets the specified IAM server role" do
+      @knife_ec2_create.config[:iam_instance_profile_name] = ['iam-role']
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:iam_instance_profile_name].should == ['iam-role']
     end
   end
 
