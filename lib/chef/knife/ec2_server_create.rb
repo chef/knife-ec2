@@ -150,6 +150,10 @@ class Chef
         :long => "--ebs-size SIZE",
         :description => "The size of the EBS volume in GB, for EBS-backed instances"
 
+      option :ebs_optimized,
+        :long => "--ebs-optimized",
+        :description => "Enabled optimized EBS I/O"
+
       option :ebs_no_delete_on_term,
         :long => "--ebs-no-delete-on-term",
         :description => "Do not delete EBS volume on instance termination"
@@ -336,6 +340,9 @@ class Chef
             end
           end
         end
+        if config[:ebs_optimized]
+          msg_pair("EBS is Optimized", @server.ebs_optimized.to_s)
+        end
         if vpc_mode?
           msg_pair("Subnet ID", @server.subnet_id)
         else
@@ -445,6 +452,12 @@ class Chef
           end
         end
 
+        if config[:ebs_optimized]
+          server_def[:ebs_optimized] = "true"
+        else
+          server_def[:ebs_optimized] = "false"
+        end
+
         if ami.root_device_type == "ebs"
           ami_map = ami.block_device_mapping.first
           ebs_size = begin
@@ -463,6 +476,7 @@ class Chef
                         else
                           ami_map["deleteOnTermination"]
                         end
+
           server_def[:block_device_mapping] =
             [{
                'DeviceName' => ami_map["deviceName"],
