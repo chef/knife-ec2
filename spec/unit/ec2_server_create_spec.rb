@@ -41,7 +41,8 @@ describe Chef::Knife::Ec2ServerCreate do
     @ec2_servers = mock()
     @new_ec2_server = mock()
 
-    @ec2_server_attribs = { :id => 'i-39382318',
+    @ec2_server_id ='i-39382318' 
+    @ec2_server_attribs = { :id => @ec2_server_id,
                            :flavor_id => 'm1.small',
                            :image_id => 'ami-47241231',
                            :availability_zone => 'us-west-1',
@@ -59,8 +60,7 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "run" do
-    it "creates an EC2 instance and bootstraps it" do
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+    before do
       @ec2_servers.should_receive(:create).and_return(@new_ec2_server)
       @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
 
@@ -70,13 +70,28 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.stub!(:print)
       @knife_ec2_create.config[:image] = '12345'
 
-
       @bootstrap = Chef::Knife::Bootstrap.new
       Chef::Knife::Bootstrap.stub!(:new).and_return(@bootstrap)
       @bootstrap.should_receive(:run)
+    end
+
+    it "creates an EC2 instance and bootstraps it" do
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+    end
+
+    it "creates an EC2 instance with elastic ip and bootstraps it" do
+      eip = '123.123.123.123'
+
+      @new_ec2_server.stub!(:public_ip_address).and_return(eip)
+      @knife_ec2_create.config[:elastic_ip] = eip
+      @new_ec2_server.should_receive(:wait_for).at_least(:twice).and_return(true)
+      @ec2_connection.should_receive(:associate_address).with(@ec2_server_id, eip)
+
       @knife_ec2_create.run
     end
   end
+
   describe "when setting tags" do
     before do
       Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
