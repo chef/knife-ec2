@@ -180,7 +180,7 @@ class Chef
         :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
         :default => nil
 
-      Chef::Config[:knife][:hints] ||= {"ec2" => {}}
+      Chef::Config[:knife][:hints] ||= {}
       option :hint,
         :long => "--hint HINT_NAME[=HINT_FILE]",
         :description => "Specify Ohai Hint to be set on the bootstrap target.  Use multiple --hint options to specify multiple hints.",
