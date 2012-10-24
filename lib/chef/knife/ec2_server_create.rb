@@ -180,7 +180,6 @@ class Chef
         :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
         :default => nil
 
-      Chef::Config[:knife][:hints] ||= {}
       option :hint,
         :long => "--hint HINT_NAME[=HINT_FILE]",
         :description => "Specify Ohai Hint to be set on the bootstrap target.  Use multiple --hint options to specify multiple hints.",
@@ -226,6 +225,9 @@ class Chef
         validate!
 
         @server = connection.servers.create(create_server_def)
+
+        # Set ec2 hint
+        Chef::Config[:knife][:hints] ||=  {"ec2" => {}}
 
         hashed_tags={}
         tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
