@@ -227,6 +227,9 @@ class Chef
 
         @server = connection.servers.create(create_server_def)
 
+        # Set ec2 hint
+        Chef::Config[:knife][:hints] ||=  {"ec2" => {}}
+
         hashed_tags={}
         tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
 
