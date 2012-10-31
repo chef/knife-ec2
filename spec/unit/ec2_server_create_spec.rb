@@ -54,6 +54,7 @@ describe Chef::Knife::Ec2ServerCreate do
     @ec2_server_attribs = { :id => 'i-39382318',
                            :flavor_id => 'm1.small',
                            :image_id => 'ami-47241231',
+                           :placement_group => 'some_placement_group',
                            :availability_zone => 'us-west-1',
                            :key_name => 'my_ssh_key',
                            :groups => ['group1', 'group2'],
