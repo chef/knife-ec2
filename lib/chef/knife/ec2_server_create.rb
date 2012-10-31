@@ -67,6 +67,11 @@ class Chef
         :long => "--associate-eip IP_ADDRESS",
         :description => "Associate existing elastic IP address with instance after launch"
 
+      option :placement_group,
+        :long => "--placement-group PLACEMENT_GROUP",
+        :description => "The placement group to place a cluster compute instance",
+        :proc => Proc.new { |pg| Chef::Config[:knife][:placement_group] = pg }
+
       option :tags,
         :short => "-T T=V[,T=V,...]",
         :long => "--tags Tag=Value[,Tag=Value...]",
@@ -418,6 +423,7 @@ class Chef
         puts "\n"
         msg_pair("Instance ID", @server.id)
         msg_pair("Flavor", @server.flavor_id)
+        msg_pair("Placement Group", @server.placement_group) unless @server.placement_group.nil?
         msg_pair("Image", @server.image_id)
         msg_pair("Region", connection.instance_variable_get(:@region))
         msg_pair("Availability Zone", @server.availability_zone)
@@ -595,6 +601,7 @@ class Chef
         }
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
+        server_def[:placement_group] = locate_config_value(:placement_group)
 
         if Chef::Config[:knife][:aws_user_data]
           begin
