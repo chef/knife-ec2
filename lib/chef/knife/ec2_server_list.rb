@@ -33,6 +33,7 @@ class Chef
         validate!
 
         server_list = [
+          ui.color('Name', :bold),
           ui.color('Instance ID', :bold),
           ui.color('Public IP', :bold),
           ui.color('Private IP', :bold),
@@ -44,6 +45,7 @@ class Chef
           ui.color('State', :bold)
         ]
         connection.servers.all.each do |server|
+          server_list << server.tags["Name"].to_s
           server_list << server.id.to_s
           server_list << server.public_ip_address.to_s
           server_list << server.private_ip_address.to_s
@@ -64,7 +66,7 @@ class Chef
             end
           end
         end
-        puts ui.list(server_list, :uneven_columns_across, 9)
+        puts ui.list(server_list, :uneven_columns_across, 10)
 
       end
     end
