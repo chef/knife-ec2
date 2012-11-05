@@ -26,9 +26,6 @@ class Chef
       include Knife::Ec2Base
 
       deps do
-        require 'fog'
-        require 'readline'
-        require 'chef/json_compat'
         require 'chef/knife/bootstrap'
         Chef::Knife::Bootstrap.load_deps
       end
