@@ -65,7 +65,7 @@ Generates instance metadata in meant to be used with Opscode's custom AMIs. This
 
 <b>PLEASE NOTE</b> - Using Opscode's custom AMIs reflect an older way of launching instances in EC2 for Chef and should be considered DEPRECATED. Leveraging this plugins's <tt>knife ec2 server create</tt> subcommands with a base AMIs directly from your Linux distribution (ie Ubuntu AMIs from Canonical) is much preferred and more flexible.  Although this subcommand will remain, the Opscode custom AMIs are currently out of date.
 
-In-depth usage instructions can be found on the {Chef Wiki}[http://wiki.opscode.com/display/chef/Amazon+EC2+AMIs+with+Chef].
+In-depth usage instructions can be found on the {Chef Wiki}[http://wiki.opscode.com/display/chef/EC2+Bootstrap+Fast+Start+Guide].
 
 = LICENSE:
 
