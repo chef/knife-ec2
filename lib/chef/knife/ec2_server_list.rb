@@ -64,6 +64,7 @@ class Chef
             end
           end,
           
+          ui.color('IAM Profile', :bold),
           ui.color('State', :bold)
         ].flatten.compact
         
@@ -89,6 +90,8 @@ class Chef
             end
           end
           
+          server_list << iam_name_from_profile(server.iam_instance_profile)
+
           server_list << begin
             state = server.state.to_s.downcase
             case state
