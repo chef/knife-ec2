@@ -180,6 +180,10 @@ class Chef
         :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
         :default => nil
 
+      option :elastic_ip,
+        :long => "--elastic-ip IP-ADDRESS",
+        :description => "bind an elastic ip before bootstrapping"
+
       option :hint,
         :long => "--hint HINT_NAME[=HINT_FILE]",
         :description => "Specify Ohai Hint to be set on the bootstrap target.  Use multiple --hint options to specify multiple hints.",
@@ -264,6 +268,13 @@ class Chef
 
         # wait for it to be ready to do stuff
         @server.wait_for { print "."; ready? }
+
+        if config[:elastic_ip]
+          elastic_ip = config[:elastic_ip]
+          print "\n#{ui.color("Switching to elastic ip", :magenta)}"
+          connection.associate_address(server.id, elastic_ip)
+          server.wait_for { print "."; public_ip_address == elastic_ip }
+        end
 
         puts("\n")
 
