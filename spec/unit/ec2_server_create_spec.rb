@@ -60,7 +60,6 @@ describe Chef::Knife::Ec2ServerCreate do
                            :security_group_ids => ['sg-00aa11bb'],
                            :iam_instance_profile => {
                              "arn" => "arn:aws:iam::123456789012:instance-profile/iam-test",
-                             "id" => "ABCD1234EFGH5678IJKL9"
                            },
                            :dns_name => 'ec2-75.101.253.10.compute-1.amazonaws.com',
                            :public_ip_address => '75.101.253.10',
