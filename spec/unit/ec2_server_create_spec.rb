@@ -539,10 +539,10 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "sets the specified IAM server role" do
-      @knife_ec2_create.config[:iam_instance_profile_name] = ['iam-role']
+      @knife_ec2_create.config[:iam_instance_profile] = ['iam-role']
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:iam_instance_profile_name].should == ['iam-role']
+      server_def[:iam_instance_profile].should == ['iam-role']
     end
   end
 

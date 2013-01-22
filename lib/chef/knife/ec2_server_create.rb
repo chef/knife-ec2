@@ -51,9 +51,9 @@ class Chef
         :description => "The AMI for the server",
         :proc => Proc.new { |i| Chef::Config[:knife][:image] = i }
 
-      option :iam_instance_profile_name,
-        :long => "--iam-profile-name NAME",
-        :description => "The IAM instance role to apply to this instance."
+      option :iam_instance_profile,
+        :long => "--iam-profile NAME",
+        :description => "The IAM instance profile to apply to this instance."
 
       option :security_groups,
         :short => "-G X,Y,Z",
@@ -376,7 +376,7 @@ class Chef
         printed_security_group_ids = @server.security_group_ids.join(", ") if @server.security_group_ids
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or @server.security_group_ids
 
-        msg_pair("IAM Profile", locate_config_value(:iam_instance_profile_name))
+        msg_pair("IAM Profile", locate_config_value(:iam_instance_profile))
 
         msg_pair("Tags", printed_tags)
         msg_pair("SSH Key", @server.key_name)
@@ -448,7 +448,7 @@ class Chef
         msg_pair("Availability Zone", @server.availability_zone)
         msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (@server.groups.nil? and @server.security_group_ids)
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or @server.security_group_ids
-        msg_pair("IAM Profile", locate_config_value(:iam_instance_profile_name))
+        msg_pair("IAM Profile", locate_config_value(:iam_instance_profile))
         msg_pair("Tags", printed_tags)
         msg_pair("SSH Key", @server.key_name)
         msg_pair("Root Device Type", @server.root_device_type)
@@ -621,7 +621,7 @@ class Chef
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
         server_def[:placement_group] = locate_config_value(:placement_group)
-        server_def[:iam_instance_profile_name] = locate_config_value(:iam_instance_profile_name)
+        server_def[:iam_instance_profile] = locate_config_value(:iam_instance_profile)
 
         if Chef::Config[:knife][:aws_user_data]
           begin
