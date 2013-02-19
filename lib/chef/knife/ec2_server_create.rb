@@ -167,6 +167,12 @@ class Chef
         :description => "create node in this Virtual Private Cloud Subnet ID (implies VPC mode)",
         :proc => Proc.new { |key| Chef::Config[:knife][:subnet_id] = key }
 
+      option :vpc_delay,
+        :long => "--vpc-delay SECONDS",
+        :description => "Time to wait before attempting to connect to a new VPC instance",
+        :proc => Proc.new { |key| Chef::Config[:knife][:vpc_delay] = key },
+        :default => 40
+
       option :host_key_verify,
         :long => "--[no-]host-key-verify",
         :description => "Verify host key, enabled by default.",
@@ -449,9 +455,10 @@ class Chef
       end
 
       def wait_for_tunnelled_sshd(hostname)
+        vpc_delay = locate_config_value(:vpc_delay)
         print(".")
         print(".") until tunnel_test_ssh(ssh_connect_host) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+          sleep @initial_sleep_delay ||= (vpc_mode? ? vpc_delay : 10)
           puts("done")
         }
       end
@@ -473,8 +480,9 @@ class Chef
       end
 
       def wait_for_direct_sshd(hostname, ssh_port)
+        vpc_delay = locate_config_value(:vpc_delay)
         print(".") until tcp_test_ssh(ssh_connect_host, ssh_port) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+          sleep @initial_sleep_delay ||= (vpc_mode? ? vpc_delay : 10)
           puts("done")
         }
       end
