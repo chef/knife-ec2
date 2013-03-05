@@ -20,6 +20,7 @@
 require 'chef/knife/ec2_base'
 require 'chef/knife/winrm_base'
 require 'winrm'
+require 'em-winrm'
 require 'httpclient'
 require 'gssapi'
 
