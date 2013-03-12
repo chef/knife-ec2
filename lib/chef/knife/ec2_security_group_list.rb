@@ -25,7 +25,7 @@ class Chef
 
       include Knife::Ec2Base
 
-      banner "knife ec2 security list"
+      banner "knife ec2 security group list"
       
       def run
         $stdout.sync = true
