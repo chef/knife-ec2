@@ -27,7 +27,7 @@ class Chef
 
       banner "knife ec2 security group delete (options)"
       
-      option :security_group_name,
+      option :security_group_id,
         :short => "-G GROUPID",
         :long => "--security-group-id GROUPID",
         :description => "Security group id to delete"
