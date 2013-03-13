@@ -26,7 +26,7 @@ class Chef
 
       include Knife::Ec2Base
 
-      banner "knife ec2 security group create (options)"
+      banner "knife ec2 security group rule add (options)"
 
       option :security_group_id,
         :short => "-G GROUPID",
@@ -124,7 +124,7 @@ class Chef
         else
           @target_group = connection.security_groups.get_by_id(security_group_id)
           if @target_group.nil?
-             ui.error("Target security group does not exist.")
+             ui.error("Security group #{security_group_id} does not exist.")
              exit 1
            end
         end
@@ -150,7 +150,7 @@ class Chef
         if !security_group_rule_target_group.nil?
            @target_group = connection.security_groups.get_by_id(security_group_rule_target_group)
            if @target_group.nil?
-             ui.error("Target security group does not exist.")
+             ui.error("Target security group #{security_group_rule_target_group} does not exist.")
              exit 1
            end
         end
@@ -165,31 +165,31 @@ class Chef
               exit 1
             else
               if security_group_rule_range.to_i > 65535
-                ui.error("Invalid port number.")
+                ui.error("Invalid port number, port higher than 65535.")
                 exit 1
               end
             end
           elsif security_group_rule_range.count("-") == 1
             items = security_group_rule_range.split(/-/)
             if items.first.to_i.to_s != items.first
-              ui.error("Range is invalid.")
+              ui.error("Port range is invalid, start of the range not integer.")
               exit 1
             end
             if items.last.to_i.to_s != items.last
-              ui.error("Range is invalid.")
+              ui.error("Port range is invalid, end of range not integer.")
               exit 1
             end
             
             if items.first.to_i > 65535
-              ui.error("Invalid start of the port range.")
+              ui.error("Invalid start of the port range, port higher than 65535.")
               exit 1
             end
             if items.last.to_i > 65535
-              ui.error("Invalid end of the port range.")
+              ui.error("Invalid end of the port range, port higher than 65535.")
               exit 1
             end
             if items.first.to_i > items.last.to_i
-              ui.error("Beginning of the range higher than end.")
+              ui.error("Beginning of the port range higher than end.")
               exit 1
             end
             
