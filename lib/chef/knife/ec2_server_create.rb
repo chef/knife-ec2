@@ -227,6 +227,11 @@ class Chef
 
         @server = connection.servers.create(create_server_def)
 
+        # wait for it to be ready to do stuff
+        @server.wait_for { print "."; ready? }
+
+        puts("\n")
+
         hashed_tags={}
         tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
 
@@ -262,10 +267,6 @@ class Chef
 
         print "\n#{ui.color("Waiting for server", :magenta)}"
 
-        # wait for it to be ready to do stuff
-        @server.wait_for { print "."; ready? }
-
-        puts("\n")
 
         if vpc_mode?
           msg_pair("Subnet ID", @server.subnet_id)
