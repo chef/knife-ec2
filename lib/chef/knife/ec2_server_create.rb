@@ -62,6 +62,16 @@ class Chef
         :description => "The security group ids for this server; required when using VPC",
         :proc => Proc.new { |security_group_ids| security_group_ids.split(',') }
 
+      option :associate_eip,
+        :long => "--associate-eip IP_ADDRESS",
+        :description => "Associate existing elastic IP address with instance after launch"
+
+      option :associate_new_eip,
+        :long => "--associate-new-eip",
+        :description => "Allocate new elastic IP address and associate with instance after launch",
+        :boolean => true,
+        :default => false
+
       option :tags,
         :short => "-T T=V[,T=V,...]",
         :long => "--tags Tag=Value[,Tag=Value...]",
@@ -109,7 +119,6 @@ class Chef
         :long => "--ssh-gateway GATEWAY",
         :description => "The ssh gateway server",
         :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway] = key }
-
 
       option :identity_file,
         :short => "-i IDENTITY_FILE",
@@ -225,6 +234,20 @@ class Chef
 
         validate!
 
+        requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
+
+        if config[:associate_new_eip]
+          begin
+            requested_elastic_ip = connection.allocate_address(eip_scope).body["publicIp"]
+          rescue Fog::Compute::AWS::Error => e
+            ui.error("Failed to allocate elastic IP: #{e.message}")
+            exit 1
+          end
+        end
+
+        # For VPC EIP assignment we need the allocation ID so fetch full EIP details
+        elastic_ip = connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
+
         @server = connection.servers.create(create_server_def)
 
         hashed_tags={}
@@ -265,10 +288,18 @@ class Chef
         # wait for it to be ready to do stuff
         @server.wait_for { print "."; ready? }
 
+        if config[:associate_eip] || config[:associate_new_eip]
+          connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
+          @server.wait_for { public_ip_address == elastic_ip.public_ip }
+        end
+
         puts("\n")
 
         if vpc_mode?
           msg_pair("Subnet ID", @server.subnet_id)
+          if elastic_ip
+            msg_pair("Public IP Address", @server.public_ip_address)
+          end
         else
           msg_pair("Public DNS Name", @server.dns_name)
           msg_pair("Public IP Address", @server.public_ip_address)
@@ -374,6 +405,19 @@ class Chef
           exit 1
         end
 
+        if config[:associate_eip] && config[:associate_new_eip]
+          ui.error("You cannot associate an existing EIP and allocate/associate a new EIP simultaneously.")
+          exit 1
+        end
+
+        if config[:associate_eip]
+          eips = connection.addresses.collect{|addr| addr if addr.domain == eip_scope}.compact
+
+          unless eips.detect{|addr| addr.public_ip == config[:associate_eip] && addr.server_id == nil}
+            ui.error("Elastic IP requested is not available.")
+            exit 1
+          end
+        end
       end
 
       def tags
@@ -383,6 +427,14 @@ class Chef
           exit 1
         end
        tags
+      end
+
+      def eip_scope
+        if vpc_mode?
+          "vpc"
+        else
+          "standard"
+        end
       end
 
       def create_server_def
