@@ -167,6 +167,11 @@ class Chef
         :description => "create node in this Virtual Private Cloud Subnet ID (implies VPC mode)",
         :proc => Proc.new { |key| Chef::Config[:knife][:subnet_id] = key }
 
+      option :private_ip_address,
+        :long => "--private-ip-address IP-ADDRESS",
+        :description => "allows to specify the private IP address of the instance in VPC mode",
+        :proc => Proc.new { |ip| Chef::Config[:knife][:private_ip_address] = ip }
+
       option :host_key_verify,
         :long => "--[no-]host-key-verify",
         :description => "Verify host key, enabled by default.",
@@ -373,6 +378,10 @@ class Chef
           ui.error("You are using a VPC, security groups specified with '-G' are not allowed, specify one or more security group ids with '-g' instead.")
           exit 1
         end
+        if !vpc_mode? and !!config[:private_ip_address]
+          ui.error("You can only specify a private IP address if you are using VPC.")
+          exit 1
+        end
 
       end
 
@@ -395,6 +404,7 @@ class Chef
           :availability_zone => locate_config_value(:availability_zone)
         }
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
+        server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
 
         if Chef::Config[:knife][:aws_user_data]
           begin
