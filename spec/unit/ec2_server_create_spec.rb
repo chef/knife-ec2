@@ -39,12 +39,11 @@ describe Chef::Knife::Ec2ServerCreate do
     @ec2_connection.stub_chain(:tags).and_return mock('create', :create => true)
     @ec2_connection.stub_chain(:images, :get).and_return mock('ami', :root_device_type => 'not_ebs')
     @ec2_connection.stub_chain(:addresses).and_return [mock('addesses', {
-            :domain => 'standard', 
-            :public_ip => '111.111.111.111', 
-            :server_id => nil, 
+            :domain => 'standard',
+            :public_ip => '111.111.111.111',
+            :server_id => nil,
             :allocation_id => ''})]
 
-    @ec2_connection.stub_chain(:allocate_address, :body).and_return({"publicIp" => "111.111.111.111"})
 
     @ec2_servers = mock()
     @new_ec2_server = mock()
@@ -101,19 +100,8 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.run
       @knife_ec2_create.server.should_not == nil
     end
-
-    it "creates an EC2 instance, assigns newly allocated EIP and bootstraps it" do
-      @knife_ec2_create.config[:associate_new_eip] = true
-
-      @new_ec2_server.stub!(:public_ip_address).and_return(@eip)
-      @ec2_connection.should_receive(:allocate_address).with("standard")
-      @ec2_connection.should_receive(:associate_address).with(@ec2_server_attribs[:id], @eip, nil, '')
-      @new_ec2_server.should_receive(:wait_for).at_least(:twice).and_return(true)
-
-      @knife_ec2_create.run
-      @knife_ec2_create.server.should_not == nil
-    end
   end
+
   describe "when setting tags" do
     before do
       Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)

@@ -66,12 +66,6 @@ class Chef
         :long => "--associate-eip IP_ADDRESS",
         :description => "Associate existing elastic IP address with instance after launch"
 
-      option :associate_new_eip,
-        :long => "--associate-new-eip",
-        :description => "Allocate new elastic IP address and associate with instance after launch",
-        :boolean => true,
-        :default => false
-
       option :tags,
         :short => "-T T=V[,T=V,...]",
         :long => "--tags Tag=Value[,Tag=Value...]",
@@ -236,15 +230,6 @@ class Chef
 
         requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
 
-        if config[:associate_new_eip]
-          begin
-            requested_elastic_ip = connection.allocate_address(eip_scope).body["publicIp"]
-          rescue Fog::Compute::AWS::Error => e
-            ui.error("Failed to allocate elastic IP: #{e.message}")
-            exit 1
-          end
-        end
-
         # For VPC EIP assignment we need the allocation ID so fetch full EIP details
         elastic_ip = connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
 
@@ -288,7 +273,7 @@ class Chef
         # wait for it to be ready to do stuff
         @server.wait_for { print "."; ready? }
 
-        if config[:associate_eip] || config[:associate_new_eip]
+        if config[:associate_eip]
           connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
           @server.wait_for { public_ip_address == elastic_ip.public_ip }
         end
@@ -402,11 +387,6 @@ class Chef
 
         if vpc_mode? and !!config[:security_groups]
           ui.error("You are using a VPC, security groups specified with '-G' are not allowed, specify one or more security group ids with '-g' instead.")
-          exit 1
-        end
-
-        if config[:associate_eip] && config[:associate_new_eip]
-          ui.error("You cannot associate an existing EIP and allocate/associate a new EIP simultaneously.")
           exit 1
         end
 
