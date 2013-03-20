@@ -216,6 +216,12 @@ describe Chef::Knife::Ec2ServerCreate do
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
+
+    it "disallows private ips when not using a VPC" do
+      @knife_ec2_create.config[:private_ip_address] = '10.0.0.10'
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
   end
 
   describe "when creating the server definition" do
@@ -269,6 +275,15 @@ describe Chef::Knife::Ec2ServerCreate do
                                                    { "VirtualName" => "ephemeral1", "DeviceName" => "/dev/sdc" },
                                                    { "VirtualName" => "ephemeral2", "DeviceName" => "/dev/sdd" },
                                                    { "VirtualName" => "ephemeral3", "DeviceName" => "/dev/sde" }]
+    end
+
+    it "sets the specified private ip address" do
+      @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
+      @knife_ec2_create.config[:private_ip_address] = '10.0.0.10'
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:subnet_id].should == 'subnet-1a2b3c4d'
+      server_def[:private_ip_address].should == '10.0.0.10'
     end
   end
 

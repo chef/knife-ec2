@@ -23,7 +23,7 @@ Bundler::GemHelper.install_tasks
 
 # require 'rubygems'
 # require 'rake/gempackagetask'
-require 'rake/rdoctask'
+require 'rdoc/task'
 
 begin
   require 'sdoc'
