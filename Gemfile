@@ -5,4 +5,5 @@ gemspec
 
 group :development do
   gem 'rspec', '~> 2.7.0'
+  gem 'netaddr', '~> 1.5.0'
 end
