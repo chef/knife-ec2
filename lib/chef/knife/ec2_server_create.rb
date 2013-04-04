@@ -225,30 +225,10 @@ class Chef
         :description => "The EC2 server attribute to use for SSH connection",
         :default => nil
 
-      def tcp_test_winrm(hostname)
-        if locate_config_value(:kerberos_realm)
-          hostname = locate_config_value(:fqdn) || fetch_server_fqdn(server.private_ip_address)
-          endpoint = "http://#{hostname}:#{config[:winrm_port]}/wsman"
-          winrm = WinRM::WinRMWebService.new(endpoint, :kerberos, :realm => locate_config_value(:kerberos_realm))
-        else
-          endpoint = "http://#{hostname}:#{config[:winrm_port]}/wsman"
-          winrm = WinRM::WinRMWebService.new(endpoint, :plaintext,
-                                             :user => locate_config_value(:winrm_user),
-                                             :pass => locate_config_value(:winrm_password))
-        end
-
-       if winrm.open_shell()
-          Chef::Log.debug("WinRM accepting connections on #{hostname}")
-          return true
-        else
-          return false
-        end
-      rescue GSSAPI::GssApiError
-        sleep 10
-        false
-      rescue HTTPClient::ConnectTimeoutError
-        sleep 2
-        false
+    def tcp_test_winrm(ip_addr, port)
+      tcp_socket = TCPSocket.new(ip_addr, port)
+      yield
+      true
       rescue SocketError
         sleep 2
         false
@@ -259,15 +239,15 @@ class Chef
       rescue Errno::ECONNREFUSED
         sleep 2
         false
-      # This happens on EC2 quite often
       rescue Errno::EHOSTUNREACH
         sleep 2
         false
-      # This happens on EC2 sometimes
       rescue Errno::ENETUNREACH
         sleep 2
         false
-      end
+        ensure
+        tcp_socket && tcp_socket.close
+    end
 
       def tcp_test_ssh(hostname, ssh_port)
         tcp_socket = TCPSocket.new(hostname, ssh_port)
@@ -306,15 +286,15 @@ class Chef
         response.body["passwordData"]
       end
 
-      def fetch_windows_password(server)
+      def windows_password
         if not locate_config_value(:winrm_password)
           if locate_config_value(:identity_file)
             print "\n#{ui.color("Waiting for Windows Admin password to be available", :magenta)}"
-            print(".") until check_windows_password_available(server.id) {
-              sleep 10
+            print(".") until check_windows_password_available(@server.id) {
+              sleep 1000 #typically is available after 30 mins
               puts("done")
             }
-            response = connection.get_password_data(server.id)
+            response = connection.get_password_data(@server.id)
             data = File.read(locate_config_value(:identity_file))
             config[:winrm_password] = decrypt_admin_password(response.body["passwordData"], data)
           else
@@ -379,19 +359,14 @@ class Chef
         end
         msg_pair("Private IP Address", @server.private_ip_address)
 
-        fqdn = vpc_mode? or locate_config_value(:kerberos_realm) ? @server.private_ip_address : @server.dns_name
+         fqdn = vpc_mode? ? server.private_ip_address : server.dns_name
 
         #Check if Server is Windows or Linux
-        image_info = connection.images.get(@server.image_id)
-        if image_info.platform == 'windows'
+        if is_image_windows?
           protocol = locate_config_value(:bootstrap_protocol)
           if protocol == 'winrm'
-            print "\n#{ui.color("Waiting for winrm", :magenta)}"
-           #Fetch dynamically available password
-            if not locate_config_value(:kerberos_realm)
-              fetch_windows_password(server)
-            end
-            print(".") until tcp_test_winrm(fqdn) {
+            print "\n#{ui.color("Waiting for winrm on #{fqdn}", :magenta)}"
+            print(".") until tcp_test_winrm(@server.public_ip_address, locate_config_value(:winrm_port)) {
               sleep 10
               puts("done")
             }
@@ -412,7 +387,7 @@ class Chef
               sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
               puts("done")
             }
-            bootstrap_for_node(@server,fqdn).run
+            bootstrap_for_linux_node(@server,fqdn).run
         end
 
         puts "\n"
@@ -457,13 +432,23 @@ class Chef
         msg_pair("Run List", (config[:run_list] || []).join(', '))
         msg_pair("JSON Attributes",config[:json_attributes]) unless !config[:json_attributes] || config[:json_attributes].empty?
       end
-      def bootstrap_common_params(bootstrap)
 
+      def bootstrap_common_params(bootstrap)
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:distro] = locate_config_value(:distro)
         bootstrap.config[:template_file] = locate_config_value(:template_file)
+        bootstrap.config[:environment] = locate_config_value(:environment)
+        bootstrap.config[:prerelease] = config[:prerelease]
+        bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
+        bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
+        bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
+        bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
+          # Modify global configuration state to ensure hint gets set by
+        # knife-bootstrap
+        Chef::Config[:knife][:hints] ||= {}
+        Chef::Config[:knife][:hints]["ec2"] ||= {}
         bootstrap
       end
 
@@ -479,15 +464,13 @@ class Chef
               fqdn = locate_config_value(:fqdn) || fetch_server_fqdn(server.private_ip_address)
             end
             bootstrap = Chef::Knife::BootstrapWindowsWinrm.new
-
             bootstrap.config[:winrm_user] = locate_config_value(:winrm_user)
-            bootstrap.config[:winrm_password] = locate_config_value(:winrm_password)
+            bootstrap.config[:winrm_password] = windows_password
             bootstrap.config[:winrm_transport] = locate_config_value(:winrm_transport)
-
-            bootstrap.config[:kerberos_keytab_file] = Chef::Config[:knife][:kerberos_keytab_file] if Chef::Config[:knife][:kerberos_keytab_file]
-            bootstrap.config[:kerberos_realm] = Chef::Config[:knife][:kerberos_realm] if Chef::Config[:knife][:kerberos_realm]
-            bootstrap.config[:kerberos_service] = Chef::Config[:knife][:kerberos_service] if Chef::Config[:knife][:kerberos_service]
-            bootstrap.config[:ca_trust_file] = Chef::Config[:knife][:ca_trust_file] if Chef::Config[:knife][:ca_trust_file]
+            bootstrap.config[:kerberos_keytab_file] = locate_config_value(:kerberos_keytab_file)
+            bootstrap.config[:kerberos_realm] = locate_config_value(:kerberos_realm)
+            bootstrap.config[:kerberos_service] = locate_config_value(:kerberos_service)
+            bootstrap.config[:ca_trust_file] = locate_config_value(:ca_trust_file)
             bootstrap.config[:winrm_port] = locate_config_value(:winrm_port)
 
         elsif locate_config_value(:bootstrap_protocol) == 'ssh'
@@ -503,33 +486,22 @@ class Chef
         end
         bootstrap.name_args = [fqdn]
         bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
-        bootstrap.config[:encrypted_data_bag_secret] = config[:encrypted_data_bag_secret]
-        bootstrap.config[:encrypted_data_bag_secret_file] = config[:encrypted_data_bag_secret_file]
         bootstrap_common_params(bootstrap)
       end
 
-      def bootstrap_for_node(server,ssh_host)
+      def bootstrap_for_linux_node(server,ssh_host)
         bootstrap = Chef::Knife::Bootstrap.new
         bootstrap.name_args = [ssh_host]
-        bootstrap.config[:run_list] = locate_config_value(:run_list) || []
         bootstrap.config[:ssh_user] = config[:ssh_user]
         bootstrap.config[:ssh_port] = config[:ssh_port]
         bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
         bootstrap.config[:identity_file] = config[:identity_file]
         bootstrap.config[:chef_node_name] = locate_config_value(:chef_node_name) || server.id
-        bootstrap.config[:prerelease] = config[:prerelease]
-        bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
         bootstrap.config[:distro] = locate_config_value(:distro) || "chef-full"
         bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
-        bootstrap.config[:environment] = config[:environment]
         # may be needed for vpc_mode
         bootstrap.config[:host_key_verify] = config[:host_key_verify]
-        # Modify global configuration state to ensure hint gets set by
-        # knife-bootstrap
-        Chef::Config[:knife][:hints] ||= {}
-        Chef::Config[:knife][:hints]["ec2"] ||= {}
-        bootstrap
+        bootstrap_common_params(bootstrap)
       end
 
       def vpc_mode?
