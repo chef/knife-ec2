@@ -38,6 +38,13 @@ describe Chef::Knife::Ec2ServerCreate do
     @ec2_connection = mock(Fog::Compute::AWS)
     @ec2_connection.stub_chain(:tags).and_return mock('create', :create => true)
     @ec2_connection.stub_chain(:images, :get).and_return mock('ami', :root_device_type => 'not_ebs')
+    @ec2_connection.stub_chain(:addresses).and_return [mock('addesses', {
+            :domain => 'standard',
+            :public_ip => '111.111.111.111',
+            :server_id => nil,
+            :allocation_id => ''})]
+
+
     @ec2_servers = mock()
     @new_ec2_server = mock()
 
@@ -60,30 +67,47 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "run" do
-    it "creates an EC2 instance and bootstraps it" do
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+    before do
       @ec2_servers.should_receive(:create).and_return(@new_ec2_server)
       @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
+      @ec2_connection.should_receive(:addresses)
 
+      @eip = "111.111.111.111"
       Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
 
       @knife_ec2_create.stub!(:puts)
       @knife_ec2_create.stub!(:print)
       @knife_ec2_create.config[:image] = '12345'
 
-
       @bootstrap = Chef::Knife::Bootstrap.new
       Chef::Knife::Bootstrap.stub!(:new).and_return(@bootstrap)
       @bootstrap.should_receive(:run)
+    end
+
+    it "creates an EC2 instance and bootstraps it" do
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      @knife_ec2_create.server.should_not == nil
+    end
+
+    it "creates an EC2 instance, assigns existing EIP and bootstraps it" do
+      @knife_ec2_create.config[:associate_eip] = @eip
+
+      @new_ec2_server.stub!(:public_ip_address).and_return(@eip)
+      @ec2_connection.should_receive(:associate_address).with(@ec2_server_attribs[:id], @eip, nil, '')
+      @new_ec2_server.should_receive(:wait_for).at_least(:twice).and_return(true)
+
       @knife_ec2_create.run
       @knife_ec2_create.server.should_not == nil
     end
   end
+
   describe "when setting tags" do
     before do
       Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
       @knife_ec2_create.stub!(:bootstrap_for_node).and_return mock("bootstrap", :run => true)
       @ec2_connection.stub!(:servers).and_return(@ec2_servers)
+      @ec2_connection.should_receive(:addresses)
       @new_ec2_server.stub!(:wait_for).and_return(true)
       @ec2_servers.stub!(:create).and_return(@new_ec2_server)
       @knife_ec2_create.stub!(:puts)
@@ -216,6 +240,12 @@ describe Chef::Knife::Ec2ServerCreate do
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
+
+    it "disallows private ips when not using a VPC" do
+      @knife_ec2_create.config[:private_ip_address] = '10.0.0.10'
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
   end
 
   describe "when creating the server definition" do
@@ -269,6 +299,15 @@ describe Chef::Knife::Ec2ServerCreate do
                                                    { "VirtualName" => "ephemeral1", "DeviceName" => "/dev/sdc" },
                                                    { "VirtualName" => "ephemeral2", "DeviceName" => "/dev/sdd" },
                                                    { "VirtualName" => "ephemeral3", "DeviceName" => "/dev/sde" }]
+    end
+
+    it "sets the specified private ip address" do
+      @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
+      @knife_ec2_create.config[:private_ip_address] = '10.0.0.10'
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:subnet_id].should == 'subnet-1a2b3c4d'
+      server_def[:private_ip_address].should == '10.0.0.10'
     end
   end
 
