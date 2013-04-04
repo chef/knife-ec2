@@ -75,6 +75,11 @@ class Chef
         end
       end
 
+      def is_image_windows?
+        image_info = connection.images.get(@server.image_id)
+        return image_info.platform == 'windows'
+      end
+
       def validate!(keys=[:aws_access_key_id, :aws_secret_access_key])
         errors = []
 
