@@ -202,7 +202,6 @@ class Chef
         :proc => Proc.new { |key| Chef::Config[:knife][:fqdn] = key },
         :default => nil
 
- 
       option :aws_user_data,
         :long => "--user-data USER_DATA_FILE",
         :short => "-u USER_DATA_FILE",
@@ -396,35 +395,28 @@ class Chef
         end
         msg_pair("Private IP Address", @server.private_ip_address)
 
-         fqdn = vpc_mode? ? server.private_ip_address : server.dns_name
 
         #Check if Server is Windows or Linux
         if is_image_windows?
           protocol = locate_config_value(:bootstrap_protocol)
           if protocol == 'winrm'
-            print "\n#{ui.color("Waiting for winrm on #{fqdn}", :magenta)}"
-            print(".") until tcp_test_winrm(@server.public_ip_address, locate_config_value(:winrm_port)) {
+            print "\n#{ui.color("Waiting for winrm", :magenta)}"
+            print(".") until tcp_test_winrm(ssh_connect_host, locate_config_value(:winrm_port)) {
               sleep 10
               puts("done")
             }
- 
           else
             print "\n#{ui.color("Waiting for sshd", :magenta)}"
             #If FreeSSHd, winsshd etc are available
-            print(".") until tcp_test_ssh(fqdn) {
+            print(".") until tcp_test_ssh(ssh_connect_host) {
               sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
               puts("done")
             }
           end
-          bootstrap_for_windows_node(@server,fqdn).run
+          bootstrap_for_windows_node(@server,ssh_connect_host).run
         else
-            print "\n#{ui.color("Waiting for sshd", :magenta)}"
-
-            print(".") until tcp_test_ssh(fqdn) {
-              sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
-              puts("done")
-            }
-            bootstrap_for_linux_node(@server,fqdn).run
+            wait_for_sshd(ssh_connect_host)
+            bootstrap_for_linux_node(@server,ssh_connect_host).run
         end
 
         puts "\n"
