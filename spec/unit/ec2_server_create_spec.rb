@@ -19,6 +19,9 @@
 require File.expand_path('../../spec_helper', __FILE__)
 require 'fog'
 require 'chef/knife/bootstrap'
+require 'chef/knife/bootstrap_windows_winrm'
+require 'chef/knife/bootstrap_windows_ssh'
+
 
 describe Chef::Knife::Ec2ServerCreate do
   before do
@@ -37,7 +40,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     @ec2_connection = mock(Fog::Compute::AWS)
     @ec2_connection.stub_chain(:tags).and_return mock('create', :create => true)
-    @ec2_connection.stub_chain(:images, :get).and_return mock('ami', :root_device_type => 'not_ebs')
+    @ec2_connection.stub_chain(:images, :get).and_return mock('ami', :root_device_type => 'not_ebs', :platform => 'linux')
     @ec2_connection.stub_chain(:addresses).and_return [mock('addesses', {
             :domain => 'standard',
             :public_ip => '111.111.111.111',
@@ -102,10 +105,57 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
+  describe "run for EC2 Windows instance" do
+    before do
+      @ec2_servers.should_receive(:create).and_return(@new_ec2_server)
+      @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
+      @ec2_connection.should_receive(:addresses)
+
+      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
+
+      @knife_ec2_create.stub!(:puts)
+      @knife_ec2_create.stub!(:print)
+      @knife_ec2_create.config[:identity_file] = "~/.ssh/aws-key.pem"
+      @knife_ec2_create.config[:image] = '12345'
+      @knife_ec2_create.stub(:is_image_windows?).and_return(true)
+      @knife_ec2_create.stub(:tcp_test_winrm).and_return(true)
+    end
+
+    it "bootstraps via the WinRM protocol" do
+      @knife_ec2_create.config[:winrm_password] = 'winrm-password'
+      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
+      @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
+      Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
+      @bootstrap_winrm.should_receive(:run)
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+    end
+
+    it "bootstraps via the SSH protocol" do
+      @knife_ec2_create.config[:bootstrap_protocol] = 'ssh'
+      bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
+      Chef::Knife::BootstrapWindowsSsh.stub(:new).and_return(bootstrap_win_ssh)
+      bootstrap_win_ssh.should_receive(:run)
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+    end
+
+    it "waits for EC2 to generate password if not supplied" do
+      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
+      @knife_ec2_create.config[:winrm_password] = nil
+      @knife_ec2_create.should_receive(:windows_password).and_return("")
+      @new_ec2_server.stub(:wait_for).and_return(true)
+      @knife_ec2_create.stub(:check_windows_password_available).and_return(true)
+      bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
+      Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(bootstrap_winrm)
+      bootstrap_winrm.should_receive(:run)
+      @knife_ec2_create.run
+    end
+  end
   describe "when setting tags" do
     before do
       Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
-      @knife_ec2_create.stub!(:bootstrap_for_node).and_return mock("bootstrap", :run => true)
+      @knife_ec2_create.stub!(:bootstrap_for_linux_node).and_return mock("bootstrap", :run => true)
       @ec2_connection.stub!(:servers).and_return(@ec2_servers)
       @ec2_connection.should_receive(:addresses)
       @new_ec2_server.stub!(:wait_for).and_return(true)
@@ -159,7 +209,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:run_list] = ['role[base]']
       @knife_ec2_create.config[:json_attributes] = "{'my_attributes':{'foo':'bar'}"
 
-      @bootstrap = @knife_ec2_create.bootstrap_for_node(@new_ec2_server, @new_ec2_server.dns_name)
+      @bootstrap = @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name)
     end
 
     it "should set the bootstrap 'name argument' to the hostname of the EC2 server" do
@@ -197,7 +247,7 @@ describe Chef::Knife::Ec2ServerCreate do
     it "configures the bootstrap to use the EC2 server id if no explicit node name is set" do
       @knife_ec2_create.config[:chef_node_name] = nil
 
-      bootstrap = @knife_ec2_create.bootstrap_for_node(@new_ec2_server, @new_ec2_server.dns_name)
+      bootstrap = @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name)
       bootstrap.config[:chef_node_name].should == @new_ec2_server.id
     end
 
@@ -206,7 +256,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
       @knife_ec2_create.config[:prerelease] = true
 
-      bootstrap = @knife_ec2_create.bootstrap_for_node(@new_ec2_server, @new_ec2_server.dns_name)
+      bootstrap = @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name)
       bootstrap.config[:prerelease].should be_true
     end
 
@@ -226,6 +276,64 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][:hints]["ec2"].should_not be_nil
     end
   end
+  describe "when configuring the winrm bootstrap process for windows" do
+    before do
+      @knife_ec2_create.stub(:fetch_server_fqdn).and_return("SERVERNAME")
+      @knife_ec2_create.config[:winrm_user] = "Administrator"
+      @knife_ec2_create.config[:winrm_password] = "password"
+      @knife_ec2_create.config[:winrm_port] = 12345
+      @knife_ec2_create.config[:winrm_transport] = 'ssl'
+      @knife_ec2_create.config[:kerberos_realm] = "realm"
+      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
+      @knife_ec2_create.config[:kerberos_service] = "service"
+      @knife_ec2_create.config[:chef_node_name] = "blarf"
+      @knife_ec2_create.config[:template_file] = '~/.chef/templates/my-bootstrap.sh.erb'
+      @knife_ec2_create.config[:distro] = 'ubuntu-10.04-magic-sparkles'
+      @knife_ec2_create.config[:run_list] = ['role[base]']
+      @knife_ec2_create.config[:json_attributes] = "{'my_attributes':{'foo':'bar'}"
+      @bootstrap = @knife_ec2_create.bootstrap_for_windows_node(@new_ec2_server, @new_ec2_server.dns_name)
+   end
+    it "should set the winrm username correctly" do
+      @bootstrap.config[:winrm_user].should == @knife_ec2_create.config[:winrm_user]
+    end
+    it "should set the winrm password correctly" do
+      @bootstrap.config[:winrm_password].should == @knife_ec2_create.config[:winrm_password]
+    end
+
+    it "should set the winrm port correctly" do
+      @bootstrap.config[:winrm_port].should == @knife_ec2_create.config[:winrm_port]
+    end
+
+    it "should set the winrm transport layer correctly" do
+      @bootstrap.config[:winrm_transport].should == @knife_ec2_create.config[:winrm_transport]
+    end
+
+    it "should set the kerberos realm correctly" do
+      @bootstrap.config[:kerberos_realm].should == @knife_ec2_create.config[:kerberos_realm]
+    end
+
+    it "should set the kerberos service correctly" do
+      @bootstrap.config[:kerberos_service].should == @knife_ec2_create.config[:kerberos_service]
+    end
+
+    it "should set the bootstrap 'name argument' to the Windows/AD hostname of the EC2 server" do
+      @bootstrap.name_args.should == ["SERVERNAME"]
+    end
+
+    it "should set the bootstrap 'name argument' to the hostname of the EC2 server when AD/Kerberos is not used" do
+      @knife_ec2_create.config[:kerberos_realm] = nil
+      @bootstrap = @knife_ec2_create.bootstrap_for_windows_node(@new_ec2_server, @new_ec2_server.dns_name)
+      @bootstrap.name_args.should == ['ec2-75.101.253.10.compute-1.amazonaws.com']
+    end
+
+    it "should set the bootstrap 'first_boot_attributes' correctly" do
+      @bootstrap.config[:first_boot_attributes].should == "{'my_attributes':{'foo':'bar'}"
+    end
+
+    it "configures sets the bootstrap's run_list" do
+      @bootstrap.config[:run_list].should == ['role[base]']
+    end
+ end
 
   describe "when validating the command-line parameters" do
     before do
