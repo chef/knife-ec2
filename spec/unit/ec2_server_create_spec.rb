@@ -93,6 +93,12 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.server.should_not == nil
     end
 
+    it "should never invoke windows bootstrap for linux instance" do
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.should_not_receive(:bootstrap_for_windows_node)
+      @knife_ec2_create.run
+    end
+
     it "creates an EC2 instance, assigns existing EIP and bootstraps it" do
       @knife_ec2_create.config[:associate_eip] = @eip
 
@@ -146,6 +152,15 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Knife::BootstrapWindowsSsh.stub(:new).and_return(bootstrap_win_ssh)
       bootstrap_win_ssh.should_receive(:run)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+    end
+
+    it "should never invoke linux bootstrap" do
+      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
+      @knife_ec2_create.stub(:windows_password).and_return("")
+      @knife_ec2_create.should_not_receive(:bootstrap_for_linux_node)
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.stub(:bootstrap_for_windows_node).and_return mock("bootstrap", :run => true)
       @knife_ec2_create.run
     end
 
