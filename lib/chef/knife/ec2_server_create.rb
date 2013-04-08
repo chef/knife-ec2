@@ -248,7 +248,7 @@ class Chef
           hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
         end
 
-        tries = 10
+        tries = 24
         begin
           hashed_tags.each_pair do |key,val|
             connection.tags.create :key => key, :value => val, :resource_id => @server.id
@@ -256,7 +256,7 @@ class Chef
         rescue Fog::Compute::AWS::NotFound => e
           raise if (tries -= 1) <= 0
           ui.warn("server not ready, retrying tag application (retries left: #{tries})")
-          sleep 1
+          sleep 5
           retry
         end
 
