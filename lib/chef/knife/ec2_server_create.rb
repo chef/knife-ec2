@@ -18,11 +18,6 @@
 #
 
 require 'chef/knife/ec2_base'
-require 'chef/knife/winrm_base'
-require 'winrm'
-require 'em-winrm'
-require 'httpclient'
-require 'gssapi'
 
 class Chef
   class Knife
@@ -34,10 +29,6 @@ class Chef
         require 'fog'
         require 'readline'
         require 'chef/json_compat'
-        require 'chef/knife/bootstrap_windows_winrm'
-        require 'chef/knife/bootstrap_windows_ssh'
-        require 'chef/knife/core/windows_bootstrap_context'
-        require 'chef/knife/winrm'
         require 'chef/knife/bootstrap'
         Chef::Knife::Bootstrap.load_deps
       end
@@ -209,8 +200,6 @@ class Chef
         :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
         :default => nil
 
-
-
       option :hint,
         :long => "--hint HINT_NAME[=HINT_FILE]",
         :description => "Specify Ohai Hint to be set on the bootstrap target.  Use multiple --hint options to specify multiple hints.",
@@ -312,6 +301,15 @@ class Chef
         end
       end
 
+      def load_winrm_deps
+        require 'winrm'
+        require 'em-winrm'
+        require 'chef/knife/winrm'
+        require 'chef/knife/winrm_base'
+        require 'chef/knife/bootstrap_windows_winrm'
+        require 'chef/knife/bootstrap_windows_ssh'
+        require 'chef/knife/core/windows_bootstrap_context'
+      end
 
       def run
         $stdout.sync = true
@@ -388,6 +386,7 @@ class Chef
         if is_image_windows?
           protocol = locate_config_value(:bootstrap_protocol)
           if protocol == 'winrm'
+            load_winrm_deps
             print "\n#{ui.color("Waiting for winrm", :magenta)}"
             print(".") until tcp_test_winrm(ssh_connect_host, locate_config_value(:winrm_port)) {
               sleep 10
