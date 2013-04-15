@@ -100,6 +100,15 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.run
       @knife_ec2_create.server.should_not == nil
     end
+
+    it "retries if it receives Fog::Compute::AWS::NotFound" do
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.should_receive(:create_tags).and_raise(Fog::Compute::AWS::NotFound)
+      @knife_ec2_create.should_receive(:create_tags).and_return(true)
+      @knife_ec2_create.should_receive(:sleep).and_return(true)
+      @knife_ec2_create.ui.should_receive(:warn).with(/retrying/)
+      @knife_ec2_create.run
+    end
   end
 
   describe "when setting tags" do

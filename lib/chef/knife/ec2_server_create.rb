@@ -248,10 +248,6 @@ class Chef
           hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
         end
 
-        hashed_tags.each_pair do |key,val|
-          connection.tags.create :key => key, :value => val, :resource_id => @server.id
-        end
-
         msg_pair("Instance ID", @server.id)
         msg_pair("Flavor", @server.flavor_id)
         msg_pair("Image", @server.image_id)
@@ -273,17 +269,24 @@ class Chef
         msg_pair("Tags", hashed_tags)
         msg_pair("SSH Key", @server.key_name)
 
-        print "\n#{ui.color("Waiting for server", :magenta)}"
+        print "\n#{ui.color("Waiting for instance", :magenta)}"
 
-        # wait for it to be ready to do stuff
+        # wait for instance to come up before acting against it
         @server.wait_for { print "."; ready? }
 
-        if config[:associate_eip]
-          connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
-          @server.wait_for { public_ip_address == elastic_ip.public_ip }
-        end
-
         puts("\n")
+
+        # occasionally 'ready?' isn't, so retry a couple times if needed.
+        tries = 6 
+        begin
+          create_tags(hashed_tags) unless hashed_tags.empty?
+          associate_eip(elastic_ip) if config[:associate_eip]
+        rescue Fog::Compute::AWS::NotFound => e
+          raise if (tries -= 1) <= 0
+          ui.warn("server not ready, retrying tag application (retries left: #{tries})")
+          sleep 5
+          retry
+        end
 
         if vpc_mode?
           msg_pair("Subnet ID", @server.subnet_id)
@@ -527,6 +530,17 @@ class Chef
         else
           vpc_mode? ? server.private_ip_address : server.dns_name
         end
+      end
+
+      def create_tags(hashed_tags)
+        hashed_tags.each_pair do |key,val|
+          connection.tags.create :key => key, :value => val, :resource_id => @server.id
+        end
+      end
+
+      def associate_eip(elastic_ip)
+        connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
+        @server.wait_for { public_ip_address == elastic_ip.public_ip }
       end
     end
   end
