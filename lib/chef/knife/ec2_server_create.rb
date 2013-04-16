@@ -18,6 +18,7 @@
 #
 
 require 'chef/knife/ec2_base'
+require 'chef/knife/winrm_base'
 
 class Chef
   class Knife
@@ -311,7 +312,6 @@ class Chef
         require 'winrm'
         require 'em-winrm'
         require 'chef/knife/winrm'
-        require 'chef/knife/winrm_base'
         require 'chef/knife/bootstrap_windows_winrm'
         require 'chef/knife/bootstrap_windows_ssh'
         require 'chef/knife/core/windows_bootstrap_context'
