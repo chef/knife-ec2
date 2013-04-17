@@ -290,6 +290,7 @@ class Chef
               sleep 1000 #typically is available after 30 mins
               puts("done")
             }
+            sleep_delay
             response = connection.get_password_data(@server.id)
             data = File.read(locate_config_value(:identity_file))
             config[:winrm_password] = decrypt_admin_password(response.body["passwordData"], data)
@@ -361,7 +362,7 @@ class Chef
         puts("\n")
 
         # occasionally 'ready?' isn't, so retry a couple times if needed.
-        tries = 6 
+        tries = 6
         begin
           create_tags(hashed_tags) unless hashed_tags.empty?
           associate_eip(elastic_ip) if config[:associate_eip]
@@ -399,7 +400,7 @@ class Chef
             print "\n#{ui.color("Waiting for sshd", :magenta)}"
             #If FreeSSHd, winsshd etc are available
             print(".") until tcp_test_ssh(ssh_connect_host) {
-              sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+              sleep_delay
               puts("done")
             }
           end
@@ -645,7 +646,7 @@ class Chef
       def wait_for_tunnelled_sshd(hostname)
         print(".")
         print(".") until tunnel_test_ssh(ssh_connect_host) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+          sleep_delay
           puts("done")
         }
       end
@@ -668,9 +669,14 @@ class Chef
 
       def wait_for_direct_sshd(hostname, ssh_port)
         print(".") until tcp_test_ssh(ssh_connect_host, ssh_port) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+          sleep_delay
           puts("done")
         }
+      end
+
+      # sometimes, you just have to wait.
+      def sleep_delay
+        sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
       end
 
       def ssh_connect_host
