@@ -73,6 +73,12 @@ class Chef
         :description => "The tags for this server",
         :proc => Proc.new { |tags| tags.split(',') }
 
+      option :sudo,
+        :long => "--[no-]sudo",
+        :description => "Use sudo, default true",
+        :boolean => true,
+        :default => true
+
       option :availability_zone,
         :short => "-Z ZONE",
         :long => "--availability-zone ZONE",
@@ -517,7 +523,7 @@ class Chef
         bootstrap.config[:identity_file] = config[:identity_file]
         bootstrap.config[:chef_node_name] = locate_config_value(:chef_node_name) || server.id
         bootstrap.config[:distro] = locate_config_value(:distro) || "chef-full"
-        bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
+        bootstrap.config[:use_sudo] = config[:sudo]
         # may be needed for vpc_mode
         bootstrap.config[:host_key_verify] = config[:host_key_verify]
         bootstrap_common_params(bootstrap)
