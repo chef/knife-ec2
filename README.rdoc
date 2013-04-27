@@ -49,7 +49,7 @@ This plugin provides the following Knife subcommands.  Specific command options 
 
 == knife ec2 server create
 
-Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap (using the SSH protocol).  The goal of the bootstrap is to get Chef installed on the target system so it can run Chef Client with a Chef Server. The main assumption is a baseline OS installation exists (provided by the provisioning). It is primarily intended for Chef Client systems that talk to a Chef server.  By default the server is bootstrapped using the {ubuntu10.04-gems}[https://github.com/opscode/chef/blob/master/chef/lib/chef/knife/bootstrap/ubuntu10.04-gems.erb] template.  This can be overridden using the <tt>-d</tt> or <tt>--template-file</tt> command options.
+Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap (using the SSH protocol).  The goal of the bootstrap is to get Chef installed on the target system so it can run Chef Client with a Chef Server. The main assumption is a baseline OS installation exists (provided by the provisioning). It is primarily intended for Chef Client systems that talk to a Chef server.  By default the server is bootstrapped using the {ubuntu10.04-gems}[https://github.com/opscode/chef/blob/master/chef/lib/chef/knife/bootstrap/ubuntu10.04-gems.erb] template.  This can be overridden using the <tt>-d</tt> or <tt>--template-file</tt> command options.  Use '-b / --bake AMI_IMAGE_NAME' when using an ebs backed Amazon Machine Image to have knife snapshot the instance after the chef run.  It will label the newly created image with your argument to '-b / --bake'.
 
 == knife ec2 server delete
 
