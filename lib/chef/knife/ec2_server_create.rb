@@ -248,10 +248,7 @@ class Chef
 
         # Validate this after we have our server definition
         if config[:bake]
-          unless @server.root_device_type == "ebs"
-            ui.error("Cannot bake non-EBS backed images")
-            exit 1
-          end
+          check_if_bakeable
         end
 
         hashed_tags={}
@@ -364,6 +361,13 @@ class Chef
 
         if config[:bake]
           bake_image
+        end
+      end
+
+      def check_if_bakeable
+        unless @server.root_device_type == "ebs"
+          ui.error("Cannot bake non-EBS backed images")
+          exit 1
         end
       end
 
