@@ -354,19 +354,19 @@ class Chef
         msg_pair("Run List", (config[:run_list] || []).join(', '))
         msg_pair("JSON Attributes",config[:json_attributes]) unless !config[:json_attributes] || config[:json_attributes].empty?
 
-        puts "Starting Bake"
-        puts config[:bake]
         if config[:bake]
-          image_name = config[:bake]
-          puts image_name
-          image_description = (config[:run_list] || config[:role]).join(', ')
-          puts image_description
-          ami_info = connection.create_image(@server.identity, image_name, image_description)
-          puts ami_info.inspect
-          new_ami_id = ami_info.body['imageId']
-          puts new_ami_id
-          msg_pair("New AMI ID", new_ami_id)
+          bake_image
         end
+      end
+
+      def bake_image
+        image_name = config[:bake]
+        image_description = (config[:run_list] || config[:role] || ["empty_runlist"]).join(',')
+        ami_info = connection.create_image(@server.identity, image_name, image_description)
+        new_ami_id = ami_info.body['imageId']
+        msg_pair("New AMI ID", new_ami_id)
+        msg_pair("New AMI Name", image_name)
+        msg_pair("New AMI Description", image_description)
       end
 
       def bootstrap_for_node(server,ssh_host)
