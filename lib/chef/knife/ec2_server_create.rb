@@ -38,11 +38,11 @@ class Chef
       attr_accessor :initial_sleep_delay
       attr_reader :server
 
-      # option :bake,
-      #   :short => "-b NEW_AMI_NAME",
-      #   :long => "--bake NEW_AMI_NAME",
-      #   :description => "Name for the AMI created after the Chef run",
-      #   :proc => Proc.new { |f| Chef::Config[:knife][:bake] = f }
+      option :bake,
+        :short => "-b NEW_AMI_NAME",
+        :long => "--bake NEW_AMI_NAME",
+        :description => "Name for the AMI created after the Chef run",
+        :proc => Proc.new { |f| Chef::Config[:knife][:bake] = f }
 
       option :flavor,
         :short => "-f FLAVOR",
@@ -354,17 +354,19 @@ class Chef
         msg_pair("Run List", (config[:run_list] || []).join(', '))
         msg_pair("JSON Attributes",config[:json_attributes]) unless !config[:json_attributes] || config[:json_attributes].empty?
 
-        # if config[:bake]
-        #   image_name = config[:bake]
-        #   puts image_name
-        #   image_description = (config[:run_list] || config[:role]).join(', ')
-        #   puts image_description
-        #   ami_info = connection.create_image(@server.identity, image_name, image_description)
-        #   puts ami_info.inspect
-        #   new_ami_id = ami_info.body['imageId']
-        #   puts new_ami_id
-        #   msg_pair("New AMI ID", new_ami_id)
-        # end
+        puts "Starting Bake"
+        puts config[:bake]
+        if config[:bake]
+          image_name = config[:bake]
+          puts image_name
+          image_description = (config[:run_list] || config[:role]).join(', ')
+          puts image_description
+          ami_info = connection.create_image(@server.identity, image_name, image_description)
+          puts ami_info.inspect
+          new_ami_id = ami_info.body['imageId']
+          puts new_ami_id
+          msg_pair("New AMI ID", new_ami_id)
+        end
       end
 
       def bootstrap_for_node(server,ssh_host)
