@@ -246,6 +246,14 @@ class Chef
 
         @server = connection.servers.create(create_server_def)
 
+        # Validate this after we have our server definition
+        if config[:bake]
+          unless @server.root_device_type == "ebs"
+            ui.error("Cannot bake non-EBS backed images")
+            exit 1
+          end
+        end
+
         hashed_tags={}
         tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
 
