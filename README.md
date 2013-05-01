@@ -4,7 +4,7 @@ Knife EC2
 [![Build Status](https://travis-ci.org/opscode/knife-ec2.png?branch=master)](https://travis-ci.org/opscode/knife-ec2)
 [![Dependency Status](https://gemnasium.com/opscode/knife-ec2.png)](https://gemnasium.com/opscode/knife-ec2)
 
-This is the official Opscode Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
+This is the official Opscode Knife plugin for EC2 (or Eucalyptus). This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
 
 
 Installation
@@ -29,7 +29,7 @@ Depending on your system's configuration, you may need to run this command with 
 
 Configuration
 -------------
-In order to communicate with the Amazon's EC2 API you will have to tell Knife about your AWS Access Key and Secret Access Key. The easiest way to accomplish this is to create some entries in your `knife.rb` file:
+In order to communicate with an EC2 API you will have to tell Knife about your AWS Access Key and Secret Access Key. The easiest way to accomplish this is to create some entries in your `knife.rb` file:
 
 ```ruby
 knife[:aws_access_key_id] = "Your AWS Access Key ID"
@@ -50,6 +50,13 @@ You also have the option of passing your AWS API Key/Secret into the individual 
 $ knife ec2 server create -r 'role[webserver]' -I ami-7000f019 -f m1.small -A 'Your AWS Access Key ID' -K "Your AWS Secret Access Key"
 ```
 
+If you are using Eucalyptus, you will also need to specify the <tt>:endpoint</tt> and <tt>region</tt> attributes:
+
+```ruby
+knife[:aws_endpoint] = 'http://euca.company.com'
+knife[:region] = 'eucalyptus'
+```
+
 Additionally the following options may be set in your `knife.rb`:
 
 - flavor
@@ -59,6 +66,7 @@ Additionally the following options may be set in your `knife.rb`:
 - region
 - distro
 - template_file
+- aws_endpoint
 
 
 Subcommands
@@ -67,7 +75,7 @@ This plugin provides the following Knife subcommands. Specific command options c
 
 
 #### `knife ec2 server create`
-Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap (using the SSH protocol). The goal of the bootstrap is to get Chef installed on the target system so it can run Chef Client with a Chef Server. The main assumption is a baseline OS installation exists (provided by the provisioning). It is primarily intended for Chef Client systems that talk to a Chef server.
+Provisions a new server in EC2 and then perform a Chef bootstrap (using the SSH protocol). The goal of the bootstrap is to get Chef installed on the target system so it can run Chef Client with a Chef Server. The main assumption is a baseline OS installation exists (provided by the provisioning). It is primarily intended for Chef Client systems that talk to a Chef server.
 
 #### `knife ec2 server delete`
 Deletes an existing server in the currently configured AWS account. **By default, this does not delete the associated node and client objects from the Chef server. To do so, add the `--purge` flag**

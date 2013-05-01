@@ -50,17 +50,25 @@ class Chef
             :long => "--region REGION",
             :description => "Your AWS region",
             :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
+
+          option :endpoint,
+            :long => "--endpoint ENDPOINT",
+            :description => "API Endpoint (defaults to AWS API)",
+            :proc => Proc.new { |key| Chef::Config[:knife][:aws_endpoint] = key }
         end
       end
 
       def connection
         @connection ||= begin
-          connection = Fog::Compute.new(
-            :provider => 'AWS',
-            :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
-            :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-            :region => locate_config_value(:region)
-          )
+          options = {}.tap do |h|
+            h[:provider] = 'AWS'
+            h[:aws_access_key_id] = Chef::Config[:knife][:aws_access_key_id]
+            h[:aws_secret_access_key] = Chef::Config[:knife][:aws_secret_access_key]
+            h[:region] = locate_config_value(:region)
+            h[:endpoint] = locate_config_value(:endpoint) unless locate_config_value(:endpoint).nil?
+          end
+
+          Fog::Compute.new(options)
         end
       end
 
