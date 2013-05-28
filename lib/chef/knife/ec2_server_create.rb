@@ -413,7 +413,7 @@ class Chef
           else
             print "\n#{ui.color("Waiting for sshd", :magenta)}"
             #If FreeSSHd, winsshd etc are available
-            print(".") until tcp_test_ssh(ssh_connect_host) {
+            print(".") until tcp_test_ssh(ssh_connect_host, config[:ssh_port]) {
               sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
               puts("done")
             }
