@@ -300,6 +300,27 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][:hints]["ec2"].should_not be_nil
     end
   end
+
+  describe "when settings attributes from the knife config" do
+    let :attributes do
+      [:ssh_user, :ssh_port, :ssh_gateway, :identity_file, :host_key_verify]
+    end
+
+    before do
+      attributes.each do |attribute|
+        Chef::Config[:knife][attribute] = "#{attribute} from knife"
+        @knife_ec2_create.config[attribute] = nil
+      end
+      @bootstrap = @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name)
+    end
+
+    it "sets the attribute" do
+      attributes.each do |attribute|
+        @bootstrap.config[attribute].should == "#{attribute} from knife"
+      end
+    end
+  end
+
   describe "when configuring the winrm bootstrap process for windows" do
     before do
       @knife_ec2_create.stub(:fetch_server_fqdn).and_return("SERVERNAME")

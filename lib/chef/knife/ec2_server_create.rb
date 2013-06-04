@@ -95,7 +95,8 @@ class Chef
         :short => "-x USERNAME",
         :long => "--ssh-user USERNAME",
         :description => "The ssh username",
-        :default => "root"
+        :default => "root",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_user] = key }
 
       option :ssh_password,
         :short => "-P PASSWORD",
@@ -511,15 +512,15 @@ class Chef
       def bootstrap_for_linux_node(server,ssh_host)
         bootstrap = Chef::Knife::Bootstrap.new
         bootstrap.name_args = [ssh_host]
-        bootstrap.config[:ssh_user] = config[:ssh_user]
-        bootstrap.config[:ssh_port] = config[:ssh_port]
-        bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
-        bootstrap.config[:identity_file] = config[:identity_file]
+        bootstrap.config[:ssh_user] = locate_config_value(:ssh_user)
+        bootstrap.config[:ssh_port] = locate_config_value(:ssh_port)
+        bootstrap.config[:ssh_gateway] = locate_config_value(:ssh_gateway)
+        bootstrap.config[:identity_file] = locate_config_value(:identity_file)
         bootstrap.config[:chef_node_name] = locate_config_value(:chef_node_name) || server.id
         bootstrap.config[:distro] = locate_config_value(:distro) || "chef-full"
-        bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
+        bootstrap.config[:use_sudo] = true unless locate_config_value(:ssh_user) == 'root'
         # may be needed for vpc_mode
-        bootstrap.config[:host_key_verify] = config[:host_key_verify]
+        bootstrap.config[:host_key_verify] = locate_config_value(:host_key_verify)
         bootstrap_common_params(bootstrap)
       end
 
