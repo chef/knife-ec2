@@ -346,6 +346,8 @@ class Chef
           hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
         end
 
+        printed_tags = hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")
+
         msg_pair("Instance ID", @server.id)
         msg_pair("Flavor", @server.flavor_id)
         msg_pair("Image", @server.image_id)
@@ -365,7 +367,7 @@ class Chef
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or @server.security_group_ids
 
 
-        msg_pair("Tags", hashed_tags)
+        msg_pair("Tags", printed_tags)
         msg_pair("SSH Key", @server.key_name)
 
         print "\n#{ui.color("Waiting for instance", :magenta)}"
@@ -432,7 +434,7 @@ class Chef
         msg_pair("Availability Zone", @server.availability_zone)
         msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (@server.groups.nil? and @server.security_group_ids)
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or @server.security_group_ids
-        msg_pair("Tags", hashed_tags)
+        msg_pair("Tags", printed_tags)
         msg_pair("SSH Key", @server.key_name)
         msg_pair("Root Device Type", @server.root_device_type)
         if @server.root_device_type == "ebs"
