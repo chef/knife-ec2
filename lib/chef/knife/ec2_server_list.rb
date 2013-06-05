@@ -34,15 +34,83 @@ class Chef
         :default => true,
         :description => "Do not display name tag in output"
 
+      option :az,
+        :short => "-z",
+        :long => "--availability-zone",
+        :boolean => true,
+        :default => false,
+        :description => "Show availability zones"
+
+      option :vpc,
+        :short => "-v",
+        :long => "--vpc",
+        :boolean => true,
+        :default => false,
+        :description => "Show VPC ID"
+
+      option :key,
+        :long => "--no-key",
+        :boolean => true,
+        :default => true,
+        :description => "Disable displaying SSH key"
+
+      option :image,
+        :long => "--no-image",
+        :boolean => true,
+        :default => true,
+        :description => "Disable displaying AMI"
+
       option :tags,
         :short => "-t TAG1,TAG2",
         :long => "--tags TAG1,TAG2",
         :description => "List of tags to output"
 
+      def fcolor(flavor)
+        case flavor
+        when "t1.micro"
+          fcolor = :blue
+        when "m1.small"
+          fcolor = :magenta
+        when "m1.medium"
+          fcolor = :cyan
+        when "m1.large"
+          fcolor = :green
+        when "m1.xlarge"
+          fcolor = :red
+        else
+          fcolor = :black
+        end
+      end
+
+      def azcolor(az)
+        case az
+        when /a$/
+          color = :blue
+        when /b$/
+          color = :green
+        when /c$/
+          color = :red
+        when /d$/
+          color = :magenta
+        else
+          color = :cyan
+        end
+      end
+
+      def groups_with_ids(groups)
+        groups.map{|g| 
+          "#{g} (#{@group_id_hash[g]})"
+        }
+      end
+
       def run
         $stdout.sync = true
 
         validate!
+
+        @group_id_hash = Hash[connection.security_groups.map{|g| 
+          [g.group_id, g.name]
+        }]
 
         server_list = [
           ui.color('Instance ID', :bold),
@@ -54,14 +122,29 @@ class Chef
           ui.color('Public IP', :bold),
           ui.color('Private IP', :bold),
           ui.color('Flavor', :bold),
-          ui.color('Image', :bold),
-          ui.color('SSH Key', :bold),
+
+          if config[:az]
+            ui.color('AZ', :bold)
+          end,
+
+          if config[:image]
+            ui.color('Image', :bold)
+          end,
+
+          if config[:key]
+            ui.color('SSH Key', :bold)
+          end,
+
           ui.color('Security Groups', :bold),
           
           if config[:tags]
             config[:tags].split(",").collect do |tag_name|
               ui.color("Tag:#{tag_name}", :bold)
             end
+          end,
+
+          if config[:vpc]
+            ui.color('VPC', :bold)
           end,
           
           ui.color('State', :bold)
@@ -78,15 +161,40 @@ class Chef
           
           server_list << server.public_ip_address.to_s
           server_list << server.private_ip_address.to_s
-          server_list << server.flavor_id.to_s
-          server_list << server.image_id.to_s
-          server_list << server.key_name.to_s
-          server_list << server.groups.join(", ")
+          server_list << ui.color(
+                                  server.flavor_id.to_s,
+                                  fcolor(server.flavor_id.to_s)
+                                )
+
+          if config[:az]
+            server_list << ui.color(
+                                server.availability_zone.to_s,
+                                azcolor(server.availability_zone.to_s)
+                              )
+          end
+
+          if config[:image]
+            server_list << server.image_id.to_s
+          end
+
+          if config[:key]
+            server_list << server.key_name.to_s
+          end
+
+          if server.vpc_id
+            server_list << groups_with_ids(server.security_group_ids).join(", ")
+          else
+            server_list << server.groups.join(", ")
+          end
           
           if config[:tags]
             config[:tags].split(",").each do |tag_name|
               server_list << server.tags[tag_name].to_s
             end
+          end
+
+          if config[:vpc]
+            server_list << server.vpc_id.to_s
           end
           
           server_list << begin
@@ -101,6 +209,7 @@ class Chef
             end
           end
         end
+
         puts ui.list(server_list, :uneven_columns_across, output_column_count)
 
       end
