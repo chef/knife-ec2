@@ -155,6 +155,19 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.run
     end
 
+    it "should use configured SSH port" do
+      @knife_ec2_create.config[:bootstrap_protocol] = 'ssh'
+      @knife_ec2_create.config[:ssh_port] = 422
+      
+      @knife_ec2_create.should_receive(:tcp_test_ssh).with('ec2-75.101.253.10.compute-1.amazonaws.com', 422).and_return(true)
+
+      bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
+      Chef::Knife::BootstrapWindowsSsh.stub(:new).and_return(bootstrap_win_ssh)
+      bootstrap_win_ssh.should_receive(:run)
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+    end
+
     it "should never invoke linux bootstrap" do
       @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
       @knife_ec2_create.stub(:windows_password).and_return("")
