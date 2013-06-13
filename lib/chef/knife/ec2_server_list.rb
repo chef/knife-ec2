@@ -160,7 +160,13 @@ class Chef
           end
           
           server_list << server.public_ip_address.to_s
-          server_list << server.private_ip_address.to_s
+
+          if server.subnet_id
+            server_list << "#{server.subnet_id}/#{server.private_ip_address}"
+          else
+            server_list << server.private_ip_address.to_s
+          end
+          
           server_list << ui.color(
                                   server.flavor_id.to_s,
                                   fcolor(server.flavor_id.to_s)
