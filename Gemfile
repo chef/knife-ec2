@@ -6,3 +6,8 @@ gemspec
 group :development do
   gem 'rspec', '~> 2.7.0'
 end
+
+group :test do
+	gem 'rake'
+	gem 'sdoc'
+end
