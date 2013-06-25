@@ -74,7 +74,6 @@ describe Chef::Knife::Ec2ServerCreate do
       @ec2_servers.should_receive(:create).and_return(@new_ec2_server)
       @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
       @ec2_connection.should_receive(:addresses)
-
       @eip = "111.111.111.111"
       Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
 
@@ -487,4 +486,41 @@ describe Chef::Knife::Ec2ServerCreate do
       end
     end
   end
+
+  describe "when baking" do
+    before do
+      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
+      @knife_ec2_create.stub!(:puts)
+      @knife_ec2_create.stub!(:print)
+      @knife_ec2_create.config[:image] = '12345'
+      @knife_ec2_create.config[:bake] = 'foobar'
+      @bootstrap = Chef::Knife::Bootstrap.new
+      Chef::Knife::Bootstrap.stub!(:new).and_return(@bootstrap)
+    end
+
+    it "will not try to bake a machine that is not EBS backed" do
+      @ec2_servers.should_receive(:create).and_return(@new_ec2_server)
+      @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
+      @knife_ec2_create.ui.stub!(:error)
+      lambda { @knife_ec2_create.run }.should raise_error SystemExit
+    end
+
+    it "will create a properly named AMI" do
+      @new_ec2_server.stub!(:root_device_type).and_return('ebs')
+      @new_ec2_server.stub!(:block_device_mapping).and_return({})
+      
+      @ami_info = mock()
+      @ami_info.stub!(:body).and_return({ "imageId" => "foobar" })
+      
+      @server = mock()
+      @server.stub!(:identity).and_return('server_ident')
+      
+      @knife_ec2_create.instance_variable_set("@server", @server)
+      @knife_ec2_create.stub!(:msg_pair)
+
+      @ec2_connection.stub!(:create_image).with("server_ident", "foobar", "empty_runlist").and_return(@ami_info)
+      @knife_ec2_create.bake_image
+    end 
+  end
+
 end

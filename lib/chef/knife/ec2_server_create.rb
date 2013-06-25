@@ -39,6 +39,12 @@ class Chef
       attr_accessor :initial_sleep_delay
       attr_reader :server
 
+      option :bake,
+        :short => "-b NEW_AMI_NAME",
+        :long => "--bake NEW_AMI_NAME",
+        :description => "Name for the AMI created after the Chef run",
+        :proc => Proc.new { |f| Chef::Config[:knife][:bake] = f }
+
       option :flavor,
         :short => "-f FLAVOR",
         :long => "--flavor FLAVOR",
@@ -323,6 +329,11 @@ class Chef
 
         @server = connection.servers.create(create_server_def)
 
+        # Validate this after we have our server definition
+        if config[:bake]
+          check_if_bakeable
+        end
+
         hashed_tags={}
         tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
 
@@ -450,6 +461,27 @@ class Chef
         msg_pair("Environment", config[:environment] || '_default')
         msg_pair("Run List", (config[:run_list] || []).join(', '))
         msg_pair("JSON Attributes",config[:json_attributes]) unless !config[:json_attributes] || config[:json_attributes].empty?
+
+        if config[:bake]
+          bake_image
+        end
+      end
+
+      def check_if_bakeable
+        unless @server.root_device_type == "ebs"
+          ui.error("Cannot bake non-EBS backed images")
+          exit 1
+        end
+      end
+
+      def bake_image
+        image_name = config[:bake]
+        image_description = (config[:run_list] || config[:role] || ["empty_runlist"]).join(',')
+        ami_info = connection.create_image(@server.identity, image_name, image_description)
+        new_ami_id = ami_info.body['imageId']
+        msg_pair("New AMI ID", new_ami_id)
+        msg_pair("New AMI Name", image_name)
+        msg_pair("New AMI Description", image_description)
       end
 
       def bootstrap_common_params(bootstrap)
