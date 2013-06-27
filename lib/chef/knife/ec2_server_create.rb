@@ -165,6 +165,12 @@ class Chef
         :description => "A JSON string to be added to the first run of chef-client",
         :proc => lambda { |o| JSON.parse(o) }
 
+      option :json_attributes_file,
+        :short => "-j JSON",
+        :long => "--json-attributes-file FILE",
+        :description => "A JSON file with 'normal' attributes to be added to the first run of chef-client",
+        :proc => lambda { |o| JSON.parse(File.read(o))[:normal] }
+
       option :subnet_id,
         :short => "-s SUBNET-ID",
         :long => "--subnet SUBNET-ID",
@@ -449,7 +455,12 @@ class Chef
         msg_pair("Private IP Address", @server.private_ip_address)
         msg_pair("Environment", config[:environment] || '_default')
         msg_pair("Run List", (config[:run_list] || []).join(', '))
-        msg_pair("JSON Attributes",config[:json_attributes]) unless !config[:json_attributes] || config[:json_attributes].empty?
+        if config[:json_attributes] && !config[:json_attributes].empty?
+          msg_pair("JSON Attributes",config[:json_attributes]) 
+        elsif config[:json_attributes_file] && !config[:json_attributes_file].empty?
+          msg_pair("JSON Attributes from file", config[:json_attributes_file])
+        end
+
       end
 
       def bootstrap_common_params(bootstrap)
@@ -461,7 +472,7 @@ class Chef
         bootstrap.config[:environment] = locate_config_value(:environment)
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
+        bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || config[:json_attributes_file] || {}
         bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
           # Modify global configuration state to ensure hint gets set by
