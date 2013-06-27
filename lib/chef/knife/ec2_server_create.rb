@@ -166,7 +166,7 @@ class Chef
         :proc => lambda { |o| JSON.parse(o) }
 
       option :json_attributes_file,
-        :short => "-j JSON",
+        :short => "-J JSON_FILE",
         :long => "--json-attributes-file FILE",
         :description => "A JSON file with 'normal' attributes to be added to the first run of chef-client",
         :proc => lambda { |o| JSON.parse(File.read(o))[:normal] }
