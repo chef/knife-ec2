@@ -169,7 +169,7 @@ class Chef
         :short => "-J JSON_FILE",
         :long => "--json-attributes-file FILE",
         :description => "A JSON file with 'normal' attributes to be added to the first run of chef-client",
-        :proc => lambda { |o| JSON.parse(File.read(o))[:normal] }
+        :proc => lambda { |o| attrs = JSON.parse(File.read(o)); attrs["normal"] }
 
       option :subnet_id,
         :short => "-s SUBNET-ID",
