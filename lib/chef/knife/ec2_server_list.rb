@@ -69,6 +69,10 @@ class Chef
         
         output_column_count = server_list.length
         
+        if !config[:region]
+          ui.warn "No region was specified in knife.rb or as an argument. The default region, us-east-1, will be used:"
+        end
+        
         connection.servers.all.each do |server|
           server_list << server.id.to_s
           
