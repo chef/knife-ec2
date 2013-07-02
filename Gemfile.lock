@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    knife-ec2 (0.6.4)
+    knife-ec2 (0.6.5)
       chef (>= 0.10.10)
       fog (~> 1.6)
       knife-windows (>= 0.5.12)
