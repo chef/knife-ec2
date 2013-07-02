@@ -293,6 +293,12 @@ class Chef
             response = connection.get_password_data(@server.id)
             data = File.read(locate_config_value(:identity_file))
             config[:winrm_password] = decrypt_admin_password(response.body["passwordData"], data)
+            # Even though the winrm port is available we need to wait just a bit for the service
+            # to actually come up after the password is generated. In the future we should create
+            # a method to probe winrm to determine readiness.
+            print "\n#{ui.color("Waiting for WinRM service to be available", :magenta)}\n"
+            sleep 100
+            config[:winrm_password]
           else
             ui.error("Cannot find SSH Identity file, required to fetch dynamically generated password")
             exit 1
