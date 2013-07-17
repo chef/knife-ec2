@@ -1,5 +1,8 @@
 = Knife EC2
 
+{<img src="https://travis-ci.org/opscode/knife-ec2.png" />}[https://travis-ci.org/opscode/knife-ec2]
+
+
 = DESCRIPTION:
 
 This is the official Opscode Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
