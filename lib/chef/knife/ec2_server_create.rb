@@ -584,7 +584,7 @@ class Chef
           :groups => locate_config_value(:security_groups),
           :security_group_ids => locate_config_value(:security_group_ids),
           :flavor_id => locate_config_value(:flavor),
-          :key_name => Chef::Config[:knife][:aws_ssh_key_id],
+          :key_name => locate_config_value(:aws_ssh_key_id),
           :availability_zone => locate_config_value(:availability_zone)
         }
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
