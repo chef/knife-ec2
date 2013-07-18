@@ -59,6 +59,14 @@ class Chef
           ui.warn("Could not find a #{type_name} named #{name} to delete!")
         end
       end
+      
+      def get_item(klass, name, type_name)
+        begin
+          klass.load(name)
+        rescue Net::HTTPServerException
+          ui.warn("Could not find a #{type_name} named #{name} to delete!")
+        end
+      end
 
       def run
 
@@ -67,7 +75,17 @@ class Chef
         @name_args.each do |instance_id|
 
           begin
-            @server = connection.servers.get(instance_id)
+            
+            @server = nil
+            
+            begin
+              @server = connection.servers.get(instance_id)
+            rescue Fog::Compute::AWS::Error
+              item = get_item(Chef::Node, instance_id, "node")
+              if !item.nil? && item.to_hash.has_key?("ec2") && item.to_hash["ec2"].has_key?("instance_id")
+                @server = connection.servers.get(item.to_hash["ec2"]["instance_id"])
+              end
+            end
 
             msg_pair("Instance ID", @server.id)
             msg_pair("Flavor", @server.flavor_id)
