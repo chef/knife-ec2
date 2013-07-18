@@ -36,7 +36,7 @@ You also have the option of passing your AWS API Key/Secret into the individual 
 If you are using Eucalyptus, you will also need to specify the <tt>:endpoint</tt> and <tt>region</tt> attributes:
 
     knife[:aws_endpoint] = 'http://euca.company.com'
-    kinfe[:region] = 'eucalyptus'
+    knife[:region] = 'eucalyptus'
 
 Additionally the following options may be set in your `knife.rb`:
 
