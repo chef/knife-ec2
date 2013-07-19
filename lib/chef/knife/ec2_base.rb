@@ -89,9 +89,12 @@ class Chef
         errors = []
 
         unless Chef::Config[:knife][:aws_credential_file].nil?
-          if [:aws_access_key_id, :aws_secret_access_key].select { |k| Chef::Config[:knife][k].nil? }.length < 2
+          unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
             errors << "Either provide a credentials file or the access key and secret keys but not both."
           end
+          # File format:
+          # AWSAccessKeyId=somethingsomethingdarkside
+          # AWSSecretKey=somethingsomethingcomplete
           entries = Hash[*File.read(Chef::Config[:knife][:aws_credential_file]).split(/[=\n]/)]
           Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId']
           Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey']
