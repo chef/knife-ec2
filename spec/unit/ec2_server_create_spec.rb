@@ -27,7 +27,7 @@ describe Chef::Knife::Ec2ServerCreate do
   before do
     @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
     @knife_ec2_create.initial_sleep_delay = 0
-    @knife_ec2_create.stub!(:tcp_test_ssh).and_return(true)
+    @knife_ec2_create.stub(:tcp_test_ssh).and_return(true)
 
     {
       :image => 'image',
@@ -38,18 +38,18 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][key] = value
     end
 
-    @ec2_connection = mock(Fog::Compute::AWS)
-    @ec2_connection.stub_chain(:tags).and_return mock('create', :create => true)
-    @ec2_connection.stub_chain(:images, :get).and_return mock('ami', :root_device_type => 'not_ebs', :platform => 'linux')
-    @ec2_connection.stub_chain(:addresses).and_return [mock('addesses', {
+    @ec2_connection = double(Fog::Compute::AWS)
+    @ec2_connection.stub_chain(:tags).and_return double('create', :create => true)
+    @ec2_connection.stub_chain(:images, :get).and_return double('ami', :root_device_type => 'not_ebs', :platform => 'linux')
+    @ec2_connection.stub_chain(:addresses).and_return [double('addesses', {
             :domain => 'standard',
             :public_ip => '111.111.111.111',
             :server_id => nil,
             :allocation_id => ''})]
 
 
-    @ec2_servers = mock()
-    @new_ec2_server = mock()
+    @ec2_servers = double()
+    @new_ec2_server = double()
 
     @ec2_server_attribs = { :id => 'i-39382318',
                            :flavor_id => 'm1.small',
@@ -65,7 +65,7 @@ describe Chef::Knife::Ec2ServerCreate do
                            :root_device_type => 'not_ebs' }
 
     @ec2_server_attribs.each_pair do |attrib, value|
-      @new_ec2_server.stub!(attrib).and_return(value)
+      @new_ec2_server.stub(attrib).and_return(value)
     end
   end
 
@@ -78,12 +78,12 @@ describe Chef::Knife::Ec2ServerCreate do
       @eip = "111.111.111.111"
       Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
 
-      @knife_ec2_create.stub!(:puts)
-      @knife_ec2_create.stub!(:print)
+      @knife_ec2_create.stub(:puts)
+      @knife_ec2_create.stub(:print)
       @knife_ec2_create.config[:image] = '12345'
 
       @bootstrap = Chef::Knife::Bootstrap.new
-      Chef::Knife::Bootstrap.stub!(:new).and_return(@bootstrap)
+      Chef::Knife::Bootstrap.stub(:new).and_return(@bootstrap)
       @bootstrap.should_receive(:run)
     end
 
@@ -102,7 +102,7 @@ describe Chef::Knife::Ec2ServerCreate do
     it "creates an EC2 instance, assigns existing EIP and bootstraps it" do
       @knife_ec2_create.config[:associate_eip] = @eip
 
-      @new_ec2_server.stub!(:public_ip_address).and_return(@eip)
+      @new_ec2_server.stub(:public_ip_address).and_return(@eip)
       @ec2_connection.should_receive(:associate_address).with(@ec2_server_attribs[:id], @eip, nil, '')
       @new_ec2_server.should_receive(:wait_for).at_least(:twice).and_return(true)
 
@@ -128,8 +128,8 @@ describe Chef::Knife::Ec2ServerCreate do
 
       Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
 
-      @knife_ec2_create.stub!(:puts)
-      @knife_ec2_create.stub!(:print)
+      @knife_ec2_create.stub(:puts)
+      @knife_ec2_create.stub(:print)
       @knife_ec2_create.config[:identity_file] = "~/.ssh/aws-key.pem"
       @knife_ec2_create.config[:image] = '12345'
       @knife_ec2_create.stub(:is_image_windows?).and_return(true)
@@ -158,7 +158,7 @@ describe Chef::Knife::Ec2ServerCreate do
     it "should use configured SSH port" do
       @knife_ec2_create.config[:bootstrap_protocol] = 'ssh'
       @knife_ec2_create.config[:ssh_port] = 422
-      
+
       @knife_ec2_create.should_receive(:tcp_test_ssh).with('ec2-75.101.253.10.compute-1.amazonaws.com', 422).and_return(true)
 
       bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
@@ -173,7 +173,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.stub(:windows_password).and_return("")
       @knife_ec2_create.should_not_receive(:bootstrap_for_linux_node)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
-      @knife_ec2_create.stub(:bootstrap_for_windows_node).and_return mock("bootstrap", :run => true)
+      @knife_ec2_create.stub(:bootstrap_for_windows_node).and_return double("bootstrap", :run => true)
       @knife_ec2_create.run
     end
 
@@ -192,13 +192,13 @@ describe Chef::Knife::Ec2ServerCreate do
   describe "when setting tags" do
     before do
       Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
-      @knife_ec2_create.stub!(:bootstrap_for_linux_node).and_return mock("bootstrap", :run => true)
-      @ec2_connection.stub!(:servers).and_return(@ec2_servers)
+      @knife_ec2_create.stub(:bootstrap_for_linux_node).and_return double("bootstrap", :run => true)
+      @ec2_connection.stub(:servers).and_return(@ec2_servers)
       @ec2_connection.should_receive(:addresses)
-      @new_ec2_server.stub!(:wait_for).and_return(true)
-      @ec2_servers.stub!(:create).and_return(@new_ec2_server)
-      @knife_ec2_create.stub!(:puts)
-      @knife_ec2_create.stub!(:print)
+      @new_ec2_server.stub(:wait_for).and_return(true)
+      @ec2_servers.stub(:create).and_return(@new_ec2_server)
+      @knife_ec2_create.stub(:puts)
+      @knife_ec2_create.stub(:print)
     end
 
     it "sets the Name tag to the instance id by default" do
@@ -375,7 +375,7 @@ describe Chef::Knife::Ec2ServerCreate do
   describe "when validating the command-line parameters" do
     before do
       Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
-      @knife_ec2_create.ui.stub!(:error)
+      @knife_ec2_create.ui.stub(:error)
     end
 
     it "disallows security group names when using a VPC" do
@@ -458,12 +458,12 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "ssh_connect_host" do
     before(:each) do
-      @new_ec2_server.stub!(
+      @new_ec2_server.stub(
         :dns_name => 'public_name',
         :private_ip_address => 'private_ip',
         :custom => 'custom'
       )
-      @knife_ec2_create.stub!(:server => @new_ec2_server)
+      @knife_ec2_create.stub(:server => @new_ec2_server)
     end
 
     describe "by default" do
@@ -474,7 +474,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     describe "with vpc_mode?" do
       it 'should use private ip' do
-        @knife_ec2_create.stub!(:vpc_mode? => true)
+        @knife_ec2_create.stub(:vpc_mode? => true)
         @knife_ec2_create.ssh_connect_host.should == 'private_ip'
       end
 
