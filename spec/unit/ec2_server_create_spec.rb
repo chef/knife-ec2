@@ -428,6 +428,14 @@ describe Chef::Knife::Ec2ServerCreate do
       server_def[:flavor_id].should == "massive"
     end
 
+    it "sets the endoing from the CLI arguments over knife config" do
+      @knife_ec2_create.config[:endpoint] = "euca.internal"
+      Chef::Config[:knife][:aws_endpoint] = "bacon.internal"
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:image_id].should == "euca.internal"
+    end
+
     it "sets the availability zone from CLI arguments over knife config" do
       @knife_ec2_create.config[:availability_zone] = "dis-one"
       Chef::Config[:knife][:availability_zone] = "dat-one"

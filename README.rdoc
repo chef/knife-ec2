@@ -2,7 +2,7 @@
 
 = DESCRIPTION:
 
-This is the official Opscode Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
+This is the official Opscode Knife plugin for EC2 (or Eucalyptus). This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
 
 = INSTALLATION:
 
@@ -18,20 +18,25 @@ Depending on your system's configuration, you may need to run this command with 
 
 = CONFIGURATION:
 
-In order to communicate with the Amazon's EC2 API you will have to tell Knife about your AWS Access Key and Secret Access Key.  The easiest way to accomplish this is to create some entries in your <tt>knife.rb</tt> file:
+In order to communicate with the EC2 API you will have to tell Knife about your AWS Access Key and Secret Access Key.  The easiest way to accomplish this is to create some entries in your <tt>knife.rb</tt> file:
 
     knife[:aws_access_key_id]  = "Your AWS Access Key ID"
     knife[:aws_secret_access_key] = "Your AWS Secret Access Key"
 
 If your knife.rb file will be checked into a SCM system (ie readable by others) you may want to read the values from environment variables:
 
-    knife[:aws_access_key_id] = "#{ENV['AWS_ACCESS_KEY_ID']}"
-    knife[:aws_secret_access_key] = "#{ENV['AWS_SECRET_ACCESS_KEY']}"
+    knife[:aws_access_key_id] = ENV['AWS_ACCESS_KEY_ID']
+    knife[:aws_secret_access_key] = ENV['AWS_SECRET_ACCESS_KEY']
 
 You also have the option of passing your AWS API Key/Secret into the individual knife subcommands using the <tt>-A</tt> (or <tt>--aws-access-key-id</tt>) <tt>-K</tt> (or <tt>--aws-secret-access-key</tt>) command options
 
     # provision a new m1.small Ubuntu 10.04 webserver
     knife ec2 server create -r 'role[webserver]' -I ami-7000f019 -f m1.small -A 'Your AWS Access Key ID' -K "Your AWS Secret Access Key"
+
+If you are using Eucalyptus, you will also need to specify the <tt>:endpoint</tt> and <tt>region</tt> attributes:
+
+    knife[:aws_endpoint] = 'http://euca.company.com'
+    knife[:region] = 'eucalyptus'
 
 Additionally the following options may be set in your `knife.rb`:
 
@@ -42,6 +47,7 @@ Additionally the following options may be set in your `knife.rb`:
 * region
 * distro
 * template_file
+* aws_endpoint
 
 = SUBCOMMANDS:
 
@@ -49,7 +55,7 @@ This plugin provides the following Knife subcommands.  Specific command options 
 
 == knife ec2 server create
 
-Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap (using the SSH protocol).  The goal of the bootstrap is to get Chef installed on the target system so it can run Chef Client with a Chef Server. The main assumption is a baseline OS installation exists (provided by the provisioning). It is primarily intended for Chef Client systems that talk to a Chef server.  By default the server is bootstrapped using the {ubuntu10.04-gems}[https://github.com/opscode/chef/blob/master/chef/lib/chef/knife/bootstrap/ubuntu10.04-gems.erb] template.  This can be overridden using the <tt>-d</tt> or <tt>--template-file</tt> command options.
+Provisions a new server in the EC2 and then perform a Chef bootstrap (using the SSH protocol).  The goal of the bootstrap is to get Chef installed on the target system so it can run Chef Client with a Chef Server. The main assumption is a baseline OS installation exists (provided by the provisioning). It is primarily intended for Chef Client systems that talk to a Chef server.  By default the server is bootstrapped using the {ubuntu10.04-gems}[https://github.com/opscode/chef/blob/master/chef/lib/chef/knife/bootstrap/ubuntu10.04-gems.erb] template.  This can be overridden using the <tt>-d</tt> or <tt>--template-file</tt> command options.
 
 == knife ec2 server delete
 
