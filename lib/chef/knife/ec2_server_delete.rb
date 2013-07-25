@@ -63,6 +63,11 @@ class Chef
       def run
 
         validate!
+        if @name_args.empty? && config[:chef_node_name]
+          ui.info("no instance id is specific, trying to retrieve it from node name")
+          instance_id = fetch_instance_id(config[:chef_node_name])
+          @name_args << instance_id unless instance_id.nil?
+        end
 
         @name_args.each do |instance_id|
 
@@ -90,19 +95,44 @@ class Chef
             ui.warn("Deleted server #{@server.id}")
 
             if config[:purge]
-              thing_to_delete = config[:chef_node_name] || instance_id
+              if config[:chef_node_name]
+                thing_to_delete = config[:chef_node_name]
+              else
+                thing_to_delete = fetch_node_name(instance_id)
+              end
               destroy_item(Chef::Node, thing_to_delete, "node")
               destroy_item(Chef::ApiClient, thing_to_delete, "client")
             else
               ui.warn("Corresponding node and client for the #{instance_id} server were not deleted and remain registered with the Chef Server")
             end
-
           rescue NoMethodError
             ui.error("Could not locate server '#{instance_id}'.  Please verify it was provisioned in the '#{locate_config_value(:region)}' region.")
           end
         end
       end
 
+      def fetch_node_name(instance_id)
+        result = query.search(:node,"ec2_instance_id:#{instance_id}")
+        unless result.first.empty?
+          result.first.first.name
+        else
+          instance_id
+        end
+      end
+
+      def fetch_instance_id(name)
+        result = query.search(:node,"name:#{name}")
+        unless result.first.empty?
+          node = result.first.first
+          if node.attribute?('ec2')
+            node['ec2']['instance_id']
+          end
+        end
+      end
+
+      def query
+        @query ||= Chef::Search::Query.new
+      end
     end
   end
 end
