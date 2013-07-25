@@ -45,12 +45,12 @@ describe Chef::Knife::Ec2ServerDelete do
                              :private_ip_address => '10.251.75.20',
                              :root_device_type => 'not_ebs' }
         @knife_ec2_delete = Chef::Knife::Ec2ServerDelete.new
-        @ec2_servers = mock()
+        @ec2_servers = double()
         @knife_ec2_delete.ui.stub(:confirm)
         @knife_ec2_delete.stub(:msg_pair)
-        @ec2_server = mock(@ec2_server_attribs)
-        @ec2_connection = mock(Fog::Compute::AWS)
-        @ec2_connection.stub!(:servers).and_return(@ec2_servers)
+        @ec2_server = double(@ec2_server_attribs)
+        @ec2_connection = double(Fog::Compute::AWS)
+        @ec2_connection.stub(:servers).and_return(@ec2_servers)
         @knife_ec2_delete.ui.stub(:warn)
       end
 
@@ -76,12 +76,12 @@ describe Chef::Knife::Ec2ServerDelete do
         @ec2_server.should_receive(:destroy)
         @knife_ec2_delete.config[:purge] = false
         @knife_ec2_delete.config[:chef_node_name] = 'baz'
-        mock_node = mock(Chef::Node)
-        mock_node.should_receive(:attribute?).with('ec2').and_return(true)
-        mock_node.should_receive(:[]).with('ec2').and_return('instance_id'=>'foo')
-        mock_search = mock(Chef::Search::Query)
-        mock_search.should_receive(:search).with(:node,"name:baz").and_return([[mock_node],nil,nil])
-        Chef::Search::Query.should_receive(:new).and_return(mock_search)
+        double_node = double(Chef::Node)
+        double_node.should_receive(:attribute?).with('ec2').and_return(true)
+        double_node.should_receive(:[]).with('ec2').and_return('instance_id'=>'foo')
+        double_search = double(Chef::Search::Query)
+        double_search.should_receive(:search).with(:node,"name:baz").and_return([[double_node],nil,nil])
+        Chef::Search::Query.should_receive(:new).and_return(double_search)
         @knife_ec2_delete.name_args = []
         @knife_ec2_delete.run
     end
@@ -95,8 +95,8 @@ describe Chef::Knife::Ec2ServerDelete do
         @ec2_server.should_receive(:destroy)
         @knife_ec2_delete.config[:purge] = true
         @knife_ec2_delete.config[:chef_node_name] = 'baz'
-        Chef::Node.should_receive(:load).with('baz').and_return(mock(:destroy=>true))
-        Chef::ApiClient.should_receive(:load).with('baz').and_return(mock(:destroy=>true))
+        Chef::Node.should_receive(:load).with('baz').and_return(double(:destroy=>true))
+        Chef::ApiClient.should_receive(:load).with('baz').and_return(double(:destroy=>true))
         @knife_ec2_delete.run
       end
 
@@ -108,13 +108,13 @@ describe Chef::Knife::Ec2ServerDelete do
         @ec2_server.should_receive(:destroy)
         @knife_ec2_delete.config[:purge] = true
         @knife_ec2_delete.config[:chef_node_name] = nil
-        mock_search = mock(Chef::Search::Query)
-        mock_node = mock(Chef::Node)
-        mock_node.should_receive(:name).and_return("baz")
-        Chef::Node.should_receive(:load).with('baz').and_return(mock(:destroy=>true))
-        Chef::ApiClient.should_receive(:load).with('baz').and_return(mock(:destroy=>true))
-        mock_search.should_receive(:search).with(:node,"ec2_instance_id:i-foo").and_return([[mock_node],nil,nil])
-        Chef::Search::Query.should_receive(:new).and_return(mock_search)
+        double_search = double(Chef::Search::Query)
+        double_node = double(Chef::Node)
+        double_node.should_receive(:name).and_return("baz")
+        Chef::Node.should_receive(:load).with('baz').and_return(double(:destroy=>true))
+        Chef::ApiClient.should_receive(:load).with('baz').and_return(double(:destroy=>true))
+        double_search.should_receive(:search).with(:node,"ec2_instance_id:i-foo").and_return([[double_node],nil,nil])
+        Chef::Search::Query.should_receive(:new).and_return(double_search)
         @knife_ec2_delete.run
       end
 
@@ -126,11 +126,11 @@ describe Chef::Knife::Ec2ServerDelete do
         @ec2_server.should_receive(:destroy)
         @knife_ec2_delete.config[:purge] = true
         @knife_ec2_delete.config[:chef_node_name] = nil
-        Chef::Node.should_receive(:load).with('i-foo').and_return(mock(:destroy=>true))
-        Chef::ApiClient.should_receive(:load).with('i-foo').and_return(mock(:destroy=>true))
-        mock_search = mock(Chef::Search::Query)
-        mock_search.should_receive(:search).with(:node,"ec2_instance_id:i-foo").and_return([[],nil,nil])
-        Chef::Search::Query.should_receive(:new).and_return(mock_search)
+        Chef::Node.should_receive(:load).with('i-foo').and_return(double(:destroy=>true))
+        Chef::ApiClient.should_receive(:load).with('i-foo').and_return(double(:destroy=>true))
+        double_search = double(Chef::Search::Query)
+        double_search.should_receive(:search).with(:node,"ec2_instance_id:i-foo").and_return([[],nil,nil])
+        Chef::Search::Query.should_receive(:new).and_return(double_search)
         @knife_ec2_delete.run
       end
     end
