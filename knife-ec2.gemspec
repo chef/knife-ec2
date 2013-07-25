@@ -20,7 +20,10 @@ Gem::Specification.new do |s|
   s.add_dependency 'chef',          '>= 0.10.10'
   s.add_dependency 'knife-windows', '>= 0.5.12'
 
-  s.add_development_dependency 'rspec', '~> 2.14.1'
+  s.add_development_dependency 'rspec', '~> 2.14'
+  s.add_development_dependency 'rake',  '~> 10.1'
+  s.add_development_dependency 'sdoc',  '~> 0.3'
 
   s.require_paths = ['lib']
 end
+
