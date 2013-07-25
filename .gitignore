@@ -34,3 +34,4 @@ Icon?
 *.swo
 
 Gemfile.lock
+.rspec
