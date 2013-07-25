@@ -54,6 +54,7 @@ describe Chef::Knife::Ec2ServerCreate do
     @ec2_server_attribs = { :id => 'i-39382318',
                            :flavor_id => 'm1.small',
                            :image_id => 'ami-47241231',
+                           :placement_group => 'some_placement_group',
                            :availability_zone => 'us-west-1',
                            :key_name => 'my_ssh_key',
                            :groups => ['group1', 'group2'],
@@ -189,6 +190,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.run
     end
   end
+
   describe "when setting tags" do
     before do
       Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
@@ -396,6 +398,13 @@ describe Chef::Knife::Ec2ServerCreate do
   describe "when creating the server definition" do
     before do
       Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
+    end
+
+    it "sets the specified placement_group" do
+      @knife_ec2_create.config[:placement_group] = ['some_placement_group']
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:placement_group].should == ['some_placement_group']
     end
 
     it "sets the specified security group names" do
