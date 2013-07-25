@@ -65,7 +65,7 @@ class Chef
         validate!
         if @name_args.empty? && config[:chef_node_name]
           ui.info("no instance id is specific, trying to retrieve it from node name")
-          instance_id = guess_instance_id(config[:chef_node_name])
+          instance_id = fetch_instance_id(config[:chef_node_name])
           @name_args << instance_id unless instance_id.nil?
         end
 
@@ -98,7 +98,7 @@ class Chef
               if config[:chef_node_name]
                 thing_to_delete = config[:chef_node_name]
               else
-                thing_to_delete = guess_node_name(instance_id)
+                thing_to_delete = fetch_node_name(instance_id)
               end
               destroy_item(Chef::Node, thing_to_delete, "node")
               destroy_item(Chef::ApiClient, thing_to_delete, "client")
@@ -111,7 +111,7 @@ class Chef
         end
       end
 
-      def guess_node_name(instance_id)
+      def fetch_node_name(instance_id)
         result = query.search(:node,"ec2_instance_id:#{instance_id}")
         unless result.first.empty?
           result.first.first.name
@@ -120,7 +120,7 @@ class Chef
         end
       end
 
-      def guess_instance_id(name)
+      def fetch_instance_id(name)
         result = query.search(:node,"name:#{name}")
         unless result.first.empty?
           node = result.first.first
