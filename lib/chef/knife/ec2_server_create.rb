@@ -100,7 +100,8 @@ class Chef
         :short => "-x USERNAME",
         :long => "--ssh-user USERNAME",
         :description => "The ssh username",
-        :default => "root"
+        :default => "root",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_user] = key }
 
       option :ssh_password,
         :short => "-P PASSWORD",
@@ -372,7 +373,7 @@ class Chef
         puts("\n")
 
         # occasionally 'ready?' isn't, so retry a couple times if needed.
-        tries = 6 
+        tries = 6
         begin
           create_tags(hashed_tags) unless hashed_tags.empty?
           associate_eip(elastic_ip) if config[:associate_eip]
@@ -395,8 +396,7 @@ class Chef
         end
         msg_pair("Private IP Address", @server.private_ip_address)
 
-
-        #Check if Server is Windows or Linux
+        # Check if Server is Windows or Linux
         if is_image_windows?
           protocol = locate_config_value(:bootstrap_protocol)
           if protocol == 'winrm'
@@ -465,18 +465,18 @@ class Chef
       end
 
       def bootstrap_common_params(bootstrap)
-        bootstrap.config[:run_list] = config[:run_list]
-        bootstrap.config[:prerelease] = config[:prerelease]
+        bootstrap.config[:run_list] = locate_config_value(:run_list)
+        bootstrap.config[:prerelease] = locate_config_value(:prerelease)
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:distro] = locate_config_value(:distro)
         bootstrap.config[:template_file] = locate_config_value(:template_file)
         bootstrap.config[:environment] = locate_config_value(:environment)
-        bootstrap.config[:prerelease] = config[:prerelease]
+        bootstrap.config[:prerelease] = locate_config_value(:prerelease)
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
         bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
-          # Modify global configuration state to ensure hint gets set by
+        # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
         Chef::Config[:knife][:hints]["ec2"] ||= {}
@@ -516,22 +516,22 @@ class Chef
             exit 1
         end
         bootstrap.name_args = [fqdn]
-        bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
+        bootstrap.config[:chef_node_name] = locate_config_value(:chef_node_name) || server.id
         bootstrap_common_params(bootstrap)
       end
 
       def bootstrap_for_linux_node(server,ssh_host)
         bootstrap = Chef::Knife::Bootstrap.new
         bootstrap.name_args = [ssh_host]
-        bootstrap.config[:ssh_user] = config[:ssh_user]
-        bootstrap.config[:ssh_port] = config[:ssh_port]
-        bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
-        bootstrap.config[:identity_file] = config[:identity_file]
+        bootstrap.config[:ssh_user] = locate_config_value(:ssh_user)
+        bootstrap.config[:ssh_port] = locate_config_value(:ssh_port)
+        bootstrap.config[:ssh_gateway] = locate_config_value(:ssh_gateway)
+        bootstrap.config[:identity_file] = locate_config_value(:identity_file)
         bootstrap.config[:chef_node_name] = locate_config_value(:chef_node_name) || server.id
         bootstrap.config[:distro] = locate_config_value(:distro) || "chef-full"
-        bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
+        bootstrap.config[:use_sudo] = true unless locate_config_value(:ssh_user) == 'root'
         # may be needed for vpc_mode
-        bootstrap.config[:host_key_verify] = config[:host_key_verify]
+        bootstrap.config[:host_key_verify] = locate_config_value(:host_key_verify)
         bootstrap_common_params(bootstrap)
       end
 
@@ -593,10 +593,10 @@ class Chef
       def create_server_def
         server_def = {
           :image_id => locate_config_value(:image),
-          :groups => config[:security_groups],
+          :groups => locate_config_value(:security_groups),
           :security_group_ids => locate_config_value(:security_group_ids),
           :flavor_id => locate_config_value(:flavor),
-          :key_name => Chef::Config[:knife][:aws_ssh_key_id],
+          :key_name => locate_config_value(:aws_ssh_key_id),
           :availability_zone => locate_config_value(:availability_zone)
         }
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
