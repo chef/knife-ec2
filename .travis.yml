@@ -1,3 +1,4 @@
 rvm:
   - 1.9.3
-script: bundle exec rspec --color
+  - 2.0.0
+script: bundle exec rspec --color --formatter progress
