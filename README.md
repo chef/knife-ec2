@@ -1,7 +1,7 @@
 Knife EC2
 =========
 [![Gem Version](https://badge.fury.io/rb/knife-ec2.png)](http://badge.fury.io/rb/knife-ec2)
-[![Build Status](https://travis-ci.org/opscode/knife-ec2.png?branch=adamed-knife-290)](https://travis-ci.org/opscode/knife-ec2)
+[![Build Status](https://travis-ci.org/opscode/knife-ec2.png?branch=master)](https://travis-ci.org/opscode/knife-ec2)
 [![Dependency Status](https://gemnasium.com/opscode/knife-ec2.png)](https://gemnasium.com/opscode/knife-ec2)
 
 This is the official Opscode Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
