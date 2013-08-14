@@ -23,12 +23,13 @@ Bundler::GemHelper.install_tasks
 
 # require 'rubygems'
 # require 'rake/gempackagetask'
-require 'rake/rdoctask'
+require 'rdoc/task'
 
 begin
   require 'sdoc'
+  require 'rdoc/task'
 
-  Rake::RDocTask.new do |rdoc|
+  RDoc::Task.new do |rdoc|
     rdoc.title = "Chef Ruby API Documentation"
     rdoc.main = "README.rdoc"
     rdoc.options << '--fmt' << 'shtml' # explictly set shtml generator
