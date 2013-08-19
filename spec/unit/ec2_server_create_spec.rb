@@ -77,7 +77,6 @@ describe Chef::Knife::Ec2ServerCreate do
       @ec2_connection.should_receive(:addresses)
 
       @eip = "111.111.111.111"
-      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
 
       @knife_ec2_create.stub(:puts)
       @knife_ec2_create.stub(:print)
@@ -88,36 +87,53 @@ describe Chef::Knife::Ec2ServerCreate do
       @bootstrap.should_receive(:run)
     end
 
-    it "creates an EC2 instance and bootstraps it" do
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
-      @knife_ec2_create.run
-      @knife_ec2_create.server.should_not == nil
+    context "default" do
+      before do
+        auth_params = {:aws_access_key_id=>"aws_access_key_id", :aws_secret_access_key=>"aws_secret_access_key", :region=>nil}
+        Fog::Compute::AWS.should_receive(:new).with(auth_params).and_return(@ec2_connection)
+      end
+      it "creates an EC2 instance and bootstraps it" do
+        @new_ec2_server.should_receive(:wait_for).and_return(true)
+        @knife_ec2_create.run
+        @knife_ec2_create.server.should_not == nil
+      end
+
+      it "should never invoke windows bootstrap for linux instance" do
+        @new_ec2_server.should_receive(:wait_for).and_return(true)
+        @knife_ec2_create.should_not_receive(:bootstrap_for_windows_node)
+        @knife_ec2_create.run
+      end
+
+      it "creates an EC2 instance, assigns existing EIP and bootstraps it" do
+        @knife_ec2_create.config[:associate_eip] = @eip
+
+        @new_ec2_server.stub(:public_ip_address).and_return(@eip)
+        @ec2_connection.should_receive(:associate_address).with(@ec2_server_attribs[:id], @eip, nil, '')
+        @new_ec2_server.should_receive(:wait_for).at_least(:twice).and_return(true)
+
+        @knife_ec2_create.run
+        @knife_ec2_create.server.should_not == nil
+      end
+
+      it "retries if it receives Fog::Compute::AWS::NotFound" do
+        @new_ec2_server.should_receive(:wait_for).and_return(true)
+        @knife_ec2_create.should_receive(:create_tags).and_raise(Fog::Compute::AWS::NotFound)
+        @knife_ec2_create.should_receive(:create_tags).and_return(true)
+        @knife_ec2_create.should_receive(:sleep).and_return(true)
+        @knife_ec2_create.ui.should_receive(:warn).with(/retrying/)
+        @knife_ec2_create.run
+      end
     end
 
-    it "should never invoke windows bootstrap for linux instance" do
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
-      @knife_ec2_create.should_not_receive(:bootstrap_for_windows_node)
-      @knife_ec2_create.run
-    end
-
-    it "creates an EC2 instance, assigns existing EIP and bootstraps it" do
-      @knife_ec2_create.config[:associate_eip] = @eip
-
-      @new_ec2_server.stub(:public_ip_address).and_return(@eip)
-      @ec2_connection.should_receive(:associate_address).with(@ec2_server_attribs[:id], @eip, nil, '')
-      @new_ec2_server.should_receive(:wait_for).at_least(:twice).and_return(true)
-
-      @knife_ec2_create.run
-      @knife_ec2_create.server.should_not == nil
-    end
-
-    it "retries if it receives Fog::Compute::AWS::NotFound" do
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
-      @knife_ec2_create.should_receive(:create_tags).and_raise(Fog::Compute::AWS::NotFound)
-      @knife_ec2_create.should_receive(:create_tags).and_return(true)
-      @knife_ec2_create.should_receive(:sleep).and_return(true)
-      @knife_ec2_create.ui.should_receive(:warn).with(/retrying/)
-      @knife_ec2_create.run
+    context "#api_endpoint" do
+      it "connects to another provider (like eucalyptus) when api_endpoint provided" do
+        @knife_ec2_create.config[:api_endpoint] = "api_endpoint"
+        @new_ec2_server.should_receive(:wait_for).and_return(true)
+        auth_params = {:aws_access_key_id=>"aws_access_key_id", :aws_secret_access_key=>"aws_secret_access_key", :region=>nil, :endpoint=>"api_endpoint"}
+        Fog::Compute::AWS.should_receive(:new).with(auth_params).and_return(@ec2_connection)
+        @knife_ec2_create.run
+        @knife_ec2_create.server.should_not == nil
+      end
     end
   end
 
