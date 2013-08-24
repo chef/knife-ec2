@@ -135,6 +135,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:image] = '12345'
       @knife_ec2_create.stub(:is_image_windows?).and_return(true)
       @knife_ec2_create.stub(:tcp_test_winrm).and_return(true)
+      @knife_ec2_create.stub(:ready_to_run_winrm_commands).and_return(true)
     end
 
     it "bootstraps via the WinRM protocol" do
