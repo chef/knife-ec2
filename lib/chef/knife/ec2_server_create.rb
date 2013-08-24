@@ -227,6 +227,86 @@ class Chef
         :description => "The EC2 server attribute to use for SSH connection",
         :default => nil
 
+
+
+    def test_winrm_readiness(server)
+      '''
+        The primary goal here is to ensure that the WinRM service is ready
+        to accept commands.
+        This function runs a simple "ipconfig" command and returns false if there is an error 
+        or true if it runs successfully.  
+      '''
+        session_opts = {}
+        command = 'cmd.exe /C ipconfig'
+
+        session_opts[:user] = locate_config_value(:winrm_user)
+        session_opts[:password] = windows_password
+        session_opts[:transport] = locate_config_value(:winrm_transport)
+        session_opts[:port] = locate_config_value(:winrm_port)
+        session_opts[:keytab] = locate_config_value(:kerberos_keytab_file)
+        session_opts[:realm] = locate_config_value(:kerberos_realm)
+        session_opts[:service] = locate_config_value(:kerberos_service)
+        session_opts[:ca_trust_path] = locate_config_value(:ca_trust_file)
+        session_opts[:operation_timeout] = 1800 # 30 min OperationTimeout for long bootstraps fix for KNIFE_WINDOWS-8
+        session_opts[:basic_auth_only] = true
+
+        ## If you have a \\ in your name you need to use NTLM domain authentication
+        if session_opts[:user].split("\\").length.eql?(2)
+          session_opts[:basic_auth_only] = false
+        else
+          session_opts[:basic_auth_only] = true
+        end
+
+        if config.keys.any? {|k| k.to_s =~ /kerberos/ }
+          session_opts[:transport] = :kerberos
+          session_opts[:basic_auth_only] = false
+        else
+          session_opts[:transport] = (Chef::Config[:knife][:winrm_transport] || config[:winrm_transport]).to_sym
+          session_opts[:disable_sspi] = true
+
+          if session_opts[:user] and 
+              (not session_opts[:password])
+            session_opts[:password] = Chef::Config[:knife][:winrm_password] = config[:winrm_password] = get_password
+          end
+        end
+
+        begin
+          # @longest = 0
+          @session ||= begin
+            session = EventMachine::WinRM::Session.new(session_opts)
+            Chef::Log.debug(session_opts)
+
+            Chef::Log.debug("Setting session opts")
+            session.use(server,session_opts)
+
+            Chef::Log.debug("Running ipconfig test command")
+            session.relay_command(command)
+            
+            session.on_output do |host, data|
+              Chef::Log.debug("WinRM command ran successfully: #{data}")
+              return true
+            end
+            session.on_error do |host, err|
+              Chef::Log.debug("Error #{err}")
+              return false
+            end
+            session.on_command_complete do |host|
+              host = host == :all ? 'All Servers' : host
+              Chef::Log.debug("command complete on #{host}")
+              return true
+            end
+          end
+    
+        rescue => error
+          Chef::Log.debug("#{error}")
+
+          sleep 5
+          false
+        end
+    end  
+
+    
+    
     def tcp_test_winrm(ip_addr, port)
       tcp_socket = TCPSocket.new(ip_addr, port)
       yield
@@ -286,6 +366,7 @@ class Chef
       def check_windows_password_available(server_id)
         response = connection.get_password_data(server_id)
         if not response.body["passwordData"]
+          sleep 5
           return false
         end
         response.body["passwordData"]
@@ -414,7 +495,20 @@ class Chef
               puts("done")
             }
           end
+
+          # pre-fetch windows password
+          windows_password
+
+          print "\n#{ui.color("Running WinRM command-run preflight", :magenta)}"
+
+          print(".") until test_winrm_readiness(@server.private_ip_address) {
+            puts("done")
+          }
+
+          print "\n#{ui.color(" *****  WINning! *****", :green)}"
+
           bootstrap_for_windows_node(@server,ssh_connect_host).run
+           
         else
             wait_for_sshd(ssh_connect_host)
             bootstrap_for_linux_node(@server,ssh_connect_host).run
