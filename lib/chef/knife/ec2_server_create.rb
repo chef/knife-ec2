@@ -504,6 +504,8 @@ class Chef
           bootstrap.run
         else
             wait_for_sshd(ssh_connect_host)
+            # Waiting a bit for linux initialization scripts to run 
+            sleep 10
             bootstrap_for_linux_node(@server,ssh_connect_host).run
         end
 
