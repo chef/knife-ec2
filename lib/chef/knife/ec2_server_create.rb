@@ -362,6 +362,7 @@ class Chef
       def check_windows_password_available(server_id)
         response = connection.get_password_data(server_id)
         if not response.body["passwordData"]
+          sleep 5
           return false
         end
         response.body["passwordData"]
