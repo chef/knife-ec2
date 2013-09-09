@@ -22,7 +22,6 @@ require 'chef/knife/bootstrap'
 require 'chef/knife/bootstrap_windows_winrm'
 require 'chef/knife/bootstrap_windows_ssh'
 
-
 describe Chef::Knife::Ec2ServerCreate do
   before do
     @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
@@ -236,6 +235,41 @@ describe Chef::Knife::Ec2ServerCreate do
 
   end
 
+  # This shared examples group can be used to house specifications that
+  # are common to both the Linux and Windows bootstraping process. This
+  # would remove a lot of testing duplication that is currently present.
+  shared_examples "generic bootstrap configurations" do
+    context "data bag secret" do
+      before(:each) do
+        Chef::Config[:knife][:secret] = "sys-knife-secret"
+      end
+
+     it "uses the the knife configuration when no explicit value is provided" do
+        expect(bootstrap.config[:secret]).to eql("sys-knife-secret")
+      end
+
+      it "prefers using a provided value instead of the knife confiuration" do
+        subject.config[:secret] = "cli-provided-secret"
+        expect(bootstrap.config[:secret]).to eql("cli-provided-secret")
+      end
+    end
+
+    context "data bag secret file" do
+      before(:each) do
+        Chef::Config[:knife][:secret_file] = "sys-knife-secret-file"
+      end
+
+      it "uses the the knife configuration when no explicit value is provided" do
+        expect(bootstrap.config[:secret_file]).to eql("sys-knife-secret-file")
+      end
+
+      it "prefers using a provided value instead of the knife confiuration" do
+        subject.config[:secret_file] = "cli-provided-secret-file"
+        expect(bootstrap.config[:secret_file]).to eql("cli-provided-secret-file")
+      end
+    end
+  end
+
   describe "when configuring the bootstrap process" do
     before do
       @knife_ec2_create.config[:ssh_user] = "ubuntu"
@@ -249,6 +283,11 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:json_attributes] = "{'my_attributes':{'foo':'bar'}"
 
       @bootstrap = @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name)
+    end
+
+    include_examples "generic bootstrap configurations" do
+      subject { @knife_ec2_create }
+      let(:bootstrap) { @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name) }
     end
 
     it "should set the bootstrap 'name argument' to the hostname of the EC2 server" do
@@ -332,6 +371,12 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:json_attributes] = "{'my_attributes':{'foo':'bar'}"
       @bootstrap = @knife_ec2_create.bootstrap_for_windows_node(@new_ec2_server, @new_ec2_server.dns_name)
    end
+
+    include_examples "generic bootstrap configurations" do
+      subject { @knife_ec2_create }
+      let(:bootstrap) { @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name) }
+    end
+
     it "should set the winrm username correctly" do
       @bootstrap.config[:winrm_user].should == @knife_ec2_create.config[:winrm_user]
     end
