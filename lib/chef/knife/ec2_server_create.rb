@@ -515,7 +515,6 @@ class Chef
           val = locate_config_value(key)
           bootstrap.config[key] = val if val
         }
-
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
