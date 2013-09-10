@@ -467,16 +467,13 @@ class Chef
       def bootstrap_common_params(bootstrap)
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:prerelease] = config[:prerelease]
-        bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:distro] = locate_config_value(:distro)
-        bootstrap.config[:template_file] = locate_config_value(:template_file)
-        bootstrap.config[:environment] = locate_config_value(:environment)
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
-        bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
-        bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
-          # Modify global configuration state to ensure hint gets set by
+        [:distro, :template_file, :environment, :bootstrap_version, :first_boot_attributes, :encrypted_data_bag_secret, :encrypted_data_bag_secret_file].each{ |key|
+          val = locate_config_value(key)
+          bootstrap.config[key] = val if val
+        }
+        # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
         Chef::Config[:knife][:hints]["ec2"] ||= {}
