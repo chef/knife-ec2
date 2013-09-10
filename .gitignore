@@ -35,3 +35,5 @@ Icon?
 
 Gemfile.lock
 .rspec
+.idea
+.ruby-*
