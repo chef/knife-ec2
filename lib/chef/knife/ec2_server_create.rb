@@ -346,7 +346,7 @@ class Chef
             exit 1
           end
         end  
-        
+
         # For VPC EIP assignment we need the allocation ID so fetch full EIP details
         elastic_ip = connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
 
@@ -585,7 +585,7 @@ class Chef
           exit 1
         end
 
-        if config[:associate_eip]
+        if config[:associate_eip] and config[:associate_eip] != 'NEW'
           eips = connection.addresses.collect{|addr| addr if addr.domain == eip_scope}.compact
 
           unless eips.detect{|addr| addr.public_ip == config[:associate_eip] && addr.server_id == nil}
