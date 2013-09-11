@@ -162,7 +162,7 @@ class Chef
         :short => "-r RUN_LIST",
         :long => "--run-list RUN_LIST",
         :description => "Comma separated list of roles/recipes to apply",
-        :proc => lambda { |o| o.split(/[\s,]+/) }
+        :proc => lambda { |o| o.split(/[\s,]/) }
 
       option :secret,
         :short => "-s SECRET",
@@ -229,7 +229,7 @@ class Chef
       option :ephemeral,
         :long => "--ephemeral EPHEMERAL_DEVICES",
         :description => "Comma separated list of device locations (eg - /dev/sdb) to map ephemeral devices",
-        :proc => lambda { |o| o.split(/[\s,]+/) },
+        :proc => lambda { |o| o.split(/[\s,]/) },
         :default => []
 
       option :server_connect_attribute,
@@ -336,8 +336,17 @@ class Chef
 
         validate!
 
-        requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
+        requested_elastic_ip = config[:associate_eip] if config[:associate_eip] and config[:associate_eip] != 'NEW'
 
+        if config[:associate_eip] and config[:associate_eip] == 'NEW'
+          begin
+            requested_elastic_ip = connection.allocate_address(eip_scope).body["publicIp"]
+          rescue Fog::Compute::AWS::Error => e
+            ui.error("Failed to allocate elastic IP: #{e.message}")
+            exit 1
+          end
+        end  
+        
         # For VPC EIP assignment we need the allocation ID so fetch full EIP details
         elastic_ip = connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
 
@@ -451,9 +460,9 @@ class Chef
 
           if config[:ebs_size]
             if ami.block_device_mapping.first['volumeSize'].to_i < config[:ebs_size].to_i
-              volume_too_large_warning = "#{config[:ebs_size]}GB " +
-                          "EBS volume size is larger than size set in AMI of " +
-                          "#{ami.block_device_mapping.first['volumeSize']}GB.\n" +
+              volume_too_large_warning = "#{config[:ebs_size]}GB " 
+                          "EBS volume size is larger than size set in AMI of " 
+                          "#{ami.block_device_mapping.first['volumeSize']}GB.\n" 
                           "Use file system tools to make use of the increased volume size."
               msg_pair("Warning", volume_too_large_warning, :yellow)
             end
