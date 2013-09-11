@@ -120,6 +120,13 @@ class Chef
         :description => "The ssh gateway server",
         :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway] = key }
 
+      option :ssh_config,
+        :short => "-F CONFIG",
+        :long => "--ssh-config CONFIG",
+        :description => "The ssh config file setting(true, false or files)",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_config] = key.strip },
+        :default => true
+
       option :identity_file,
         :short => "-i IDENTITY_FILE",
         :long => "--identity-file IDENTITY_FILE",
@@ -487,17 +494,13 @@ class Chef
       def bootstrap_common_params(bootstrap)
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:prerelease] = config[:prerelease]
-        bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:distro] = locate_config_value(:distro)
-        bootstrap.config[:template_file] = locate_config_value(:template_file)
-        bootstrap.config[:environment] = locate_config_value(:environment)
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
-        bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
-        bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
-        bootstrap.config[:secret] = locate_config_value(:secret)
-        bootstrap.config[:secret_file] = locate_config_value(:secret_file)
+        [:distro, :template_file, :environment, :bootstrap_version, :first_boot_attributes, :encrypted_data_bag_secret, :encrypted_data_bag_secret_file].each{ |key|
+          val = locate_config_value(key)
+          bootstrap.config[key] = val if val
+        }
+
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
@@ -688,7 +691,9 @@ class Chef
       def tunnel_test_ssh(hostname, &block)
         gw_host, gw_user = config[:ssh_gateway].split('@').reverse
         gw_host, gw_port = gw_host.split(':')
-        gateway = Net::SSH::Gateway.new(gw_host, gw_user, :port => gw_port || 22)
+        options = { :port => gw_port || 22, :config => config[:ssh_config] }
+        options[:keys] = %w(~/.ssh/id_dsa ~/.ssh/id_rsa ~/.ssh/id_ecdsa ~/.ssh2/id_dsa ~/.ssh2/id_rsa ~/.ssh2/id_ecdsa)+Array(config[:identity_file]) if config.key?(:identity_file)
+        gateway = Net::SSH::Gateway.new(gw_host, gw_user, options)
         status = false
         gateway.open(hostname, config[:ssh_port]) do |local_tunnel_port|
           status = tcp_test_ssh('localhost', local_tunnel_port, &block)
