@@ -50,17 +50,25 @@ class Chef
             :long => "--region REGION",
             :description => "Your AWS region",
             :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
+
+          option :api_endpoint,
+            :long => "--api-endpoint ENDPOINT",
+            :description => "Your API endpoint. Eg, for Eucalyptus it can be 'http://ecc.eucalyptus.com:8773/services/Eucalyptus'",
+            #:default => "http://ecc.eucalyptus.com:8773/services/Eucalyptus",
+            :proc => Proc.new { |endpoint| Chef::Config[:knife][:api_endpoint] = endpoint }
         end
       end
 
       def connection
         @connection ||= begin
-          connection = Fog::Compute.new(
-            :provider => 'AWS',
-            :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
-            :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-            :region => locate_config_value(:region)
-          )
+          auth_params = { :provider => 'AWS',
+                          :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
+                          :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
+                          :region => locate_config_value(:region)}
+          if Chef::Config[:knife][:api_endpoint] || config[:api_endpoint]
+            auth_params[:endpoint] = Chef::Config[:knife][:api_endpoint] || config[:api_endpoint]
+          end
+          connection = Fog::Compute.new(auth_params)
         end
       end
 
