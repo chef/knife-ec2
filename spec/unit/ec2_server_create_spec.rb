@@ -433,6 +433,13 @@ describe Chef::Knife::Ec2ServerCreate do
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
 
+    it "disallows specifying credentials file and aws keys" do
+      Chef::Config[:knife][:aws_credential_file] = '/apple/pear'
+      File.stub(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
+
     it "disallows private ips when not using a VPC" do
       @knife_ec2_create.config[:private_ip_address] = '10.0.0.10'
 
