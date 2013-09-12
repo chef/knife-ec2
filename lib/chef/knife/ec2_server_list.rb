@@ -34,10 +34,65 @@ class Chef
         :default => true,
         :description => "Do not display name tag in output"
 
+      option :az,
+        :short => "-z",
+        :long => "--availability-zone",
+        :boolean => true,
+        :default => false,
+        :description => "Show availability zones"
+
       option :tags,
         :short => "-t TAG1,TAG2",
         :long => "--tags TAG1,TAG2",
         :description => "List of tags to output"
+
+      def fcolor(flavor)
+        case flavor
+        when "t1.micro"
+          fcolor = :blue
+        when "m1.small"
+          fcolor = :magenta
+        when "m1.medium"
+          fcolor = :cyan
+        when "m1.large"
+          fcolor = :green
+        when "m1.xlarge"
+          fcolor = :red
+        else
+          fcolor = :black
+        end
+      end
+
+      def azcolor(az)
+        case az
+        when /a$/
+          color = :blue
+        when /b$/
+          color = :green
+        when /c$/
+          color = :red
+        when /d$/
+          color = :magenta
+        else
+          color = :cyan
+        end
+      end
+
+      def groups_with_ids(groups)
+        groups.map{|g| 
+          "#{g} (#{@group_id_hash[g]})"
+        }
+      end
+
+      def vpc_with_name(vpc_id)
+        this_vpc = @vpcs.select{|v| v.id == vpc_id }.first
+        if this_vpc.tags["Name"]
+          vpc_name = this_vpc.tags["Name"]
+          "#{vpc_name} (#{vpc_id})"
+        else
+          vpc_id
+        end
+      end
 
       def run
         $stdout.sync = true
@@ -54,6 +109,11 @@ class Chef
           ui.color('Public IP', :bold),
           ui.color('Private IP', :bold),
           ui.color('Flavor', :bold),
+
+          if config[:az]
+            ui.color('AZ', :bold)
+          end,
+
           ui.color('Image', :bold),
           ui.color('SSH Key', :bold),
           ui.color('Security Groups', :bold),
@@ -82,7 +142,19 @@ class Chef
           
           server_list << server.public_ip_address.to_s
           server_list << server.private_ip_address.to_s
-          server_list << server.flavor_id.to_s
+          
+          server_list << ui.color(
+                                  server.flavor_id.to_s,
+                                  fcolor(server.flavor_id.to_s)
+                                )
+
+          if config[:az]
+            server_list << ui.color(
+                                server.availability_zone.to_s,
+                                azcolor(server.availability_zone.to_s)
+                              )
+          end
+
           server_list << server.image_id.to_s
           server_list << server.key_name.to_s
           server_list << server.groups.join(", ")
@@ -105,6 +177,7 @@ class Chef
             end
           end
         end
+
         puts ui.list(server_list, :uneven_columns_across, output_column_count)
 
       end
