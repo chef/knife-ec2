@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.add_dependency "fog", "= 1.15.1"
-  s.add_dependency "chef", ">= 0.10.10"
+  s.add_dependency "chef", "~> 11.6.1.hotfix.2"
   s.add_dependency "knife-windows", ">= 0.5.12"
   %w(rspec-core rspec-expectations rspec-mocks  rspec_junit_formatter).each { |gem| s.add_development_dependency gem }
 
