@@ -120,6 +120,13 @@ class Chef
         :description => "The ssh gateway server",
         :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway] = key }
 
+      option :ssh_config,
+        :short => "-F CONFIG",
+        :long => "--ssh-config CONFIG",
+        :description => "The ssh config file setting(true, false or files)",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_config] = key.strip },
+        :default => true
+
       option :identity_file,
         :short => "-i IDENTITY_FILE",
         :long => "--identity-file IDENTITY_FILE",
@@ -163,6 +170,28 @@ class Chef
         :long => "--run-list RUN_LIST",
         :description => "Comma separated list of roles/recipes to apply",
         :proc => lambda { |o| o.split(/[\s,]+/) }
+
+      option :secret,
+        :short => "-s SECRET",
+        :long => "--secret ",
+        :description => "The secret key to use to encrypt data bag item values",
+        :proc => lambda { |s| Chef::Config[:knife][:secret] = s }
+
+      option :secret_file,
+        :long => "--secret-file SECRET_FILE",
+        :description => "A file containing the secret key to use to encrypt data bag item values",
+        :proc => lambda { |sf| Chef::Config[:knife][:secret_file] = sf }
+
+      option :secret,
+        :short => "-s SECRET",
+        :long => "--secret ",
+        :description => "The secret key to use to encrypt data bag item values",
+        :proc => lambda { |s| Chef::Config[:knife][:secret] = s }
+
+      option :secret_file,
+        :long => "--secret-file SECRET_FILE",
+        :description => "A file containing the secret key to use to encrypt data bag item values",
+        :proc => lambda { |sf| Chef::Config[:knife][:secret_file] = sf }
 
       option :secret,
         :short => "-s SECRET",
@@ -336,7 +365,16 @@ class Chef
 
         validate!
 
-        requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
+        requested_elastic_ip = config[:associate_eip] if config[:associate_eip] and config[:associate_eip] != 'NEW'
+
+        if config[:associate_eip] and config[:associate_eip] == 'NEW'
+          begin
+            requested_elastic_ip = connection.allocate_address(eip_scope).body["publicIp"]
+          rescue Fog::Compute::AWS::Error => e
+            ui.error("Failed to allocate elastic IP: #{e.message}")
+            exit 1
+          end
+        end  
 
         # For VPC EIP assignment we need the allocation ID so fetch full EIP details
         elastic_ip = connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
@@ -451,9 +489,9 @@ class Chef
 
           if config[:ebs_size]
             if ami.block_device_mapping.first['volumeSize'].to_i < config[:ebs_size].to_i
-              volume_too_large_warning = "#{config[:ebs_size]}GB " +
-                          "EBS volume size is larger than size set in AMI of " +
-                          "#{ami.block_device_mapping.first['volumeSize']}GB.\n" +
+              volume_too_large_warning = "#{config[:ebs_size]}GB " 
+                          "EBS volume size is larger than size set in AMI of " 
+                          "#{ami.block_device_mapping.first['volumeSize']}GB.\n" 
                           "Use file system tools to make use of the increased volume size."
               msg_pair("Warning", volume_too_large_warning, :yellow)
             end
@@ -478,17 +516,12 @@ class Chef
       def bootstrap_common_params(bootstrap)
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:prerelease] = config[:prerelease]
-        bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:distro] = locate_config_value(:distro)
-        bootstrap.config[:template_file] = locate_config_value(:template_file)
-        bootstrap.config[:environment] = locate_config_value(:environment)
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
-        bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
-        bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
-        bootstrap.config[:secret] = locate_config_value(:secret)
-        bootstrap.config[:secret_file] = locate_config_value(:secret_file)
+        [:distro, :template_file, :environment, :bootstrap_version, :first_boot_attributes, :encrypted_data_bag_secret, :encrypted_data_bag_secret_file].each{ |key|
+          val = locate_config_value(key)
+          bootstrap.config[key] = val if val
+        }
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
@@ -576,7 +609,7 @@ class Chef
           exit 1
         end
 
-        if config[:associate_eip]
+        if config[:associate_eip] and config[:associate_eip] != 'NEW'
           eips = connection.addresses.collect{|addr| addr if addr.domain == eip_scope}.compact
 
           unless eips.detect{|addr| addr.public_ip == config[:associate_eip] && addr.server_id == nil}
@@ -679,7 +712,9 @@ class Chef
       def tunnel_test_ssh(hostname, &block)
         gw_host, gw_user = config[:ssh_gateway].split('@').reverse
         gw_host, gw_port = gw_host.split(':')
-        gateway = Net::SSH::Gateway.new(gw_host, gw_user, :port => gw_port || 22)
+        options = { :port => gw_port || 22, :config => config[:ssh_config] }
+        options[:keys] = %w(~/.ssh/id_dsa ~/.ssh/id_rsa ~/.ssh/id_ecdsa ~/.ssh2/id_dsa ~/.ssh2/id_rsa ~/.ssh2/id_ecdsa)+Array(config[:identity_file]) if config.key?(:identity_file)
+        gateway = Net::SSH::Gateway.new(gw_host, gw_user, options)
         status = false
         gateway.open(hostname, config[:ssh_port]) do |local_tunnel_port|
           status = tcp_test_ssh('localhost', local_tunnel_port, &block)

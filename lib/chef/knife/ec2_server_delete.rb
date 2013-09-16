@@ -45,6 +45,13 @@ class Chef
         :long => "--node-name NAME",
         :description => "The name of the node and client to delete, if it differs from the server name.  Only has meaning when used with the '--purge' option."
 
+      option :release,
+        :short => "-R",
+        :long => "--release",
+        :boolean => true,
+        :default => false,
+        :description => "If the server has an associated Elastic IP, release EIP after purging."
+
       # Extracted from Chef::Knife.delete_object, because it has a
       # confirmation step built in... By specifying the '--purge'
       # flag (and also explicitly confirming the server destruction!)
@@ -90,6 +97,21 @@ class Chef
             puts "\n"
             confirm("Do you really want to delete this server")
 
+            if config[:release]
+              if @server.public_ip_address
+                begin
+                  eip = connection.describe_addresses('public-ip' => @server.public_ip_address)
+                  connection.disassociate_address(nil, eip[:body]["addressesSet"][0]["associationId"])
+                  connection.release_address(eip[:body]["addressesSet"][0]["allocationId"])
+                  ui.warn("Released EIP #{@server.public_ip_address}")
+                rescue
+                  ui.warn("Public IP #{@server.public_ip_address} is not an EIP")
+                end
+              else
+                ui.warn("Instance #{@server.id} has no public IP address")                  
+              end
+            end            
+
             @server.destroy
 
             ui.warn("Deleted server #{@server.id}")
@@ -105,6 +127,7 @@ class Chef
             else
               ui.warn("Corresponding node and client for the #{instance_id} server were not deleted and remain registered with the Chef Server")
             end
+
           rescue NoMethodError
             ui.error("Could not locate server '#{instance_id}'.  Please verify it was provisioned in the '#{locate_config_value(:region)}' region.")
           end
