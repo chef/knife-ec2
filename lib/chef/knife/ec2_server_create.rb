@@ -169,7 +169,7 @@ class Chef
         :short => "-r RUN_LIST",
         :long => "--run-list RUN_LIST",
         :description => "Comma separated list of roles/recipes to apply",
-        :proc => lambda { |o| o.split(/[\s,]/) }
+        :proc => lambda { |o| o.split(/[\s,]+/) }
 
       option :secret,
         :short => "-s SECRET",
@@ -247,7 +247,7 @@ class Chef
       option :ephemeral,
         :long => "--ephemeral EPHEMERAL_DEVICES",
         :description => "Comma separated list of device locations (eg - /dev/sdb) to map ephemeral devices",
-        :proc => lambda { |o| o.split(/[\s,]/) },
+        :proc => lambda { |o| o.split(/[\s,]+/) },
         :default => []
 
       option :server_connect_attribute,
