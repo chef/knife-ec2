@@ -621,7 +621,7 @@ class Chef
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
         server_def[:placement_group] = locate_config_value(:placement_group)
-        server_def[:iam_instance_profile] = locate_config_value(:iam_instance_profile)
+        server_def[:iam_instance_profile_name] = locate_config_value(:iam_instance_profile)
 
         if Chef::Config[:knife][:aws_user_data]
           begin
