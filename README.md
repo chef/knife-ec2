@@ -50,6 +50,17 @@ You also have the option of passing your AWS API Key/Secret into the individual 
 $ knife ec2 server create -r 'role[webserver]' -I ami-7000f019 -f m1.small -A 'Your AWS Access Key ID' -K "Your AWS Secret Access Key"
 ```
 
+If you are working with Amazon's command line tools, there is a good chance
+you already have a file with these keys somewhere in this format:
+
+    AWSAccessKeyId=Your AWS Access Key ID
+        AWSSecretKey=Your AWS Secret Access Key
+        
+        In this case, you can point the <tt>aws_credential_file</tt> option to
+        this file in your <tt>knife.rb</tt> file, like so:
+        
+            knife[:aws_credential_file] = "/path/to/credentials/file/in/above/format"
+
 Additionally the following options may be set in your `knife.rb`:
 
 - flavor
