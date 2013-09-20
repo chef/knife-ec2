@@ -564,7 +564,6 @@ class Chef
             bootstrap.config[:kerberos_service] = locate_config_value(:kerberos_service)
             bootstrap.config[:ca_trust_file] = locate_config_value(:ca_trust_file)
             bootstrap.config[:winrm_port] = locate_config_value(:winrm_port)
-     
         elsif locate_config_value(:bootstrap_protocol) == 'ssh'
             bootstrap = Chef::Knife::BootstrapWindowsSsh.new
             bootstrap.config[:ssh_user] = locate_config_value(:ssh_user)

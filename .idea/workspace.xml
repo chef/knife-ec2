@@ -2,11 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8eba986c-890b-41ae-b4ed-a6cc08fe8c4c" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lib/chef/knife/ec2_server_create.rb" afterPath="$PROJECT_DIR$/lib/chef/knife/ec2_server_create.rb" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/.rakeTasks" afterPath="$PROJECT_DIR$/.idea/.rakeTasks" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/knife-ec2.iml" afterPath="$PROJECT_DIR$/.idea/knife-ec2.iml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="knife-ec2.iws" />
     <ignored path=".idea/workspace.xml" />
-    <file path="/Dummy.txt" changelist="8eba986c-890b-41ae-b4ed-a6cc08fe8c4c" time="1378828140997" ignored="false" />
+    <file path="/Dummy.txt" changelist="8eba986c-890b-41ae-b4ed-a6cc08fe8c4c" time="1379622485936" ignored="false" />
     <file path="$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@twc_cms/gems/knife-ec2-0.6.4/lib/chef/knife/ec2_server_create.rb" changelist="8eba986c-890b-41ae-b4ed-a6cc08fe8c4c" time="1378778168097" ignored="false" />
     <file path="$PROJECT_DIR$/../chef/lib/chef/knife/ssh.rb" changelist="8eba986c-890b-41ae-b4ed-a6cc08fe8c4c" time="1378848981074" ignored="false" />
     <file path="$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@twc_cms/gems/chef-11.6.0/lib/chef/knife/ssh.rb" changelist="8eba986c-890b-41ae-b4ed-a6cc08fe8c4c" time="1378783348013" ignored="false" />
@@ -43,7 +45,17 @@
     <favorites_list name="knife-ec2" />
   </component>
   <component name="FileEditorManager">
-    <leaf />
+    <leaf>
+      <file leaf-file-name="ec2_server_create.rb" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/lib/chef/knife/ec2_server_create.rb">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="595" column="17" selection-start="24120" selection-end="24120" vertical-scroll-proportion="0.973775">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+    </leaf>
   </component>
   <component name="FindManager">
     <FindUsagesManager>
@@ -70,7 +82,7 @@
   <component name="ProjectFrameBounds">
     <option name="y" value="22" />
     <option name="width" value="2560" />
-    <option name="height" value="1024" />
+    <option name="height" value="1574" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="false">
     <OptionsSetting value="true" id="Add" />
@@ -98,6 +110,7 @@
       <sortByType />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -158,7 +171,6 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -251,7 +263,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="0" y="22" width="2560" height="1024" extended-state="0" />
+    <frame x="0" y="22" width="2560" height="1574" extended-state="6" />
     <editor active="false" />
     <layout>
       <window_info id="Dilbert" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32995266" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -259,7 +271,7 @@
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="true" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.16746221" sideWeight="0.67004734" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.16984884" sideWeight="0.6713996" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
@@ -270,7 +282,7 @@
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32901832" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3286004" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
@@ -339,35 +351,14 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/lib/chef/knife/ec2_server_create.rb">
       <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lib/chef/knife/ec2_server_create.rb">
+      <provider selected="true" editor-type-id="text-editor">
         <state line="675" column="114" selection-start="26903" selection-end="26903" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@knife-ec2/gems/chef-11.6.0/lib/chef/knife/ssh.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="90" column="0" selection-start="2610" selection-end="2893" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@knife-ec2/gems/chef-11.6.0/lib/chef/knife.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="171" column="17" selection-start="5558" selection-end="5558" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@knife-ec2/gems/chef-11.6.0/lib/chef/knife/configure.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="61" column="10" selection-start="2107" selection-end="2107" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@knife-ec2/gems/chef-11.6.0/lib/chef/application.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="69" column="6" selection-start="1835" selection-end="1835" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -377,66 +368,24 @@
         <state line="73" column="24" selection-start="2647" selection-end="2647" vertical-scroll-proportion="0.35150167" />
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@knife-ec2/gems/net-ssh-2.6.8/lib/net/ssh.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="157" column="30" selection-start="7933" selection-end="7933" vertical-scroll-proportion="0.06785317" />
-      </provider>
-    </entry>
     <entry file="file://$APPLICATION_HOME_DIR$/rubystubs193/hash.rb">
       <provider selected="true" editor-type-id="text-editor">
         <state line="199" column="8" selection-start="7752" selection-end="7752" vertical-scroll-proportion="0.5216908" />
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@knife-ec2/gems/chef-11.6.0/lib/chef/application.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="69" column="6" selection-start="1835" selection-end="1835" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@knife-ec2/gems/chef-11.6.0/lib/chef/knife/bootstrap/chef-full.erb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="-1.0216216" />
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@knife-ec2/gems/chef-11.6.0/lib/chef/knife/configure.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="61" column="10" selection-start="2107" selection-end="2107" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@knife-ec2/gems/chef-11.6.0/lib/chef/knife.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="171" column="17" selection-start="5558" selection-end="5558" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-1.9.3-p448@knife-ec2/gems/chef-11.6.0/lib/chef/knife/ssh.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="90" column="0" selection-start="2610" selection-end="2893" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/knife-ec2.gemspec">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/lib/knife-ec2/version.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="2" column="20" selection-start="46" selection-end="46" vertical-scroll-proportion="0.023464458">
-          <folding />
-        </state>
+        <state line="2" column="20" selection-start="46" selection-end="46" vertical-scroll-proportion="0.023464458" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/lib/chef/knife/ec2_server_create.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="479" column="40" selection-start="18726" selection-end="18726" vertical-scroll-proportion="0.29813665">
+        <state line="595" column="17" selection-start="24120" selection-end="24120" vertical-scroll-proportion="0.973775">
           <folding />
         </state>
       </provider>

@@ -16,14 +16,14 @@
     <orderEntry type="library" scope="PROVIDED" name="akami (v1.2.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="builder (v3.2.2, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="bundler (v1.3.5, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
-    <orderEntry type="library" scope="PROVIDED" name="chef (v11.6.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
+    <orderEntry type="library" scope="PROVIDED" name="chef (v11.6.0.hotfix.2, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="diff-lcs (v1.2.4, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="em-winrm (v0.5.4, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="erubis (v2.7.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="eventmachine (v1.0.0.beta.3, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="excon (v0.25.3, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="ffi (v1.9.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
-    <orderEntry type="library" scope="PROVIDED" name="fog (v1.15.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
+    <orderEntry type="library" scope="PROVIDED" name="fog (v1.15.1, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="formatador (v0.2.4, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="gssapi (v1.0.3, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="gyoku (v1.1.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
@@ -43,7 +43,7 @@
     <orderEntry type="library" scope="PROVIDED" name="mixlib-shellout (v1.2.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="multi_json (v1.8.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="net-scp (v1.1.2, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
-    <orderEntry type="library" scope="PROVIDED" name="net-ssh (v2.6.8, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
+    <orderEntry type="library" scope="PROVIDED" name="net-ssh (v2.7.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="net-ssh-gateway (v1.2.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="net-ssh-multi (v1.1, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="nokogiri (v1.5.10, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
@@ -52,10 +52,12 @@
     <orderEntry type="library" scope="PROVIDED" name="rack (v1.5.2, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="rake (v10.1.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="rdoc (v3.12.2, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
+    <orderEntry type="library" scope="PROVIDED" name="rest-client (v1.6.7, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="rspec (v2.14.1, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="rspec-core (v2.14.5, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="rspec-expectations (v2.14.2, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="rspec-mocks (v2.14.3, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
+    <orderEntry type="library" scope="PROVIDED" name="rspec_junit_formatter (v0.1.6, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="ruby-hmac (v0.4.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="rubyntlm (v0.1.1, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="savon (v0.9.5, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
