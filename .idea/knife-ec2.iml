@@ -16,7 +16,7 @@
     <orderEntry type="library" scope="PROVIDED" name="akami (v1.2.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="builder (v3.2.2, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="bundler (v1.3.5, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
-    <orderEntry type="library" scope="PROVIDED" name="chef (v11.6.0.hotfix.2, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
+    <orderEntry type="library" scope="PROVIDED" name="chef (v11.6.1.dldi, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="diff-lcs (v1.2.4, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="em-winrm (v0.5.4, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
     <orderEntry type="library" scope="PROVIDED" name="erubis (v2.7.0, RVM: ruby-1.9.3-p448 [knife-ec2]) [gem]" level="application" />
