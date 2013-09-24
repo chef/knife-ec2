@@ -58,8 +58,6 @@ class Chef
           fcolor = :green
         when "m1.xlarge"
           fcolor = :red
-        else
-          fcolor = :black
         end
       end
 
