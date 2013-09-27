@@ -66,7 +66,11 @@ class Chef
       option :associate_eip,
         :long => "--associate-eip IP_ADDRESS",
         :description => "Associate existing elastic IP address with instance after launch"
-
+      
+      option :dedicated_instance,
+              :long => "--dedicated_instance",
+              :description => "Launch as a Dedicated instance (VPC ONLY)"
+              
       option :placement_group,
         :long => "--placement-group PLACEMENT_GROUP",
         :description => "The placement group to place a cluster compute instance",
@@ -464,6 +468,7 @@ class Chef
         end
         if vpc_mode?
           msg_pair("Subnet ID", @server.subnet_id)
+          msg_pair("Tenancy", @server.tenancy)
         else
           msg_pair("Public DNS Name", @server.dns_name)
           msg_pair("Public IP Address", @server.public_ip_address)
@@ -571,11 +576,17 @@ class Chef
           ui.error("You are using a VPC, security groups specified with '-G' are not allowed, specify one or more security group ids with '-g' instead.")
           exit 1
         end
+        
         if !vpc_mode? and !!config[:private_ip_address]
           ui.error("You can only specify a private IP address if you are using VPC.")
           exit 1
         end
-
+        
+        if config[:dedicated_instance] and !vpc_mode?
+          ui.error("You can only specify a Dedicated Instance if you are using VPC.")
+          exit 1
+        end
+        
         if config[:associate_eip]
           eips = connection.addresses.collect{|addr| addr if addr.domain == eip_scope}.compact
 
@@ -615,6 +626,7 @@ class Chef
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
         server_def[:placement_group] = locate_config_value(:placement_group)
+        server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
 
         if Chef::Config[:knife][:aws_user_data]
           begin
