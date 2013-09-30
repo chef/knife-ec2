@@ -585,6 +585,7 @@ describe Chef::Knife::Ec2ServerCreate do
       server_def[:private_ip_address].should == '10.0.0.10'
     end
 
+<<<<<<< HEAD
     it "sets the IAM server role when one is specified" do
       @knife_ec2_create.config[:iam_instance_profile] = ['iam-role']
       server_def = @knife_ec2_create.create_server_def
@@ -620,6 +621,14 @@ describe Chef::Knife::Ec2ServerCreate do
       server_def[:tenancy].should == nil
     end
     
+    it "sets associate_public_ip to true if specified and in vpc_mode" do
+      @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
+      @knife_ec2_create.config[:associate_public_ip] = true
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:subnet_id].should == 'subnet-1a2b3c4d'
+      server_def[:associate_public_ip].should == true
+    end
   end
 
   describe "ssh_connect_host" do
