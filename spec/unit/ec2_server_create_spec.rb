@@ -438,6 +438,13 @@ describe Chef::Knife::Ec2ServerCreate do
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
+
+    it "disallows specifying credentials file and aws keys" do
+      Chef::Config[:knife][:aws_credential_file] = '/apple/pear'
+      File.stub(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
   end
 
   describe "when creating the server definition" do
