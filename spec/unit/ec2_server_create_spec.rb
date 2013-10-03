@@ -146,6 +146,17 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.run
     end
 
+    it "set default distro to windows-chef-client-msi for windows" do
+      @knife_ec2_create.config[:winrm_password] = 'winrm-password'
+      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'      
+      @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
+      Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
+      @bootstrap_winrm.should_receive(:run)
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      @knife_ec2_create.config[:distro].should == "windows-chef-client-msi"
+    end
+
     it "bootstraps via the SSH protocol" do
       @knife_ec2_create.config[:bootstrap_protocol] = 'ssh'
       bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
