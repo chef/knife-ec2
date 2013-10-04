@@ -138,7 +138,8 @@ class Chef
         :short => "-d DISTRO",
         :long => "--distro DISTRO",
         :description => "Bootstrap a distro using a template; default is 'chef-full'",
-        :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d }
+        :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d },
+        :default => "chef-full"
 
       option :template_file,
         :long => "--template-file TEMPLATE",
@@ -410,6 +411,8 @@ class Chef
         #Check if Server is Windows or Linux
         if is_image_windows?
           protocol = locate_config_value(:bootstrap_protocol)
+          # Set distro to windows-chef-client-msi
+          config[:distro] = "windows-chef-client-msi" if (config[:distro].nil? || config[:distro] == "chef-full")
           if protocol == 'winrm'
             load_winrm_deps
             print "\n#{ui.color("Waiting for winrm", :magenta)}"
@@ -477,13 +480,11 @@ class Chef
 
       def bootstrap_common_params(bootstrap)
         bootstrap.config[:run_list] = config[:run_list]
-        bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:distro] = locate_config_value(:distro)
         bootstrap.config[:template_file] = locate_config_value(:template_file)
         bootstrap.config[:environment] = locate_config_value(:environment)
         bootstrap.config[:prerelease] = config[:prerelease]
-        bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
         bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
@@ -541,7 +542,6 @@ class Chef
         bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
         bootstrap.config[:identity_file] = config[:identity_file]
         bootstrap.config[:chef_node_name] = locate_config_value(:chef_node_name) || server.id
-        bootstrap.config[:distro] = locate_config_value(:distro) || "chef-full"
         bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
         # may be needed for vpc_mode
         bootstrap.config[:host_key_verify] = config[:host_key_verify]

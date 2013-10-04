@@ -87,6 +87,13 @@ describe Chef::Knife::Ec2ServerCreate do
       @bootstrap.should_receive(:run)
     end
 
+    it "defaults to a distro of 'chef-full' for a linux instance" do
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.config[:distro] = @knife_ec2_create.options[:distro][:default]
+      @knife_ec2_create.run
+      @bootstrap.config[:distro].should == 'chef-full'
+    end
+
     it "creates an EC2 instance and bootstraps it" do
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
@@ -144,6 +151,17 @@ describe Chef::Knife::Ec2ServerCreate do
       @bootstrap_winrm.should_receive(:run)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
+    end
+
+    it "set default distro to windows-chef-client-msi for windows" do
+      @knife_ec2_create.config[:winrm_password] = 'winrm-password'
+      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'      
+      @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
+      Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
+      @bootstrap_winrm.should_receive(:run)
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      @knife_ec2_create.config[:distro].should == "windows-chef-client-msi"
     end
 
     it "bootstraps via the SSH protocol" do
