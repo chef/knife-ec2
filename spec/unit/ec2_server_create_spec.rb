@@ -87,6 +87,13 @@ describe Chef::Knife::Ec2ServerCreate do
       @bootstrap.should_receive(:run)
     end
 
+    it "defaults to a distro of 'chef-full' for a linux instance" do
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.config[:distro] = @knife_ec2_create.options[:distro][:default]
+      @knife_ec2_create.run
+      @bootstrap.config[:distro].should == 'chef-full'
+    end
+
     it "creates an EC2 instance and bootstraps it" do
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run

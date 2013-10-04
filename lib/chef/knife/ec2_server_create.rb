@@ -480,13 +480,11 @@ class Chef
 
       def bootstrap_common_params(bootstrap)
         bootstrap.config[:run_list] = config[:run_list]
-        bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:distro] = locate_config_value(:distro)
         bootstrap.config[:template_file] = locate_config_value(:template_file)
         bootstrap.config[:environment] = locate_config_value(:environment)
         bootstrap.config[:prerelease] = config[:prerelease]
-        bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
         bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
