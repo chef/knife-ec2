@@ -96,7 +96,20 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "creates an EC2 instance and bootstraps it" do
       @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.should_receive(:ssh_override_winrm)
       @knife_ec2_create.run
+      @knife_ec2_create.server.should_not == nil
+    end
+
+    it "set ssh_user value by using -x option for ssh bootstrap protocol or linux image" do
+      # Currently -x option set config[:winrm_user]
+      # default value of config[:ssh_user] is root
+      @knife_ec2_create.config[:winrm_user] = "ubuntu"
+      @knife_ec2_create.config[:ssh_user] = "root"
+
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      @knife_ec2_create.config[:ssh_user].should_not == "ubuntu"
       @knife_ec2_create.server.should_not == nil
     end
 
@@ -149,6 +162,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
       Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
       @bootstrap_winrm.should_receive(:run)
+      @knife_ec2_create.should_not_receive(:ssh_override_winrm)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
     end
@@ -169,6 +183,7 @@ describe Chef::Knife::Ec2ServerCreate do
       bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
       Chef::Knife::BootstrapWindowsSsh.stub(:new).and_return(bootstrap_win_ssh)
       bootstrap_win_ssh.should_receive(:run)
+      @knife_ec2_create.should_receive(:ssh_override_winrm)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
     end
