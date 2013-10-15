@@ -113,6 +113,42 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.server.should_not == nil
     end
 
+    it "set ssh_password value by using -P option for ssh bootstrap protocol or linux image" do
+      # Currently -P option set config[:winrm_password]
+      # default value of config[:ssh_password] is nil
+      @knife_ec2_create.config[:winrm_password] = "winrm_password"
+      @knife_ec2_create.config[:ssh_password] = nil
+
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      @knife_ec2_create.config[:ssh_password].should == "winrm_password"
+      @knife_ec2_create.server.should_not == nil
+    end
+
+    it "set ssh_port value by using -p option for ssh bootstrap protocol or linux image" do
+      # Currently -p option set config[:winrm_port]
+      # default value of config[:ssh_port] is 22
+      @knife_ec2_create.config[:winrm_port] = "1234"
+      @knife_ec2_create.config[:ssh_port] = "22"
+
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      @knife_ec2_create.config[:ssh_port].should == "1234"
+      @knife_ec2_create.server.should_not == nil
+    end
+
+    it "set identity_file value by using -i option for ssh bootstrap protocol or linux image" do
+      # Currently -i option set config[:kerberos_keytab_file]
+      # default value of config[:identity_file] is nil
+      @knife_ec2_create.config[:kerberos_keytab_file] = "kerberos_keytab_file"
+      @knife_ec2_create.config[:identity_file] = nil
+
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      @knife_ec2_create.config[:identity_file].should == "kerberos_keytab_file"
+      @knife_ec2_create.server.should_not == nil
+    end
+
     it "should never invoke windows bootstrap for linux instance" do
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.should_not_receive(:bootstrap_for_windows_node)
