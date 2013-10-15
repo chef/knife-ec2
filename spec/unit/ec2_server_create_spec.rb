@@ -109,7 +109,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
-      @knife_ec2_create.config[:ssh_user].should_not == "ubuntu"
+      @knife_ec2_create.config[:ssh_user].should == "ubuntu"
       @knife_ec2_create.server.should_not == nil
     end
 
