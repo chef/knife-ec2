@@ -113,7 +113,13 @@ class Chef
       end
 
     end
+
+    def iam_name_from_profile(profile)
+      # The IAM profile object only contains the name as part of the arn
+      if profile && profile.key?('arn')
+        name = profile['arn'].split('/')[-1]
+      end
+      name ||= ''
+    end
   end
 end
-
-

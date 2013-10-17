@@ -533,6 +533,19 @@ describe Chef::Knife::Ec2ServerCreate do
       server_def[:subnet_id].should == 'subnet-1a2b3c4d'
       server_def[:private_ip_address].should == '10.0.0.10'
     end
+
+    it "sets the IAM server role when one is specified" do
+      @knife_ec2_create.config[:iam_instance_profile] = ['iam-role']
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:iam_instance_profile_name].should == ['iam-role']
+    end
+
+    it "doesn't set an IAM server role by default" do
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:iam_instance_profile_name].should == nil
+    end
   end
 
   describe "ssh_connect_host" do
