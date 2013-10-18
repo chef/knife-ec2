@@ -207,7 +207,7 @@ class Chef
         :long => "--bootstrap-protocol protocol",
         :description => "protocol to bootstrap windows servers. options: winrm/ssh",
         :proc => Proc.new { |key| Chef::Config[:knife][:bootstrap_protocol] = key },
-        :default => "winrm"
+        :default => "ssh"
 
       option :fqdn,
         :long => "--fqdn FQDN",
