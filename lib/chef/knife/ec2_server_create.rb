@@ -247,6 +247,12 @@ class Chef
         :short => "-a ATTRIBUTE",
         :description => "The EC2 server attribute to use for SSH connection",
         :default => nil
+        
+      option :bootstrap_node,
+        :long => "--[no-]bootstrap-node",
+        :description => "Bootstrap the node after provisioning the server. Enabled by default.",
+        :boolean => true,
+        :default => true
 
     def tcp_test_winrm(ip_addr, port)
       tcp_socket = TCPSocket.new(ip_addr, port)
@@ -438,10 +444,10 @@ class Chef
               puts("done")
             }
           end
-          bootstrap_for_windows_node(@server,ssh_connect_host).run
+          bootstrap_for_windows_node(@server,ssh_connect_host).run if config[:bootstrap_node]
         else
             wait_for_sshd(ssh_connect_host)
-            bootstrap_for_linux_node(@server,ssh_connect_host).run
+            bootstrap_for_linux_node(@server,ssh_connect_host).run if config[:bootstrap_node]
         end
 
         puts "\n"

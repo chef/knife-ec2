@@ -36,6 +36,7 @@ describe Chef::Knife::Ec2ServerCreate do
     }.each do |key, value|
       Chef::Config[:knife][key] = value
     end
+    @knife_ec2_create.config[:bootstrap_node] = true
 
     @ec2_connection = double(Fog::Compute::AWS)
     @ec2_connection.stub_chain(:tags).and_return double('create', :create => true)
@@ -84,7 +85,6 @@ describe Chef::Knife::Ec2ServerCreate do
 
       @bootstrap = Chef::Knife::Bootstrap.new
       Chef::Knife::Bootstrap.stub(:new).and_return(@bootstrap)
-      @bootstrap.should_receive(:run)
     end
 
     it "defaults to a distro of 'chef-full' for a linux instance" do
@@ -95,18 +95,29 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "creates an EC2 instance and bootstraps it" do
+      @bootstrap.should_receive(:run)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
       @knife_ec2_create.server.should_not == nil
     end
 
     it "should never invoke windows bootstrap for linux instance" do
+      @bootstrap.should_receive(:run)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.should_not_receive(:bootstrap_for_windows_node)
       @knife_ec2_create.run
     end
+    
+    it "should not bootstrap if --no-bootstrap-node" do
+      @knife_ec2_create.config[:bootstrap_node] = false
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.should_not_receive(:bootstrap_for_linux_node)
+      @bootstrap.should_not_receive(:run)
+      @knife_ec2_create.run
+    end
 
     it "creates an EC2 instance, assigns existing EIP and bootstraps it" do
+      @bootstrap.should_receive(:run)
       @knife_ec2_create.config[:associate_eip] = @eip
 
       @new_ec2_server.stub(:public_ip_address).and_return(@eip)
@@ -118,6 +129,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "retries if it receives Fog::Compute::AWS::NotFound" do
+      @bootstrap.should_receive(:run)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.should_receive(:create_tags).and_raise(Fog::Compute::AWS::NotFound)
       @knife_ec2_create.should_receive(:create_tags).and_return(true)
@@ -194,6 +206,14 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.stub(:bootstrap_for_windows_node).and_return double("bootstrap", :run => true)
       @knife_ec2_create.run
     end
+    
+    it "should not bootstrap if --no-bootstrap-node" do
+      @knife_ec2_create.config[:bootstrap_node] = false
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.should_not_receive(:bootstrap_for_windows_node)
+      @knife_ec2_create.run
+    end
+    
 
     it "waits for EC2 to generate password if not supplied" do
       @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
