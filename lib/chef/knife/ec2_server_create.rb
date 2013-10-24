@@ -623,11 +623,26 @@ class Chef
         server_def[:placement_group] = locate_config_value(:placement_group)
         server_def[:iam_instance_profile_name] = locate_config_value(:iam_instance_profile)
 
-        if Chef::Config[:knife][:aws_user_data]
-          begin
-            server_def.merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
-          rescue
-            ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+        if is_image_windows?
+          if(locate_config_value(:bootstrap_protocol) == "winrm")
+            server_def.merge!(:user_data => "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:winrm_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:winrm_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell>") if locate_config_value(:winrm_user).downcase != "administrators"
+          else
+            server_def.merge!(:user_data => "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:ssh_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:ssh_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell>") if locate_config_value(:ssh_user).downcase != "administrators"
+          end
+          if Chef::Config[:knife][:aws_user_data]
+            begin
+              server_def[:user_data ] << File.read(Chef::Config[:knife][:aws_user_data])
+            rescue
+              ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            end
+          end
+        else
+          if Chef::Config[:knife][:aws_user_data]
+            begin
+              server_def.merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
+            rescue
+              ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            end
           end
         end
 
