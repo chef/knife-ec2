@@ -662,11 +662,26 @@ class Chef
         server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
         server_def[:associate_public_ip] = locate_config_value(:associate_public_ip) if vpc_mode? and config[:associate_public_ip]
 
-        if Chef::Config[:knife][:aws_user_data]
-          begin
-            server_def.merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
-          rescue
-            ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+        if is_image_windows?
+          if(locate_config_value(:bootstrap_protocol) == "winrm")
+            server_def.merge!(:user_data => "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:winrm_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:winrm_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell>") if locate_config_value(:winrm_user).downcase != "administrators"
+          else
+            server_def.merge!(:user_data => "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:ssh_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:ssh_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell>") if locate_config_value(:ssh_user).downcase != "administrators"
+          end
+          if Chef::Config[:knife][:aws_user_data]
+            begin
+              server_def[:user_data ] << File.read(Chef::Config[:knife][:aws_user_data])
+            rescue
+              ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            end
+          end
+        else
+          if Chef::Config[:knife][:aws_user_data]
+            begin
+              server_def.merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
+            rescue
+              ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            end
           end
         end
 
