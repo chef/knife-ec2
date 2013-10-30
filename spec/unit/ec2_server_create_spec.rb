@@ -190,6 +190,8 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:image] = '12345'
       @knife_ec2_create.stub(:is_image_windows?).and_return(true)
       @knife_ec2_create.stub(:tcp_test_winrm).and_return(true)
+      @knife_ec2_create.config[:winrm_user] = "winrm_user"
+      @knife_ec2_create.config[:ssh_user] = "ssh_user"
     end
 
     it "bootstraps via the WinRM protocol" do
@@ -197,8 +199,8 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
       @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
       Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
-      @bootstrap_winrm.should_receive(:run)
       @knife_ec2_create.should_not_receive(:ssh_override_winrm)
+      @bootstrap_winrm.should_receive(:run).and_return(0)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
     end
@@ -208,7 +210,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'      
       @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
       Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
-      @bootstrap_winrm.should_receive(:run)
+      @bootstrap_winrm.should_receive(:run).and_return(0)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
       @knife_ec2_create.config[:distro].should == "windows-chef-client-msi"
@@ -218,8 +220,8 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:bootstrap_protocol] = 'ssh'
       bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
       Chef::Knife::BootstrapWindowsSsh.stub(:new).and_return(bootstrap_win_ssh)
-      bootstrap_win_ssh.should_receive(:run)
       @knife_ec2_create.should_receive(:ssh_override_winrm)
+      bootstrap_win_ssh.should_receive(:run).and_return(0)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
     end
@@ -232,7 +234,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
       bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
       Chef::Knife::BootstrapWindowsSsh.stub(:new).and_return(bootstrap_win_ssh)
-      bootstrap_win_ssh.should_receive(:run)
+      bootstrap_win_ssh.should_receive(:run).and_return(0)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
     end
@@ -249,12 +251,12 @@ describe Chef::Knife::Ec2ServerCreate do
     it "waits for EC2 to generate password if not supplied" do
       @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
       @knife_ec2_create.config[:winrm_password] = nil
-      @knife_ec2_create.should_receive(:windows_password).and_return("")
+      @knife_ec2_create.should_receive(:windows_password).exactly(2).times.and_return("")
       @new_ec2_server.stub(:wait_for).and_return(true)
       @knife_ec2_create.stub(:check_windows_password_available).and_return(true)
       bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
       Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(bootstrap_winrm)
-      bootstrap_winrm.should_receive(:run)
+      bootstrap_winrm.should_receive(:run).and_return(0)
       @knife_ec2_create.run
     end
   end
@@ -634,6 +636,32 @@ describe Chef::Knife::Ec2ServerCreate do
 
       server_def[:subnet_id].should == 'subnet-1a2b3c4d'
       server_def[:associate_public_ip].should == true
+
+    it "set user create powershell script for windows winrm bootstrap" do
+      @knife_ec2_create.stub(:is_image_windows?).and_return(true)
+      @knife_ec2_create.stub(:windows_password).and_return('windows_password')
+      Chef::Config[:knife][:bootstrap_protocol] = 'winrm'
+      Chef::Config[:knife][:winrm_user] = 'winrm_user'
+      server_def = @knife_ec2_create.create_server_def
+      server_def[:user_data].should == "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"winrm_user\")\n $newuser.SetPassword(\"windows_password\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell>"
+    end
+
+    it "set user create powershell script for windows ssh bootstrap" do
+      @knife_ec2_create.stub(:is_image_windows?).and_return(true)
+      Chef::Config[:knife][:bootstrap_protocol] = 'ssh'
+      Chef::Config[:knife][:ssh_user] = 'ssh_user'
+      server_def = @knife_ec2_create.create_server_def
+      server_def[:user_data].should == "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"ssh_user\")\n $newuser.SetPassword(\"\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell>"
+    end
+
+    it "set user create powershell script for windows ssh bootstrap and append user specified user_data" do
+      @knife_ec2_create.stub(:is_image_windows?).and_return(true)
+      Chef::Config[:knife][:aws_user_data] = true
+      Chef::Config[:knife][:bootstrap_protocol] = 'ssh'
+      Chef::Config[:knife][:ssh_user] = 'ssh_user'
+      File.stub(:read).and_return("<script>echo \"testIT\"</script>")
+      server_def = @knife_ec2_create.create_server_def
+      server_def[:user_data].should == "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"ssh_user\")\n $newuser.SetPassword(\"\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell><script>echo \"testIT\"</script>"
     end
   end
 
