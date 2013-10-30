@@ -96,7 +96,56 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "creates an EC2 instance and bootstraps it" do
       @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.should_receive(:ssh_override_winrm)
       @knife_ec2_create.run
+      @knife_ec2_create.server.should_not == nil
+    end
+
+    it "set ssh_user value by using -x option for ssh bootstrap protocol or linux image" do
+      # Currently -x option set config[:winrm_user]
+      # default value of config[:ssh_user] is root
+      @knife_ec2_create.config[:winrm_user] = "ubuntu"
+      @knife_ec2_create.config[:ssh_user] = "root"
+
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      @knife_ec2_create.config[:ssh_user].should == "ubuntu"
+      @knife_ec2_create.server.should_not == nil
+    end
+
+    it "set ssh_password value by using -P option for ssh bootstrap protocol or linux image" do
+      # Currently -P option set config[:winrm_password]
+      # default value of config[:ssh_password] is nil
+      @knife_ec2_create.config[:winrm_password] = "winrm_password"
+      @knife_ec2_create.config[:ssh_password] = nil
+
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      @knife_ec2_create.config[:ssh_password].should == "winrm_password"
+      @knife_ec2_create.server.should_not == nil
+    end
+
+    it "set ssh_port value by using -p option for ssh bootstrap protocol or linux image" do
+      # Currently -p option set config[:winrm_port]
+      # default value of config[:ssh_port] is 22
+      @knife_ec2_create.config[:winrm_port] = "1234"
+      @knife_ec2_create.config[:ssh_port] = "22"
+
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      @knife_ec2_create.config[:ssh_port].should == "1234"
+      @knife_ec2_create.server.should_not == nil
+    end
+
+    it "set identity_file value by using -i option for ssh bootstrap protocol or linux image" do
+      # Currently -i option set config[:kerberos_keytab_file]
+      # default value of config[:identity_file] is nil
+      @knife_ec2_create.config[:kerberos_keytab_file] = "kerberos_keytab_file"
+      @knife_ec2_create.config[:identity_file] = nil
+
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      @knife_ec2_create.config[:identity_file].should == "kerberos_keytab_file"
       @knife_ec2_create.server.should_not == nil
     end
 
@@ -149,6 +198,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
       Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
       @bootstrap_winrm.should_receive(:run)
+      @knife_ec2_create.should_not_receive(:ssh_override_winrm)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
     end
@@ -169,6 +219,7 @@ describe Chef::Knife::Ec2ServerCreate do
       bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
       Chef::Knife::BootstrapWindowsSsh.stub(:new).and_return(bootstrap_win_ssh)
       bootstrap_win_ssh.should_receive(:run)
+      @knife_ec2_create.should_receive(:ssh_override_winrm)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
     end
