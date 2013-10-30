@@ -433,7 +433,25 @@ class Chef
               puts("done")
             }
           end
-          bootstrap_for_windows_node(@server,ssh_connect_host).run
+
+          tries = 20
+          begin
+            until (tries -= 1) <= 0 do
+              windows_bootstrap = bootstrap_for_windows_node(@server,ssh_connect_host)
+              exit_status = windows_bootstrap.run
+              if exit_status == 0
+                break
+              elsif exit_status == 1
+                puts("Retrying bootstrap again...") 
+                sleep 60
+              end
+            end
+          rescue HTTPClient::ConnectTimeoutError => e
+            raise if (tries -= 1) <= 0
+            sleep 60
+            puts("Retrying bootstrap again...")
+            retry
+          end
         else
             wait_for_sshd(ssh_connect_host)
             bootstrap_for_linux_node(@server,ssh_connect_host).run
@@ -625,7 +643,7 @@ class Chef
 
         if is_image_windows?
           if(locate_config_value(:bootstrap_protocol) == "winrm")
-            server_def.merge!(:user_data => "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:winrm_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:winrm_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell>") if locate_config_value(:winrm_user).downcase != "administrators"
+            server_def.merge!(:user_data => "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:winrm_user)}\")\n $newuser.SetPassword(\"#{windows_password}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell>") if locate_config_value(:winrm_user).downcase != "administrators"
           else
             server_def.merge!(:user_data => "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:ssh_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:ssh_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell>") if locate_config_value(:ssh_user).downcase != "administrators"
           end
