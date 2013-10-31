@@ -398,7 +398,7 @@ class Chef
         begin
           create_tags(hashed_tags) unless hashed_tags.empty?
           associate_eip(elastic_ip) if config[:associate_eip]
-        rescue Fog::Compute::AWS::NotFound => e
+        rescue Fog::Compute::AWS::NotFound, Fog::Errors::Error => e
           raise if (tries -= 1) <= 0
           ui.warn("server not ready, retrying tag application (retries left: #{tries})")
           sleep 5
