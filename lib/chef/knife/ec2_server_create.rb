@@ -458,6 +458,25 @@ class Chef
             puts("Retrying bootstrap again...")
             retry
           end
+
+          tries = 20
+          begin
+            until (tries -= 1) <= 0 do
+              windows_bootstrap = bootstrap_for_windows_node(@server,ssh_connect_host)
+              exit_status = windows_bootstrap.run
+              if exit_status == 0
+                break
+              elsif exit_status == 1
+                puts("Retrying bootstrap again...") 
+                sleep 60
+              end
+            end
+          rescue HTTPClient::ConnectTimeoutError => e
+            raise if (tries -= 1) <= 0
+            sleep 60
+            puts("Retrying bootstrap again...")
+            retry
+          end
         else
             wait_for_sshd(ssh_connect_host)
             ssh_override_winrm

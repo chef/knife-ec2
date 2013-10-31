@@ -220,7 +220,6 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:bootstrap_protocol] = 'ssh'
       bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
       Chef::Knife::BootstrapWindowsSsh.stub(:new).and_return(bootstrap_win_ssh)
-      @knife_ec2_create.should_receive(:ssh_override_winrm)
       bootstrap_win_ssh.should_receive(:run).and_return(0)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.run
