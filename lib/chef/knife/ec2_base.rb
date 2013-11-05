@@ -34,6 +34,11 @@ class Chef
             require 'chef/json_compat'
           end
 
+          option :aws_credential_file,
+            :long => "--aws-credential-file FILE",
+            :description => "File containing AWS credentials as used by aws cmdline tools",
+            :proc => Proc.new { |key| Chef::Config[:knife][:aws_credential_file] = key }
+
           option :aws_access_key_id,
             :short => "-A ID",
             :long => "--aws-access-key-id KEY",
@@ -83,6 +88,18 @@ class Chef
       def validate!(keys=[:aws_access_key_id, :aws_secret_access_key])
         errors = []
 
+        unless Chef::Config[:knife][:aws_credential_file].nil?
+          unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
+            errors << "Either provide a credentials file or the access key and secret keys but not both."
+          end
+          # File format:
+          # AWSAccessKeyId=somethingsomethingdarkside
+          # AWSSecretKey=somethingsomethingcomplete
+          entries = Hash[*File.read(Chef::Config[:knife][:aws_credential_file]).split(/[=\n]/)]
+          Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId']
+          Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey']
+        end
+
         keys.each do |k|
           pretty_key = k.to_s.gsub(/_/, ' ').gsub(/\w+/){ |w| (w =~ /(ssh)|(aws)/i) ? w.upcase  : w.capitalize }
           if Chef::Config[:knife][k].nil?
@@ -96,7 +113,13 @@ class Chef
       end
 
     end
+
+    def iam_name_from_profile(profile)
+      # The IAM profile object only contains the name as part of the arn
+      if profile && profile.key?('arn')
+        name = profile['arn'].split('/')[-1]
+      end
+      name ||= ''
+    end
   end
 end
-
-
