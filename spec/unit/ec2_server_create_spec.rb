@@ -597,6 +597,29 @@ describe Chef::Knife::Ec2ServerCreate do
 
       server_def[:iam_instance_profile_name].should == nil
     end
+    
+    it 'Set Tenancy Dedicated when both VPC mode and Flag is True' do
+      @knife_ec2_create.config[:dedicated_instance] = true
+      @knife_ec2_create.stub(:vpc_mode? => true)
+      
+      server_def = @knife_ec2_create.create_server_def
+      server_def[:tenancy].should == "dedicated"
+    end
+    
+    it 'Tenancy should be default with no vpc mode even is specified' do
+      @knife_ec2_create.config[:dedicated_instance] = true
+      
+      server_def = @knife_ec2_create.create_server_def
+      server_def[:tenancy].should == nil
+    end
+    
+    it 'Tenancy should be default with vpc but not requested' do
+      @knife_ec2_create.stub(:vpc_mode? => true)
+      
+      server_def = @knife_ec2_create.create_server_def
+      server_def[:tenancy].should == nil
+    end
+    
   end
 
   describe "ssh_connect_host" do
@@ -620,7 +643,6 @@ describe Chef::Knife::Ec2ServerCreate do
         @knife_ec2_create.stub(:vpc_mode? => true)
         @knife_ec2_create.ssh_connect_host.should == 'private_ip'
       end
-
     end
 
     describe "with custom server attribute" do
