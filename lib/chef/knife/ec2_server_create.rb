@@ -216,7 +216,7 @@ class Chef
         :long => "--bootstrap-protocol protocol",
         :description => "protocol to bootstrap windows servers. options: winrm/ssh",
         :proc => Proc.new { |key| Chef::Config[:knife][:bootstrap_protocol] = key },
-        :default => "winrm"
+        :default => nil
 
       option :fqdn,
         :long => "--fqdn FQDN",
@@ -426,6 +426,7 @@ class Chef
         #Check if Server is Windows or Linux
         if is_image_windows?
           protocol = locate_config_value(:bootstrap_protocol)
+          protocol ||= 'winrm'
           # Set distro to windows-chef-client-msi
           config[:distro] = "windows-chef-client-msi" if (config[:distro].nil? || config[:distro] == "chef-full")
           if protocol == 'winrm'
@@ -522,7 +523,7 @@ class Chef
       end
 
       def bootstrap_for_windows_node(server, fqdn)
-        if locate_config_value(:bootstrap_protocol) == 'winrm'
+        if locate_config_value(:bootstrap_protocol) == 'winrm' || locate_config_value(:bootstrap_protocol) == nil
             if locate_config_value(:kerberos_realm)
               #Fetch AD/WINS based fqdn if any for Kerberos-based Auth
               fqdn = locate_config_value(:fqdn) || fetch_server_fqdn(server.private_ip_address)
