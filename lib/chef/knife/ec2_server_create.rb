@@ -128,6 +128,13 @@ class Chef
         :description => "The ssh gateway server",
         :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway] = key }
 
+      option :ssh_config,
+        :short => "-F CONFIG",
+        :long => "--ssh-config CONFIG",
+        :description => "The ssh config file setting(true, false or files)",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_config] = key.strip },
+        :default => true
+
       option :identity_file,
         :short => "-i IDENTITY_FILE",
         :long => "--identity-file IDENTITY_FILE",
@@ -707,7 +714,9 @@ class Chef
       def tunnel_test_ssh(hostname, &block)
         gw_host, gw_user = config[:ssh_gateway].split('@').reverse
         gw_host, gw_port = gw_host.split(':')
-        gateway = Net::SSH::Gateway.new(gw_host, gw_user, :port => gw_port || 22)
+        options = { :port => gw_port || 22, :config => config[:ssh_config] }
+        options[:keys] = %w(~/.ssh/id_dsa ~/.ssh/id_rsa ~/.ssh/id_ecdsa ~/.ssh2/id_dsa ~/.ssh2/id_rsa ~/.ssh2/id_ecdsa)+Array(config[:identity_file]) if config.key?(:identity_file)
+        gateway = Net::SSH::Gateway.new(gw_host, gw_user, options)
         status = false
         gateway.open(hostname, config[:ssh_port]) do |local_tunnel_port|
           status = tcp_test_ssh('localhost', local_tunnel_port, &block)
