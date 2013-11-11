@@ -463,14 +463,14 @@ class Chef
               if exit_status == 0
                 break
               elsif exit_status == 1
-                puts("Retrying bootstrap again...") 
+                ui.info("Retrying bootstrap again...") 
                 sleep 60
               end
             end
           rescue HTTPClient::ConnectTimeoutError => e
             raise if (tries -= 1) <= 0
             sleep 60
-            puts("Retrying bootstrap again...")
+            ui.info("Retrying bootstrap again...")
             retry
           end
         else
