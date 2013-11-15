@@ -514,6 +514,13 @@ describe Chef::Knife::Ec2ServerCreate do
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
+
+    it "disallows associate public ip option when not using a VPC" do
+      @knife_ec2_create.config[:associate_public_ip] = true
+      @knife_ec2_create.config[:subnet_id] = nil
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
   end
 
   describe "when creating the server definition" do
