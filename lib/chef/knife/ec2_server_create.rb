@@ -614,6 +614,11 @@ class Chef
           exit 1
         end
         
+        if !vpc_mode? and config[:associate_public_ip]
+          ui.error("--associate-public-ip option only applies to VPC instances, and you have not specified a subnet id.")
+          exit 1
+        end
+
         if config[:associate_eip]
           eips = connection.addresses.collect{|addr| addr if addr.domain == eip_scope}.compact
 
