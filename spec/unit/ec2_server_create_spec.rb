@@ -115,7 +115,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.should_receive(:create_tags).and_raise(Fog::Compute::AWS::NotFound)
       @knife_ec2_create.should_receive(:create_tags).and_return(true)
-      @knife_ec2_create.should_receive(:sleep).at_least(:twice).and_return(true)
+      @knife_ec2_create.should_receive(:sleep).and_return(true)
       @knife_ec2_create.ui.should_receive(:warn).with(/retrying/)
       @knife_ec2_create.run
     end

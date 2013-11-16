@@ -19,6 +19,7 @@
 
 require 'chef/knife/ec2_base'
 require 'chef/knife/winrm_base'
+require 'timeout'
 
 class Chef
   class Knife
@@ -236,7 +237,9 @@ class Chef
         or true if it runs successfully.  
       '''
         session_opts = {}
-        command = 'cmd.exe /C ipconfig'
+        command = 'ipconfig'
+
+        server_ip = vpc_mode? ? server.private_ip_address : server.public_ip_address 
 
         session_opts[:user] = locate_config_value(:winrm_user)
         session_opts[:password] = locate_config_value(:winrm_password)
@@ -275,7 +278,7 @@ class Chef
             Chef::Log.debug(session_opts)
 
             Chef::Log.debug("Setting session opts")
-            session.use(server,session_opts)
+            session.use(server_ip,session_opts)
 
             Chef::Log.debug("Running ipconfig test command")
             session.relay_command(command)
@@ -494,19 +497,24 @@ class Chef
           bootstrap = bootstrap_for_windows_node(@server,ssh_connect_host)
           
           if config[:bootstrap_protocol] == 'winrm'
-            print "\n#{ui.color("Waiting to successfully run WinRM test command", :magenta)}"
-            print(".") until ready_to_run_winrm_commands(@server.private_ip_address) {
-              puts("done")
-            }
-            print "\n#{ui.color(" *****  WINning! *****", :green)}"
+            print "\n#{ui.color("Attempting to run a test command via WinRM", :magenta)}"
+            begin
+              # Timeout after 10 minutes
+              Timeout::timeout(600) do
+                 print(".") until ready_to_run_winrm_commands(@server) {
+                  puts("done")
+                }
+                print "\n\n#{ui.color(" *****  Ready to cook! *****\n", :green)}"
+              end
+            rescue Timeout::Error
+              puts "\n\n#{ui.color("Timed out.  Failed to successfully run WinRM commands against the server.", :red)}" 
+              exit 1
+            end
           end
           
-
           bootstrap.run
         else
             wait_for_sshd(ssh_connect_host)
-            # Waiting a bit for linux initialization scripts to run 
-            sleep 10
             bootstrap_for_linux_node(@server,ssh_connect_host).run
         end
 
