@@ -251,6 +251,10 @@ class Chef
         :short => "-a ATTRIBUTE",
         :description => "The EC2 server attribute to use for SSH connection",
         :default => nil
+      
+      option :forward_agent,
+        :long => "--forward-agent",
+        :description => "Forward agent when using an SSH gateway"
 
     def tcp_test_winrm(ip_addr, port)
       tcp_socket = TCPSocket.new(ip_addr, port)
@@ -565,6 +569,7 @@ class Chef
         bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
         # may be needed for vpc_mode
         bootstrap.config[:host_key_verify] = config[:host_key_verify]
+        bootstrap.config[:forward_agent] = config[:forward_agent]
         bootstrap_common_params(bootstrap)
       end
 
