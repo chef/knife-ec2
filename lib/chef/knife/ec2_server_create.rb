@@ -249,7 +249,7 @@ class Chef
         session_opts[:realm] = locate_config_value(:kerberos_realm)
         session_opts[:service] = locate_config_value(:kerberos_service)
         session_opts[:ca_trust_path] = locate_config_value(:ca_trust_file)
-        session_opts[:operation_timeout] = 60 # 2 min OperationTimeout for long bootstraps fix for KNIFE_WINDOWS-8
+        session_opts[:operation_timeout] = 60 # 1 min OperationTimeout for long bootstraps fix for KNIFE_WINDOWS-8
         session_opts[:basic_auth_only] = true
 
         ## If you have a \\ in your name you need to use NTLM domain authentication
