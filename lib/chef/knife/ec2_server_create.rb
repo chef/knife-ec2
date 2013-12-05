@@ -6,7 +6,7 @@
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# You may obtain a copy of the License atlong bootstraps fix for
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
@@ -249,7 +249,7 @@ class Chef
         session_opts[:realm] = locate_config_value(:kerberos_realm)
         session_opts[:service] = locate_config_value(:kerberos_service)
         session_opts[:ca_trust_path] = locate_config_value(:ca_trust_file)
-        session_opts[:operation_timeout] = 1800 # 30 min OperationTimeout for long bootstraps fix for KNIFE_WINDOWS-8
+        session_opts[:operation_timeout] = 60 # 2 min OperationTimeout for long bootstraps fix for KNIFE_WINDOWS-8
         session_opts[:basic_auth_only] = true
 
         ## If you have a \\ in your name you need to use NTLM domain authentication
