@@ -252,6 +252,12 @@ class Chef
         :description => "The EC2 server attribute to use for SSH connection",
         :default => nil
 
+      option :associate_public_ip,
+        :long => "--associate-public-ip",
+        :description => "Associate public ip to VPC instance.",
+        :boolean => true,
+        :default => false        
+
     def tcp_test_winrm(ip_addr, port)
       tcp_socket = TCPSocket.new(ip_addr, port)
       yield
@@ -412,6 +418,9 @@ class Chef
         if vpc_mode?
           msg_pair("Subnet ID", @server.subnet_id)
           msg_pair("Tenancy", @server.tenancy)
+          if config[:associate_public_ip]
+            msg_pair("Public DNS Name", @server.dns_name)
+          end
           if elastic_ip
             msg_pair("Public IP Address", @server.public_ip_address)
           end
@@ -487,6 +496,9 @@ class Chef
         if vpc_mode?
           msg_pair("Subnet ID", @server.subnet_id)
           msg_pair("Tenancy", @server.tenancy)
+          if config[:associate_public_ip]
+            msg_pair("Public DNS Name", @server.dns_name)
+          end
         else
           msg_pair("Public DNS Name", @server.dns_name)
           msg_pair("Public IP Address", @server.public_ip_address)
@@ -602,6 +614,11 @@ class Chef
           exit 1
         end
         
+        if !vpc_mode? and config[:associate_public_ip]
+          ui.error("--associate-public-ip option only applies to VPC instances, and you have not specified a subnet id.")
+          exit 1
+        end
+
         if config[:associate_eip]
           eips = connection.addresses.collect{|addr| addr if addr.domain == eip_scope}.compact
 
@@ -643,6 +660,7 @@ class Chef
         server_def[:placement_group] = locate_config_value(:placement_group)
         server_def[:iam_instance_profile_name] = locate_config_value(:iam_instance_profile)
         server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
+        server_def[:associate_public_ip] = locate_config_value(:associate_public_ip) if vpc_mode? and config[:associate_public_ip]
 
         if Chef::Config[:knife][:aws_user_data]
           begin

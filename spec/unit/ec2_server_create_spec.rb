@@ -23,7 +23,7 @@ require 'chef/knife/bootstrap_windows_winrm'
 require 'chef/knife/bootstrap_windows_ssh'
 
 describe Chef::Knife::Ec2ServerCreate do
-  before do
+  before(:each) do
     @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
     @knife_ec2_create.initial_sleep_delay = 0
     @knife_ec2_create.stub(:tcp_test_ssh).and_return(true)
@@ -514,6 +514,13 @@ describe Chef::Knife::Ec2ServerCreate do
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
+
+    it "disallows associate public ip option when not using a VPC" do
+      @knife_ec2_create.config[:associate_public_ip] = true
+      @knife_ec2_create.config[:subnet_id] = nil
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
   end
 
   describe "when creating the server definition" do
@@ -620,6 +627,14 @@ describe Chef::Knife::Ec2ServerCreate do
       server_def[:tenancy].should == nil
     end
     
+    it "sets associate_public_ip to true if specified and in vpc_mode" do
+      @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
+      @knife_ec2_create.config[:associate_public_ip] = true
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:subnet_id].should == 'subnet-1a2b3c4d'
+      server_def[:associate_public_ip].should == true
+    end
   end
 
   describe "ssh_connect_host" do
