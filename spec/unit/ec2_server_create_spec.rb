@@ -23,7 +23,7 @@ require 'chef/knife/bootstrap_windows_winrm'
 require 'chef/knife/bootstrap_windows_ssh'
 
 describe Chef::Knife::Ec2ServerCreate do
-  before do
+  before(:each) do
     @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
     @knife_ec2_create.initial_sleep_delay = 0
     @knife_ec2_create.stub(:tcp_test_ssh).and_return(true)
@@ -592,7 +592,6 @@ describe Chef::Knife::Ec2ServerCreate do
       server_def[:private_ip_address].should == '10.0.0.10'
     end
 
-<<<<<<< HEAD
     it "sets the IAM server role when one is specified" do
       @knife_ec2_create.config[:iam_instance_profile] = ['iam-role']
       server_def = @knife_ec2_create.create_server_def
