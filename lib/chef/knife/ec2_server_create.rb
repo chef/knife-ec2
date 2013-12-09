@@ -258,6 +258,12 @@ class Chef
         :boolean => true,
         :default => false        
 
+      option :use_public_interface,
+        :long => "--use-public-interface",
+        :description => "Use the public interface to initialize the VPC host.",
+        :boolean => true,
+        :default => false
+
     def tcp_test_winrm(ip_addr, port)
       tcp_socket = TCPSocket.new(ip_addr, port)
       yield
@@ -421,7 +427,7 @@ class Chef
           if config[:associate_public_ip]
             msg_pair("Public DNS Name", @server.dns_name)
           end
-          if elastic_ip
+          if elastic_ip or config[:associate_public_ip]
             msg_pair("Public IP Address", @server.public_ip_address)
           end
         else
@@ -619,6 +625,11 @@ class Chef
           exit 1
         end
 
+        if !vpc_mode? and config[:use_public_interface]
+          ui.error("--use-public-interface option only applies to VPC instances, and you have not specified a subnet id.")
+          exit 1
+        end
+
         if config[:associate_eip]
           eips = connection.addresses.collect{|addr| addr if addr.domain == eip_scope}.compact
 
@@ -748,8 +759,10 @@ class Chef
       def ssh_connect_host
         @ssh_connect_host ||= if config[:server_connect_attribute]
           server.send(config[:server_connect_attribute])
+        elsif vpc_mode? and !config[:use_public_interface]
+          server.private_ip_address
         else
-          vpc_mode? ? server.private_ip_address : server.dns_name
+          server.dns_name
         end
       end
 
