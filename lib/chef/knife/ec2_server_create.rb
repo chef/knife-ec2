@@ -421,7 +421,7 @@ class Chef
           if config[:associate_public_ip]
             msg_pair("Public DNS Name", @server.dns_name)
           end
-          if elastic_ip
+          if elastic_ip or config[:associate_public_ip]
             msg_pair("Public IP Address", @server.public_ip_address)
           end
         else
