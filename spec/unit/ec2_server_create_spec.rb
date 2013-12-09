@@ -521,6 +521,13 @@ describe Chef::Knife::Ec2ServerCreate do
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
+
+    it "disallows use pubic interface option when not using a VPC" do
+      @knife_ec2_create.config[:use_public_interface] = true
+      @knife_ec2_create.config[:subnet_id] = nil
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
   end
 
   describe "when creating the server definition" do
@@ -654,9 +661,17 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     describe "with vpc_mode?" do
-      it 'should use private ip' do
+      before(:each) do
         @knife_ec2_create.stub(:vpc_mode? => true)
+      end
+
+      it 'should use private ip' do
         @knife_ec2_create.ssh_connect_host.should == 'private_ip'
+      end
+
+      it "should use public interface if specified" do
+        @knife_ec2_create.config[:use_public_interface] = true
+        @knife_ec2_create.ssh_connect_host.should == 'public_name'
       end
     end
 
