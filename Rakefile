@@ -1,57 +1,35 @@
-#
-# Author:: Adam Jacob (<adam@opscode.com>)
-# Author:: Daniel DeLeo (<dan@opscode.com>)
-# Author:: Seth Chisamore (<schisamo@opscode.com>)
-# Copyright:: Copyright (c) 2008, 2010 Opscode, Inc.
-# License:: Apache License, Version 2.0
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+# Author:: Prabhu Das (<prabhu.das@clogeny.com>)
+# Copyright:: Copyright (c) 2013 Opscode, Inc.
 
 require 'bundler'
 Bundler::GemHelper.install_tasks
 
-# require 'rubygems'
-# require 'rake/gempackagetask'
-require 'rdoc/task'
+require 'rubygems'
+require 'rubygems/package_task'
 
-begin
-  require 'sdoc'
-  require 'rdoc/task'
+task :default => :all
+task :all => [:spec, :uninstall, :install]
 
-  RDoc::Task.new do |rdoc|
-    rdoc.title = "Chef Ruby API Documentation"
-    rdoc.main = "README.rdoc"
-    rdoc.options << '--fmt' << 'shtml' # explictly set shtml generator
-    rdoc.template = 'direct' # lighter template
-    rdoc.rdoc_files.include("README.rdoc", "LICENSE", "spec/tiny_server.rb", "lib/**/*.rb")
-    rdoc.rdoc_dir = "rdoc"
-  end
-rescue LoadError
-  puts "sdoc is not available. (sudo) gem install sdoc to generate rdoc documentation."
+# Packaging
+GEM_NAME = "knife-ec2"
+require File.dirname(__FILE__) + '/lib/knife-ec2/version'
+spec = eval(File.read("knife-ec2.gemspec"))
+Gem::PackageTask.new(spec) do |pkg|
+  pkg.gem_spec = spec
 end
 
+desc "uninstall #{GEM_NAME}-#{Knife::Cloud::VERSION}.gem from system..."
+task :uninstall do
+  sh %{gem uninstall #{GEM_NAME} -x -v #{Knife::Cloud::VERSION} }
+end
+
+# rspec
 begin
   require 'rspec/core/rake_task'
-
-  task :default => :spec
-
   desc "Run all specs in spec directory"
   RSpec::Core::RakeTask.new(:spec) do |t|
     t.pattern = 'spec/unit/**/*_spec.rb'
   end
-
 rescue LoadError
   STDERR.puts "\n*** RSpec not available. (sudo) gem install rspec to run unit tests. ***\n\n"
 end
-

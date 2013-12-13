@@ -1,37 +1,23 @@
-.rake_tasks~
-tags
-coverage
-rdoc
-pkg
-test/tmp
-test/version_tmp
-tmp
-pkg
 *.gem
-*.rbc
-lib/bundler/man
-spec/reports
-.config
-InstalledFiles
 .bundle
-
-# YARD artifacts
-.yardoc
-_yardoc
-doc/
-
-.DS_Store
-Icon?
-
-# Thumbnails
-._*
-
-# Files that might appear on external disk
-.Spotlight-V100
-.Trashes
-
-*.swp
-*.swo
-
+.rvmrc
 Gemfile.lock
-.rspec
+.autotest
+coverage
+.DS_Store
+pkg
+*/tags
+
+# ignore some common Bundler 'binstubs' directory names
+# http://gembundler.com/man/bundle-exec.1.html
+b/
+binstubs/
+
+# RVM and RBENV ruby version files
+.rbenv-version
+.rvmrc
+
+# Documentation
+_site/*
+.yardoc/
+doc/
