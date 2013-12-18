@@ -13,15 +13,13 @@ class Chef
         def initialize(options = {})
           Chef::Log.debug("aws_access_key_id #{Chef::Config[:knife][:aws_access_key_id]}")
           Chef::Log.debug("aws_secret_access_key #{Chef::Config[:knife][:aws_secret_access_key]}")
-          Chef::Log.debug("aws_credential_file #{Chef::Config[:knife][:aws_credential_file]}")
           Chef::Log.debug("region #{Chef::Config[:knife][:region].to_s}")
 
           super(options.merge({
                               :auth_params => {
                                 :provider => 'AWS',
                                 :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
-                                :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-                                :aws_credential_file => Chef::Config[:knife][:aws_credential_file],
+                                :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],    
                                 :region => Chef::Config[:knife][:region]
                 }}))
         end
