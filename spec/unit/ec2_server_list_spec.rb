@@ -35,5 +35,39 @@ describe Chef::Knife::Cloud::Ec2ServerList do
       instance.ui.should_receive(:error).with("You did not provide a valid 'AWS Secret Access Key' value.")
       expect { instance.validate! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError)
     end
+
+    context "with aws_credential_file" do
+      before(:each) do
+        Chef::Config[:knife][:aws_credential_file] = "creds_file_path"
+      end
+
+      it "raise error while specifying credentials file and aws keys together." do
+        File.stub(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
+        instance.ui.should_receive(:error).with("Either provide a credentials file or the access key and secret keys but not both.")
+        lambda { instance.validate! }.should raise_error 
+      end
+
+      it "validate ec2 mandatory options when aws_credential_file is not provided." do
+        Chef::Config[:knife].delete(:aws_credential_file)
+        expect {instance.validate!}.to_not raise_error 
+      end
+
+      it "raise error while specifying credentials file with only aws_access_key_id." do
+        Chef::Config[:knife].delete(:aws_access_key_id)
+        Chef::Config[:knife].delete(:aws_secret_access_key)
+        File.stub(:read).and_return("AWSAccessKeyId=b")
+        instance.ui.should_receive(:error).with("You did not provide a valid 'AWS Secret Access Key' value.")
+        lambda { instance.validate! }.should raise_error 
+      end
+
+      it "raise error while specifying credentials file with only aws_secret_access_key." do
+        Chef::Config[:knife].delete(:aws_access_key_id)
+        Chef::Config[:knife].delete(:aws_secret_access_key)
+        File.stub(:read).and_return("AWSSecretKey=a")
+        instance.ui.should_receive(:error).with("You did not provide a valid 'AWS Access Key Id' value.")
+        lambda { instance.validate! }.should raise_error 
+      end
+
+    end
   end
 end
