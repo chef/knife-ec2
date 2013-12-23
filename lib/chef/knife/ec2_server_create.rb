@@ -454,10 +454,7 @@ class Chef
             }
             ssh_override_winrm
           end
-
-
-          bootstrap_for_windows_node(@server,ssh_connect_host).run
-  
+          bootstrap_for_windows_node(@server,ssh_connect_host).run  
         else
             wait_for_sshd(ssh_connect_host)
             ssh_override_winrm
@@ -692,7 +689,6 @@ class Chef
           end
           
           # in case there is no PS script, we dont send empty <powershell> script to ec2 user-data
-          # we will reset the user-data to nil
           server_def[:user_data].gsub("<powershell></powershell>", "")
           Chef::Log.debug server_def[:user_data]
         else
