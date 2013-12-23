@@ -635,6 +635,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
       server_def[:subnet_id].should == 'subnet-1a2b3c4d'
       server_def[:associate_public_ip].should == true
+    end
 
     it "set user create powershell script for windows winrm bootstrap" do
       @knife_ec2_create.stub(:is_image_windows?).and_return(true)
@@ -642,7 +643,18 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][:bootstrap_protocol] = 'winrm'
       Chef::Config[:knife][:winrm_user] = 'winrm_user'
       server_def = @knife_ec2_create.create_server_def
-      server_def[:user_data].should == "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"winrm_user\")\n $newuser.SetPassword(\"windows_password\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell>"
+      server_def[:user_data].should == "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$username = \"winrm_user\"\n$splitusername=$username.split(\"\\\\\")\nif($splitusername[1] -eq $null) { $username = $splitusername[0] }\nelse { $username = $splitusername[1] }\n$newuser = $computer.Create(\"user\", $username)\n $newuser.Path = $newuser.Path -replace(\".\\\\\", \"\")\n $newuser.SetPassword(\"windows_password\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n </powershell>"
+    end
+
+    it "set user create powershell script for windows winrm bootstrap + PS script from user-defined data" do
+      @knife_ec2_create.stub(:is_image_windows?).and_return(true)
+      @knife_ec2_create.stub(:windows_password).and_return('windows_password')
+      Chef::Config[:knife][:bootstrap_protocol] = 'winrm'
+      Chef::Config[:knife][:winrm_user] = 'winrm_user'
+      Chef::Config[:knife][:aws_user_data] = true
+      File.stub(:read).and_return("<powershell>echo \"enable winrm through user-data in EC2 using PS script\"</powershell>")
+      server_def = @knife_ec2_create.create_server_def
+      server_def[:user_data].should == "<powershell>$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$username = \"winrm_user\"\n$splitusername=$username.split(\"\\\\\")\nif($splitusername[1] -eq $null) { $username = $splitusername[0] }\nelse { $username = $splitusername[1] }\n$newuser = $computer.Create(\"user\", $username)\n $newuser.Path = $newuser.Path -replace(\".\\\\\", \"\")\n $newuser.SetPassword(\"windows_password\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n echo \"enable winrm through user-data in EC2 using PS script\"</powershell>"
     end
 
     it "set user create powershell script for windows ssh bootstrap" do
