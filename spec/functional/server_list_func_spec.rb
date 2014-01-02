@@ -16,7 +16,7 @@ describe Chef::Knife::Cloud::Ec2ServerList do
                    ]
       instance.stub(:query_resource).and_return(@resources)
       instance.stub(:puts)
-      instance.stub(:create_service_instance).and_return(Chef::Knife::Cloud::Service.new)
+      instance.stub(:create_service_instance).and_return(Chef::Knife::Cloud::Ec2Service.new)
       instance.stub(:validate!)
     end
 
