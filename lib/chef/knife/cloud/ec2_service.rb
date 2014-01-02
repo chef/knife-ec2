@@ -29,6 +29,9 @@ class Chef
         def add_api_endpoint 
         end
 
+        def get_server_name(server)
+          server.tags['Name'] if server.tags['Name']
+        end 
       end
     end
   end
