@@ -20,6 +20,9 @@ class Chef
         banner "knife ec2 server create (options)"
 
         def before_exec_command
+            # moving some validations to these methods, since they depend on the "connection" with Fog
+            validate_ami
+            validate_elastic_ip_availability
             # setup the create options
             @create_options = {
               :server_def => {
@@ -92,6 +95,17 @@ class Chef
 
         # Setup the floating ip after server creation.
         def after_exec_command
+
+          hashed_tags={}
+          tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
+
+          # Always set the Name tag
+          unless hashed_tags.keys.include? "Name"
+            hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
+          end
+
+          printed_tags = hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")
+
           msg_pair("Flavor", server.flavor_id)
           msg_pair("Image", server.image_id)
           msg_pair("Availability Zone", server.availability_zone) if server.availability_zone
@@ -111,6 +125,17 @@ class Chef
           printed_security_group_ids = server.security_group_ids.join(", ") if server.security_group_ids
           msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or server.security_group_ids
           msg_pair("IAM Profile", locate_config_value(:iam_instance_profile))
+          msg_pair("Tags", printed_tags)
+
+          begin
+            create_tags(hashed_tags) unless hashed_tags.empty?
+            associate_eip(elastic_ip) if config[:associate_eip]
+          rescue Fog::Compute::AWS::NotFound, Fog::Errors::Error => e
+            raise if (tries -= 1) <= 0
+            ui.warn("server not ready, retrying tag application (retries left: #{tries})")
+            sleep 5
+            retry
+          end
           msg_pair("Public DNS Name", server.dns_name)
           if vpc_mode?
             msg_pair("Subnet ID", server.subnet_id)
@@ -165,8 +190,34 @@ class Chef
           errors << "You must provide SSH Key." if locate_config_value(:bootstrap_protocol) == 'ssh' && !locate_config_value(:identity_file).nil? && locate_config_value(:ec2_ssh_key_id).nil?
             
           errors << "You must provide --image-os-type option [windows/linux]" if ! (%w(windows linux).include?(locate_config_value(:image_os_type)))
+
+          errors << "You are using a VPC, security groups specified with '-G' are not allowed, specify one or more security group ids with '-g' instead." if vpc_mode? and !!config[:security_groups]
+
+          errors << "You can only specify a private IP address if you are using VPC." if !vpc_mode? and !!config[:private_ip_address]
+
+          errors << "You can only specify a Dedicated Instance if you are using VPC." if config[:dedicated_instance] and !vpc_mode?
+
+          errors << "--associate-public-ip option only applies to VPC instances, and you have not specified a subnet id." if !vpc_mode? and config[:associate_public_ip]
+  
           error_message = ""
           raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
+        end
+
+        def validate_ami
+          errors = []
+            errors << "You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'." if ami.nil?
+            error_message = ""
+          raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
+        end
+
+        def validate_elastic_ip_availability
+          if config[:associate_eip]
+            eips = service.connection.addresses.collect{|addr| addr if addr.domain == eip_scope}.compact
+
+            unless eips.detect{|addr| addr.public_ip == config[:associate_eip] && addr.server_id == nil}
+              errors << "Elastic IP requested is not available."
+            end
+          end
         end
 
         def vpc_mode?
@@ -177,6 +228,30 @@ class Chef
 
         def ami
           @ami ||= service.connection.images.get(locate_config_value(:image))
+        end
+
+        def tags
+         tags = locate_config_value(:tags)
+          if !tags.nil? and tags.length != tags.to_s.count('=')
+            ui.error("Tags should be entered in a key = value pair")
+            exit 1
+          end
+         tags
+        end
+
+        def eip_scope
+          vpc_mode? ? "vpc" : "standard"
+        end
+
+        def create_tags(hashed_tags)
+          hashed_tags.each_pair do |key,val|
+            service.connection.tags.create :key => key, :value => val, :resource_id => server.id
+          end
+        end
+
+        def associate_eip(elastic_ip)
+          service.connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
+          server.wait_for { public_ip_address == elastic_ip.public_ip }
         end
       end
     end
