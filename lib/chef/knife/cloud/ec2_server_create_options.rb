@@ -76,17 +76,22 @@ class Chef
               :description => "create node in this Virtual Private Cloud Subnet ID (implies VPC mode)",
               :proc => Proc.new { |key| Chef::Config[:knife][:subnet_id] = key }
 
+            option :private_ip_address,
+              :long => "--private-ip-address IP-ADDRESS",
+              :description => "allows to specify the private IP address of the instance in VPC mode",
+              :proc => Proc.new { |ip| Chef::Config[:knife][:private_ip_address] = ip }
+
             option :fqdn,
               :long => "--fqdn FQDN",
               :description => "Pre-defined FQDN",
               :proc => Proc.new { |key| Chef::Config[:knife][:fqdn] = key },
               :default => nil
 
-            option :ec2_user_data,
+            option :aws_user_data,
               :long => "--user-data USER_DATA_FILE",
               :short => "-u USER_DATA_FILE",
               :description => "The EC2 User Data file to provision the instance with",
-              :proc => Proc.new { |m| Chef::Config[:knife][:ec2_user_data] = m },
+              :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
               :default => nil
 
             option :ephemeral,
@@ -100,6 +105,12 @@ class Chef
               :short => "-a ATTRIBUTE",
               :description => "The EC2 server attribute to use for SSH connection",
               :default => nil
+
+            option :associate_public_ip,
+              :long => "--associate-public-ip",
+              :description => "Associate public ip to VPC instance.",
+              :boolean => true,
+              :default => false
 
           end
         end

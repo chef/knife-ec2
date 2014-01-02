@@ -28,7 +28,9 @@ class Chef
                 :image_id => locate_config_value(:image),
                 :flavor_id => locate_config_value(:flavor),
                 :groups => locate_config_value(:ec2_security_groups),
-                :key_name => locate_config_value(:ec2_ssh_key_id)
+                :security_group_ids => locate_config_value(:security_group_ids),
+                :key_name => locate_config_value(:ec2_ssh_key_id),
+                :availability_zone => locate_config_value(:availability_zone)
               },
               :server_create_timeout => locate_config_value(:server_create_timeout)
             }
@@ -43,15 +45,46 @@ class Chef
             @create_options[:server_def][:placement_group] = locate_config_value(:placement_group)
             @create_options[:server_def][:iam_instance_profile_name] = locate_config_value(:iam_instance_profile)
 
-            if Chef::Config[:knife][:ec2_user_data]
+            if Chef::Config[:knife][:aws_user_data]
               begin
-                @create_options[:server_def].merge!(:user_data => File.read(Chef::Config[:knife][:ec2_user_data]))
+                @create_options[:server_def].merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
               rescue
-                ui.warn("Cannot read #{Chef::Config[:knife][:ec2_user_data]}: #{$!.inspect}. Ignoring option.")
+                ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
               end
             end
 
             @create_options[:server_def][:ebs_optimized] = config[:ebs_optimized] ? "true" : "false"
+
+            if ami.root_device_type == "ebs"
+              ami_map = ami.block_device_mapping.first
+              ebs_size = begin
+                           if config[:ebs_size]
+                             Integer(config[:ebs_size]).to_s
+                           else
+                             ami_map["volumeSize"].to_s
+                           end
+                         rescue ArgumentError
+                           puts "--ebs-size must be an integer"
+                           msg opt_parser
+                           exit 1
+                         end
+              delete_term = if config[:ebs_no_delete_on_term]
+                              "false"
+                            else
+                              ami_map["deleteOnTermination"]
+                            end
+
+              @create_options[:server_def][:block_device_mapping] =
+                [{
+                   'DeviceName' => ami_map["deviceName"],
+                   'Ebs.VolumeSize' => ebs_size,
+                   'Ebs.DeleteOnTermination' => delete_term
+                 }]
+            end
+
+            (config[:ephemeral] || []).each_with_index do |device_name, i|
+              @create_options[:server_def][:block_device_mapping] = (@create_options[:server_def][:block_device_mapping] || []) << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
+            end
 
             Chef::Log.debug("Create server params - server_def = #{@create_options[:server_def]}")
             super
