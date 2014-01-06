@@ -1,17 +1,17 @@
 $:.unshift File.expand_path('../../lib', __FILE__)
-require 'chef'
-require 'chef/knife/winrm_base'
+require 'chef/node'
+require 'fog'
 require 'chef/knife/ec2_server_create'
-require 'chef/knife/ec2_instance_data'
-require 'chef/knife/ec2_server_delete'
-require 'chef/knife/ec2_server_list'
+require 'chef/knife/bootstrap_windows_ssh'
 
-# Clear config between each example
-# to avoid dependencies between examples
-RSpec.configure do |c|
-  c.before(:each) do
-    Chef::Config.reset
-    Chef::Config[:knife] ={}
+class TestResource
+  def initialize(*args)
+    args.each do |arg|
+      arg.each do |key, value|
+        add_attribute = "class << self; attr_accessor :#{key}; end"
+        eval(add_attribute)
+        eval("@#{key} = value")
+      end
+    end
   end
 end
-
