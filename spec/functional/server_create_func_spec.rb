@@ -96,6 +96,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
         @winrm_bootstrap_protocol = Chef::Knife::Cloud::WinrmBootstrapProtocol.new(@config)
         @windows_distribution = Chef::Knife::Cloud::WindowsDistribution.new(@config)
       end
+      
       it "Creates an Ec2 instance for Windows and bootstraps it" do
         Chef::Knife::Cloud::Bootstrapper.should_receive(:new).with(@config).and_return(@bootstrapper)
         @bootstrapper.stub(:bootstrap).and_call_original
