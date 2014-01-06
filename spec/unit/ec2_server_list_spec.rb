@@ -41,6 +41,10 @@ describe Chef::Knife::Cloud::Ec2ServerList do
         Chef::Config[:knife][:aws_credential_file] = "creds_file_path"
       end
 
+      after(:each) do
+        Chef::Config[:knife].delete(:aws_credential_file)
+      end
+      
       it "raise error while specifying credentials file and aws keys together." do
         File.stub(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
         instance.ui.should_receive(:error).with("Either provide a credentials file or the access key and secret keys but not both.")
