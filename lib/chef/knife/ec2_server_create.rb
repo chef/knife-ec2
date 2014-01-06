@@ -20,9 +20,6 @@ class Chef
         banner "knife ec2 server create (options)"
 
         def before_exec_command
-            # moving some validations to these methods, since they depend on the "connection" with Fog
-            validate_ami
-            validate_elastic_ip_availability
             # setup the create options
             @create_options = {
               :server_def => {
@@ -205,8 +202,8 @@ class Chef
 
         def validate_ami
           errors = []
-            errors << "You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'." if ami.nil?
-            error_message = ""
+          errors << "You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'." if ami.nil?
+          error_message = ""
           raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
         end
 
@@ -247,6 +244,11 @@ class Chef
           hashed_tags.each_pair do |key,val|
             service.connection.tags.create :key => key, :value => val, :resource_id => server.id
           end
+        end
+
+        def post_connection_validations
+          validate_ami
+          validate_elastic_ip_availability
         end
 
         def associate_eip(elastic_ip)
