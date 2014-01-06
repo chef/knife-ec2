@@ -18,10 +18,11 @@ class Chef
         include Ec2Helpers
 
         banner "knife ec2 server delete SERVER [SERVER] (options)"
+
         # We can get ec2 instance_id from chef node name and vice-versa
         def execute_command
           if @name_args.empty? && config[:chef_node_name]
-            ui.info("no instance id is specific, trying to retrieve it from node name")
+            ui.info("No Instance Id is specified, trying to retrieve it from node name")
             instance_id = fetch_instance_id(config[:chef_node_name])
             @name_args << instance_id unless instance_id.nil?
           end
@@ -36,11 +37,13 @@ class Chef
               thing_to_delete = fetch_node_name(server_name)
             end
           end
+          thing_to_delete ||= server_name
           super(thing_to_delete)
         end
 
         def fetch_node_name(instance_id)
-          result = query.search(:node,"ec2_instance_id:#{instance_id}")
+          result = query.search(:node, "ec2_instance_id:#{instance_id}")
+
           unless result.first.empty?
             result.first.first.name
           else
@@ -49,7 +52,8 @@ class Chef
         end
 
         def fetch_instance_id(name)
-          result = query.search(:node,"name:#{name}")
+          result = query.search(:node, "name:#{name}")
+
           unless result.first.empty?
             node = result.first.first
             if node.attribute?('ec2')
