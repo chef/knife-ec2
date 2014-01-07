@@ -94,7 +94,7 @@ class Chef
         def after_exec_command
 
           hashed_tags={}
-          tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
+          tags.map{ |t| key, val=t.split('='); hashed_tags[key]=val} unless tags.nil?
 
           # Always set the Name tag
           unless hashed_tags.keys.include? "Name"
@@ -170,7 +170,6 @@ class Chef
           super
           # Which IP address to bootstrap
           bootstrap_ip_address = server.public_ip_address if server.public_ip_address
-          bootstrap_ip_address = server.private_ip_address if config[:private_network]
           Chef::Log.debug("Bootstrap IP Address: #{bootstrap_ip_address}")
           if bootstrap_ip_address.nil?
             error_message = "No IP address available for bootstrapping."
@@ -241,7 +240,7 @@ class Chef
         end
 
         def create_tags(hashed_tags)
-          hashed_tags.each_pair do |key,val|
+          hashed_tags.each_pair do |key, val|
             service.connection.tags.create :key => key, :value => val, :resource_id => server.id
           end
         end
