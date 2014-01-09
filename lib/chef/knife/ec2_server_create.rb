@@ -92,7 +92,6 @@ class Chef
 
         # Setup the floating ip after server creation.
         def after_exec_command
-
           hashed_tags={}
           tags.map{ |t| key, val=t.split('='); hashed_tags[key]=val} unless tags.nil?
 
@@ -101,14 +100,18 @@ class Chef
             hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
           end
 
-          printed_tags = hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")
-
-          msg_pair("Flavor", server.flavor_id)
-          msg_pair("Image", server.image_id)
-          msg_pair("Availability Zone", server.availability_zone) if server.availability_zone
-          msg_pair("Region", service.connection.instance_variable_get(:@region))
-          msg_pair("Public IP Address", server.public_ip_address) if server.public_ip_address
-          msg_pair("Private IP Address", server.private_ip_address) if server.private_ip_address
+          @columns_with_info = [{:label => 'Flavor', :key => 'flavor_id'},
+                                {:label => 'Image', :key => 'image_id'}, 
+                                {:label => 'Availability Zone', :key => 'availability_zone'},
+                                {:label => 'Public IP Address', :key => 'public_ip_address'},
+                                {:label => 'Private IP Address', :key => 'private_ip_address'},
+                                {:label => 'IAM Profile', :key => 'iam_instance_profile'},
+                                {:label => 'Placement Group', :key => 'placement_group'},
+                                {:label => 'Public DNS Name', :key => 'dns_name'},
+                                {:label => 'Root Device Type', :key => 'root_device_type'},
+                                {:label => "Region", :value => service.connection.instance_variable_get(:@region)},
+                                {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")} 
+                               ]
 
           # If we don't specify a security group or security group id, Fog will
           # pick the appropriate default one. In case of a VPC we don't know the
@@ -116,13 +119,11 @@ class Chef
           # 'default' is printed if no id was specified.
           printed_security_groups = "default"
           printed_security_groups = server.groups.join(", ") if server.groups
-          msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (server.groups.nil? and server.security_group_ids)
+          @columns_with_info << {:label => 'Security Groups', :value => printed_security_groups} unless vpc_mode? or (server.groups.nil? and server.security_group_ids)
 
           printed_security_group_ids = "default"
           printed_security_group_ids = server.security_group_ids.join(", ") if server.security_group_ids
-          msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or server.security_group_ids
-          msg_pair("IAM Profile", locate_config_value(:iam_instance_profile))
-          msg_pair("Tags", printed_tags)
+          @columns_with_info << {:label => 'Security Group Ids', :value =>  printed_security_group_ids} if vpc_mode? or server.security_group_ids          
 
           begin
             create_tags(hashed_tags) unless hashed_tags.empty?
@@ -133,21 +134,19 @@ class Chef
             sleep 5
             retry
           end
-          msg_pair("Public DNS Name", server.dns_name)
+
           if vpc_mode?
-            msg_pair("Subnet ID", server.subnet_id)
-            msg_pair("Tenancy", server.tenancy)
+            @columns_with_info << {:label => 'Subnet ID', :key => 'subnet_id'}
+            @columns_with_info << {:label => 'Tenancy', :key => 'tenancy'}
           else
-            msg_pair("Private DNS Name", server.private_dns_name)
+            @columns_with_info << {:label => 'Private DNS Name', :key => 'private_dns_name'}
           end
-          msg_pair("Placement Group", server.placement_group) unless server.placement_group.nil?
-          msg_pair("Root Device Type", server.root_device_type)
 
           if server.root_device_type == "ebs"
             device_map = server.block_device_mapping.first
-            msg_pair("Root Volume ID", device_map['volumeId'])
-            msg_pair("Root Device Name", device_map['deviceName'])
-            msg_pair("Root Device Delete on Terminate", device_map['deleteOnTermination'])
+            @columns_with_info << {:label => "Root Volume ID", :value => device_map['volumeId']}
+            @columns_with_info << {:label => "Root Device Name", :value => device_map['deviceName']}
+            @columns_with_info << {:label => "Root Device Delete on Terminate", :value => device_map['deleteOnTermination'].to_s}
 
             if config[:ebs_size]
               if ami.block_device_mapping.first['volumeSize'].to_i < config[:ebs_size].to_i
@@ -155,14 +154,13 @@ class Chef
                             "EBS volume size is larger than size set in AMI of " +
                             "#{ami.block_device_mapping.first['volumeSize']}GB.\n" +
                             "Use file system tools to make use of the increased volume size."
-                msg_pair("Warning", volume_too_large_warning, :yellow)
+                ui.warn(volume_too_large_warning)            
               end
             end
           end
-
-          if config[:ebs_optimized]
-            msg_pair("EBS is Optimized", server.ebs_optimized.to_s)
-          end
+          
+          @columns_with_info << {:label => "EBS is Optimized", :key => 'ebs_optimized'} if config[:ebs_optimized]
+          service.server_summary(server, @columns_with_info)
           super
         end
 
