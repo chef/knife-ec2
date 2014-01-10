@@ -46,6 +46,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
                             :availability_zone => 'availability_zone',
                             :public_ip_address => '75.101.253.10',
                             :private_ip_address => '10.251.75.20',
+                            :iam_instance_profile => 'profile',
                             :security_group_ids => [],
                             :private_dns_name => 'private_dns_name',
                             :placement_group => 'placement_group',
@@ -64,7 +65,8 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @new_ec2_server.stub(:wait_for)
       @knife_ec2_create.stub(:ami).and_return("")
       @knife_ec2_create.ami.stub(:root_device_type)
-      @knife_ec2_create.stub(:create_tags)      
+      @knife_ec2_create.stub(:create_tags)  
+      @knife_ec2_create.stub_chain(:service, :connection, :instance_variable_get).and_return('test_region')    
     end
 
     context "for Linux" do

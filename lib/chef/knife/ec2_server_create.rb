@@ -112,7 +112,8 @@ class Chef
                                 {:label => 'Public DNS Name', :key => 'dns_name'},
                                 {:label => 'Root Device Type', :key => 'root_device_type'},
                                 {:label => "Region", :value => service.connection.instance_variable_get(:@region)},
-                                {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")} 
+                                {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")},
+                                {:label => "SSH Key", :key => 'key_name'} 
                                ]
 
           # If we don't specify a security group or security group id, Fog will
