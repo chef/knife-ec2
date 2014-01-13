@@ -195,6 +195,9 @@ class Chef
           errors << "You can only specify a Dedicated Instance if you are using VPC." if config[:dedicated_instance] and !vpc_mode?
 
           errors << "--associate-public-ip option only applies to VPC instances, and you have not specified a subnet id." if !vpc_mode? and config[:associate_public_ip]
+
+          # If flavor-id not specified aws uses m1.small falvor as a default, for which ebs_optimized is not available
+          errors << "EBS-optimized instances are not supported for your requested configuration. Please check EBS-optimized Available for given --flavor(i.e default is 'm1.small')." if (config[:ebs_optimized] and %w{m1.small m1.medium c3.large c3.8xlarge c1.medium cc2.8xlarge cg1.4xlarge m2.xlarge cr1.8xlarge i2.8xlarge hs1.8xlarge hi1.4xlarge t1.micro}.include?(locate_config_value(:flavor))) or (config[:ebs_optimized] and locate_config_value(:flavor).nil?)
   
           error_message = ""
           raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
@@ -214,6 +217,14 @@ class Chef
             unless eips.detect{|addr| addr.public_ip == config[:associate_eip] && addr.server_id == nil}
               errors << "Elastic IP requested is not available."
             end
+          end
+        end
+        
+        def validate_ebs
+          if config[:ebs_size].to_i < ami.block_device_mapping.first["volumeSize"]
+            error_message = "EBS-size is smaller than snapshot '#{ami.block_device_mapping.first["snapshotId"]}', expect size >= #{ami.block_device_mapping.first['volumeSize']}"
+            ui.error(error_message)
+            raise CloudExceptions::ValidationError, error_message
           end
         end
 
@@ -249,6 +260,7 @@ class Chef
         def post_connection_validations
           validate_ami
           validate_elastic_ip_availability
+          validate_ebs
         end
 
         def associate_eip(elastic_ip)

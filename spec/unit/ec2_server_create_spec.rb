@@ -11,6 +11,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
   ami.define_singleton_method(:root_device_type){}
   create_instance = Chef::Knife::Cloud::Ec2ServerCreate.new
   create_instance.define_singleton_method(:ami){ami}
+  create_instance.define_singleton_method(:post_connection_validations){}
   it_behaves_like Chef::Knife::Cloud::Command, Chef::Knife::Cloud::Ec2ServerCreate.new
   it_behaves_like Chef::Knife::Cloud::ServerCreateCommand, create_instance
   
@@ -46,6 +47,12 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife].delete(:ec2_ssh_key_id)
       expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " You must provide SSH Key..")
     end
+
+    it "raise error if --ebs-optimized specified and --flavor is missing" do
+      @instance.config[:ebs_optimized] = true
+      Chef::Config[:knife][:flavor] = nil
+      expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError, " EBS-optimized instances are not supported for your requested configuration. Please check EBS-optimized Available for given --flavor(i.e default is 'm1.small')..")
+    end
   end
 
   describe "#before_exec_command" do
@@ -70,6 +77,9 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife][:placement_group] = "test_placement_group"
       Chef::Config[:knife][:iam_instance_profile] = "iam_instance_profile_name"
       @instance.config[:associate_public_ip] = "test_associate_public_ip"
+      @instance.stub(:ami).and_return(double)
+      @instance.ami.should_receive(:root_device_type)
+      @instance.should_receive(:post_connection_validations)
     end
 
     after(:each) do
@@ -212,4 +222,26 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       expect { @instance.before_bootstrap }.to raise_error(Chef::Knife::Cloud::CloudExceptions::BootstrapError, "No IP address available for bootstrapping.")
     end    
   end
+
+  describe "#validate_ebs" do
+    before(:each) do
+      @instance = Chef::Knife::Cloud::Ec2ServerCreate.new
+    end
+
+    it "validate ebs size" do
+      @instance.ui.stub(:error)
+      @instance.stub(:ami).and_return(double)
+      @instance.config[:ebs_size] = "15"
+      @instance.ami.stub(:block_device_mapping).and_return([{"volumeSize" => 8}])
+      expect { @instance.validate_ebs }.to_not raise_error
+    end
+
+    it "raise error on specified ebs-size is less than ami volume size" do
+      @instance.ui.stub(:error)
+      @instance.stub(:ami).and_return(double)
+      @instance.config[:ebs_size] = "5"
+      @instance.ami.stub(:block_device_mapping).and_return([{"volumeSize" => 8}])
+      expect { @instance.validate_ebs }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError, "EBS-size is smaller than snapshot '', expect size >= 8")
+    end
+  end  
 end
