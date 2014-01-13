@@ -47,12 +47,6 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife].delete(:ec2_ssh_key_id)
       expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " You must provide SSH Key..")
     end
-
-    it "raise error if --ebs-optimized specified and --flavor is missing" do
-      @instance.config[:ebs_optimized] = true
-      Chef::Config[:knife][:flavor] = nil
-      expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError, " EBS-optimized instances are not supported for your requested configuration. Please check EBS-optimized Available for given --flavor(i.e default is 'm1.small')..")
-    end
   end
 
   describe "#before_exec_command" do
