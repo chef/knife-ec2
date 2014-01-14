@@ -45,11 +45,42 @@ class Chef
             @create_options[:server_def][:placement_group] = locate_config_value(:placement_group)
             @create_options[:server_def][:iam_instance_profile_name] = locate_config_value(:iam_instance_profile)
 
-            if Chef::Config[:knife][:aws_user_data]
-              begin
-                @create_options[:server_def].merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
-              rescue
-                ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            if service.is_image_windows?(locate_config_value(:image))
+              # we cannot have multiple <powershell> tags in the user-data. all PS scripts should be
+              # enclosed withing single <powershell>..</powershell> tag.
+              @create_options[:server_def].merge!(:user_data => "<powershell>")
+              if(locate_config_value(:bootstrap_protocol) == "winrm")
+                @create_options[:server_def][:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$username = \"#{locate_config_value(:winrm_user)}\"\n$splitusername=$username.split(\"\\\\\")\nif($splitusername[1] -eq $null) { $username = $splitusername[0] }\nelse { $username = $splitusername[1] }\n$newuser = $computer.Create(\"user\", $username)\n $newuser.Path = $newuser.Path -replace(\".\\\\\", \"\")\n $newuser.SetPassword(\"#{windows_password}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:winrm_user).downcase != "administrators"
+              else
+                @create_options[:server_def][:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:ssh_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:ssh_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:ssh_user).downcase != "administrators"
+              end
+              if Chef::Config[:knife][:aws_user_data]
+                begin
+                  user_data_file = File.read(Chef::Config[:knife][:aws_user_data]).gsub("<powershell>", "").gsub("</powershell>", "")
+                  if(user_data_file.include? "<script>")
+                    @create_options[:server_def][:user_data] << "</powershell>"
+                    @create_options[:server_def][:user_data ] << user_data_file
+                  else
+                    @create_options[:server_def][:user_data ] << user_data_file
+                    @create_options[:server_def][:user_data] << "</powershell>"
+                  end
+                rescue
+                  ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+                end
+              else
+                @create_options[:server_def][:user_data] << "</powershell>"
+              end
+              
+              # in case there is no PS script, we dont send empty <powershell> script to ec2 user-data
+              @create_options[:server_def][:user_data].gsub("<powershell></powershell>", "")
+              Chef::Log.debug @create_options[:server_def][:user_data]
+            else
+              if Chef::Config[:knife][:aws_user_data]
+                begin
+                  @create_options[:server_def].merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
+                rescue
+                  ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+                end
               end
             end
 
@@ -254,6 +285,31 @@ class Chef
         def associate_eip(elastic_ip)
           service.connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
           server.wait_for { public_ip_address == elastic_ip.public_ip }
+        end
+
+        def windows_password
+          unless locate_config_value(:winrm_password)
+            if locate_config_value(:identity_file)
+              print "\n#{ui.color("Waiting for Windows Admin password to be available", :magenta)}"
+              print(".") until check_windows_password_available(server.id) {
+                sleep 1000 #typically is available after 30 mins
+                puts("done")
+              }
+              response = service.connection.get_password_data(server.id)
+              data = File.read(locate_config_value(:identity_file))
+              config[:winrm_password] = decrypt_admin_password(response.body["passwordData"], data)
+            else
+              ui.error("Cannot find SSH Identity file, required to fetch dynamically generated password")
+              exit 1
+            end
+          else
+            locate_config_value(:winrm_password)
+          end
+        end
+
+        def check_windows_password_available(server_id)
+          response = service.connection.get_password_data(server_id)
+          response.body["passwordData"] ? response.body["passwordData"] : false
         end
       end
     end
