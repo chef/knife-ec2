@@ -61,12 +61,17 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
   describe "run" do
     before(:each) do
       @knife_ec2_create.stub(:validate_params!)
-      Fog::Compute::AWS.stub_chain(:new, :servers, :create).and_return(@new_ec2_server)
       @new_ec2_server.stub(:wait_for)
       @knife_ec2_create.stub(:ami).and_return("")
       @knife_ec2_create.ami.stub(:root_device_type)
-      @knife_ec2_create.stub(:create_tags)  
-      @knife_ec2_create.stub_chain(:service, :connection, :instance_variable_get).and_return('test_region')    
+      @knife_ec2_create.stub(:create_tags)
+      @knife_ec2_create.stub(:service).and_return(double)
+      @knife_ec2_create.service.should_receive(:ui=)
+      @knife_ec2_create.service.should_receive(:create_server_dependencies)
+      @knife_ec2_create.service.should_receive(:create_server).and_return(@new_ec2_server)
+      @knife_ec2_create.service.stub(:server_summary)
+      @knife_ec2_create.service.should_receive(:get_server_name)
+      @knife_ec2_create.service.should_receive(:connection)
     end
 
     context "for Linux" do
