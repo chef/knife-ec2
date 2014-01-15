@@ -51,6 +51,12 @@ class Chef
             :description => "Your AWS API Secret Access Key",
             :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
 
+          option :aws_session_token,
+            :short => "-T TOKEN",
+            :long => "--aws-session-token TOKEN",
+            :description => "Your AWS Session Token, For Use With AWS STS Federation or Session Tokens",
+            :proc => Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
+
           option :region,
             :long => "--region REGION",
             :description => "Your AWS region",
@@ -64,6 +70,7 @@ class Chef
             :provider => 'AWS',
             :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
             :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
+            :aws_session_token => Chef::Config[:knife][:aws_session_token],
             :region => locate_config_value(:region)
           )
         end
