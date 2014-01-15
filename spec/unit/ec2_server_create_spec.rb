@@ -9,6 +9,7 @@ require 'support/shared_examples_for_command'
 describe Chef::Knife::Cloud::Ec2ServerCreate do
   ami = Object.new
   ami.define_singleton_method(:root_device_type){}
+  ami.define_singleton_method(:platform){""}
   create_instance = Chef::Knife::Cloud::Ec2ServerCreate.new
   create_instance.define_singleton_method(:ami){ami}
   it_behaves_like Chef::Knife::Cloud::Command, Chef::Knife::Cloud::Ec2ServerCreate.new
@@ -70,6 +71,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife][:placement_group] = "test_placement_group"
       Chef::Config[:knife][:iam_instance_profile] = "iam_instance_profile_name"
       @instance.config[:associate_public_ip] = "test_associate_public_ip"
+      @instance.stub(:set_image_os_type)
     end
 
     after(:each) do
