@@ -20,6 +20,7 @@ class Chef
         banner "knife ec2 server create (options)"
 
         def before_exec_command
+            set_image_os_type
             # setup the create options
             @create_options = {
               :server_def => {
@@ -254,6 +255,10 @@ class Chef
         def associate_eip(elastic_ip)
           service.connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
           server.wait_for { public_ip_address == elastic_ip.public_ip }
+        end
+
+        def set_image_os_type
+          ami.platform == 'windows'? config[:image_os_type] = 'windows' : config[:image_os_type] = 'linux'
         end
       end
     end
