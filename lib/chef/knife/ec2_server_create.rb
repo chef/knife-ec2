@@ -259,10 +259,12 @@ class Chef
         end
         
         def validate_ebs
-          if config[:ebs_size].to_i < ami.block_device_mapping.first["volumeSize"]
-            error_message = "EBS-size is smaller than snapshot '#{ami.block_device_mapping.first["snapshotId"]}', expect size >= #{ami.block_device_mapping.first['volumeSize']}"
-            ui.error(error_message)
-            raise CloudExceptions::ValidationError, error_message
+          unless config[:ebs_size].nil?
+            if config[:ebs_size].to_i < ami.block_device_mapping.first["volumeSize"]
+              error_message = "EBS-size is smaller than snapshot '#{ami.block_device_mapping.first["snapshotId"]}', expect size >= #{ami.block_device_mapping.first['volumeSize']}"
+              ui.error(error_message)
+              raise CloudExceptions::ValidationError, error_message
+            end
           end
         end
 
