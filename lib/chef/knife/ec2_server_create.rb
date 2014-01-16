@@ -258,7 +258,7 @@ class Chef
         end
 
         def set_image_os_type
-          ami.platform == 'windows'? config[:image_os_type] = 'windows' : config[:image_os_type] = 'linux'
+          config[:image_os_type] = (ami.platform == 'windows') ?  'windows' :  'linux'
         end
       end
     end
