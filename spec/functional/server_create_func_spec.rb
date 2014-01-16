@@ -72,6 +72,9 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @knife_ec2_create.service.stub(:server_summary)
       @knife_ec2_create.service.should_receive(:get_server_name)
       @knife_ec2_create.service.should_receive(:connection)
+      @knife_ec2_create.stub(:ui).and_return(double)
+      @knife_ec2_create.ui.stub(:color)
+      @knife_ec2_create.ui.should_receive(:info)           
     end
 
     context "for Linux" do
@@ -103,6 +106,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
         @winrm_bootstrap_protocol = Chef::Knife::Cloud::WinrmBootstrapProtocol.new(@config)
         @windows_distribution = Chef::Knife::Cloud::WindowsDistribution.new(@config)
       end
+      
       it "Creates an Ec2 instance for Windows and bootstraps it" do
         Chef::Knife::Cloud::Bootstrapper.should_receive(:new).with(@config).and_return(@bootstrapper)
         @bootstrapper.stub(:bootstrap).and_call_original
