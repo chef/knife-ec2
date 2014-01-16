@@ -225,6 +225,14 @@ class Chef
             end
           end
         end
+        
+        def validate_ebs
+          if config[:ebs_size].to_i < ami.block_device_mapping.first["volumeSize"]
+            error_message = "EBS-size is smaller than snapshot '#{ami.block_device_mapping.first["snapshotId"]}', expect size >= #{ami.block_device_mapping.first['volumeSize']}"
+            ui.error(error_message)
+            raise CloudExceptions::ValidationError, error_message
+          end
+        end
 
         def vpc_mode?
           # Amazon Virtual Private Cloud requires a subnet_id. If
@@ -259,6 +267,7 @@ class Chef
         def post_connection_validations
           validate_ami
           validate_elastic_ip_availability
+          validate_ebs
         end
 
         def associate_eip(elastic_ip)
