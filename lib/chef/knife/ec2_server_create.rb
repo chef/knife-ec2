@@ -454,7 +454,7 @@ class Chef
             }
             ssh_override_winrm
           end
-          bootstrap_for_windows_node(@server,ssh_connect_host).run
+          bootstrap_for_windows_node(@server,ssh_connect_host).run  
         else
             wait_for_sshd(ssh_connect_host)
             ssh_override_winrm
@@ -662,11 +662,42 @@ class Chef
         server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
         server_def[:associate_public_ip] = locate_config_value(:associate_public_ip) if vpc_mode? and config[:associate_public_ip]
 
-        if Chef::Config[:knife][:aws_user_data]
-          begin
-            server_def.merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
-          rescue
-            ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+        if is_image_windows?
+          # we cannot have multiple <powershell> tags in the user-data. all PS scripts should be
+          # enclosed withing single <powershell>..</powershell> tag.
+          server_def.merge!(:user_data => "<powershell>")
+          if(locate_config_value(:bootstrap_protocol) == "winrm")
+            server_def[:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$username = \"#{locate_config_value(:winrm_user)}\"\n$splitusername=$username.split(\"\\\\\")\nif($splitusername[1] -eq $null) { $username = $splitusername[0] }\nelse { $username = $splitusername[1] }\n$newuser = $computer.Create(\"user\", $username)\n $newuser.Path = $newuser.Path -replace(\".\\\\\", \"\")\n $newuser.SetPassword(\"#{windows_password}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:winrm_user).downcase != "administrator"
+          else
+            server_def[:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:ssh_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:ssh_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:ssh_user).downcase != "administrator"
+          end
+          if Chef::Config[:knife][:aws_user_data]
+            begin
+              user_data_file =  File.read(Chef::Config[:knife][:aws_user_data]).gsub("<powershell>", "").gsub("</powershell>", "")
+              if(user_data_file.include? "<script>")                
+                server_def[:user_data] << "</powershell>"
+                server_def[:user_data ] << user_data_file
+              else
+                server_def[:user_data ] << user_data_file
+                server_def[:user_data] << "</powershell>"
+              end
+            rescue
+              ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            end
+          else
+            server_def[:user_data] << "</powershell>"
+          end
+          
+          # in case there is no PS script, we dont send empty <powershell> script to ec2 user-data
+          server_def[:user_data].gsub("<powershell></powershell>", "")
+          Chef::Log.debug server_def[:user_data]
+        else
+          if Chef::Config[:knife][:aws_user_data]
+            begin
+              server_def.merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
+            rescue
+              ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            end
           end
         end
 
