@@ -170,7 +170,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
     before(:each) do
       @instance = Chef::Knife::Cloud::Ec2ServerCreate.new
       @instance.stub(:msg_pair)
-      @instance.stub_chain(:service, :connection).and_return(double)
+      @instance.stub_chain(:service, :connection, :addresses, :detect).and_return(double)
       @instance.server = double
     end
 

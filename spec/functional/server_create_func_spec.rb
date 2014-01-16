@@ -71,7 +71,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @knife_ec2_create.service.should_receive(:create_server).and_return(@new_ec2_server)
       @knife_ec2_create.service.stub(:server_summary)
       @knife_ec2_create.service.should_receive(:get_server_name)
-      @knife_ec2_create.service.should_receive(:connection)
+      @knife_ec2_create.service.stub_chain(:connection, :addresses, :detect).and_return(double)
     end
 
     context "for Linux" do
