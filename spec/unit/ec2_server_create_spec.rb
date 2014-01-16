@@ -9,6 +9,7 @@ require 'support/shared_examples_for_command'
 describe Chef::Knife::Cloud::Ec2ServerCreate do
   ami = Object.new
   ami.define_singleton_method(:root_device_type){}
+  ami.define_singleton_method(:platform){""}
   create_instance = Chef::Knife::Cloud::Ec2ServerCreate.new
   create_instance.define_singleton_method(:ami){ami}
   create_instance.define_singleton_method(:post_connection_validations){}
@@ -74,6 +75,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @instance.stub(:ami).and_return(double)
       @instance.ami.should_receive(:root_device_type)
       @instance.should_receive(:post_connection_validations)
+      @instance.stub(:set_image_os_type)
     end
 
     after(:each) do

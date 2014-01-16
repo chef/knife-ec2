@@ -62,7 +62,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
     before(:each) do
       @knife_ec2_create.stub(:validate_params!)
       @new_ec2_server.stub(:wait_for)
-      @knife_ec2_create.stub(:ami).and_return("")
+      @knife_ec2_create.stub_chain(:ami).and_return(double)
       @knife_ec2_create.ami.stub(:root_device_type)
       @knife_ec2_create.stub(:create_tags)
       @knife_ec2_create.stub(:service).and_return(double)
@@ -80,12 +80,13 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
 
     context "for Linux" do
       before do
-        @config = {:bootstrap_ip_address => "75.101.253.10"}
+        @config = {:bootstrap_ip_address => "75.101.253.10", :image_os_type => 'linux'}
         @knife_ec2_create.config[:distro] = 'chef-full'
         @bootstrapper = Chef::Knife::Cloud::Bootstrapper.new(@config)
         @ssh_bootstrap_protocol = Chef::Knife::Cloud::SshBootstrapProtocol.new(@config)
         @unix_distribution = Chef::Knife::Cloud::UnixDistribution.new(@config)
         @ssh_bootstrap_protocol.stub(:send_bootstrap_command)
+        @knife_ec2_create.ami.should_receive(:platform).and_return("linux")
       end
 
       it "Creates an Ec2 instance and bootstraps it" do
@@ -106,6 +107,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
         @bootstrapper = Chef::Knife::Cloud::Bootstrapper.new(@config)
         @winrm_bootstrap_protocol = Chef::Knife::Cloud::WinrmBootstrapProtocol.new(@config)
         @windows_distribution = Chef::Knife::Cloud::WindowsDistribution.new(@config)
+        @knife_ec2_create.ami.should_receive(:platform).and_return("windows")
       end
       
       it "Creates an Ec2 instance for Windows and bootstraps it" do
