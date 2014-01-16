@@ -9,11 +9,36 @@ require 'support/shared_examples_for_command'
 describe Chef::Knife::Cloud::Ec2ServerCreate do
   ami = Object.new
   ami.define_singleton_method(:root_device_type){}
+  
   create_instance = Chef::Knife::Cloud::Ec2ServerCreate.new
   create_instance.define_singleton_method(:ami){ami}
-  it_behaves_like Chef::Knife::Cloud::Command, Chef::Knife::Cloud::Ec2ServerCreate.new
-  it_behaves_like Chef::Knife::Cloud::ServerCreateCommand, create_instance
   
+  ec2_service = Chef::Knife::Cloud::Ec2Service.new
+  create_instance.define_singleton_method(:service){ec2_service}
+  
+  create_instance.config[:winrm_user] = "test_winrm_user"
+  create_instance.config[:ssh_user] = "test_ssh_user"
+
+  context "Windows instance" do
+    before do
+      create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg| 
+        true
+      end
+    end
+    it_behaves_like Chef::Knife::Cloud::ServerCreateCommand, create_instance
+  end
+  
+  context "Linux instance" do
+    before do
+      create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg| 
+        false
+      end
+    end
+    it_behaves_like Chef::Knife::Cloud::ServerCreateCommand, create_instance
+  end
+
+  it_behaves_like Chef::Knife::Cloud::Command, Chef::Knife::Cloud::Ec2ServerCreate.new
+    
   describe "#create_service_instance" do
     it "return Ec2Service instance" do
       instance = Chef::Knife::Cloud::Ec2ServerCreate.new
@@ -53,6 +78,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @instance = Chef::Knife::Cloud::Ec2ServerCreate.new
       @instance.service = double
       @instance.service.should_receive(:create_server_dependencies)
+      @instance.service.should_receive(:is_image_windows?)
       @instance.service.stub_chain(:connection, :images, :get, :root_device_type)
       @instance.ui.stub(:error)
       @instance.ui.stub(:warn)

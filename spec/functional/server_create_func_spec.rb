@@ -67,6 +67,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @knife_ec2_create.stub(:create_tags)
       @knife_ec2_create.stub(:service).and_return(double)
       @knife_ec2_create.service.should_receive(:ui=)
+      @knife_ec2_create.service.should_receive(:is_image_windows?)
       @knife_ec2_create.service.should_receive(:create_server_dependencies)
       @knife_ec2_create.service.should_receive(:create_server).and_return(@new_ec2_server)
       @knife_ec2_create.service.stub(:server_summary)
