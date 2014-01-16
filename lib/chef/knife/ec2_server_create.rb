@@ -101,7 +101,9 @@ class Chef
             hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
           end
 
-          @columns_with_info = [{:label => 'Flavor', :key => 'flavor_id'},
+          @columns_with_info = [{:label => 'Instance Name', :value => service.get_server_name(server)},
+                                {:label => 'Instance ID', :key => 'id'},
+                                {:label => 'Flavor', :key => 'flavor_id'},
                                 {:label => 'Image', :key => 'image_id'}, 
                                 {:label => 'Availability Zone', :key => 'availability_zone'},
                                 {:label => 'Public IP Address', :key => 'public_ip_address'},
@@ -110,7 +112,8 @@ class Chef
                                 {:label => 'Placement Group', :key => 'placement_group'},
                                 {:label => 'Root Device Type', :key => 'root_device_type'},
                                 {:label => "Region", :value => service.connection.instance_variable_get(:@region)},
-                                {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")} 
+                                {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")},
+                                {:label => "SSH Key", :key => 'key_name'} 
                                ]
 
           # If we don't specify a security group or security group id, Fog will

@@ -178,25 +178,17 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife].delete(:ec2_floating_ip)
     end
    
-    it "prints tags and other server attributes." do
+    it "prints server summary." do
+      @instance.service.stub(:get_server_name)
       @instance.server.stub(:id).and_return("instance_id")
-      @instance.server.should_receive(:flavor_id).and_return("flavor_id")
-      @instance.server.should_receive(:image_id).and_return("image_id")
-      @instance.server.stub(:availability_zone).and_return("availability_zone")
-      @instance.server.stub(:public_ip_address).and_return("public_ip_address")
-      @instance.server.stub(:private_ip_address).and_return("private_ip_address")
       @instance.server.stub_chain(:groups, :join).and_return("groups")
       @instance.server.stub_chain(:security_group_ids, :join).and_return("security_group_ids")
       @instance.stub_chain(:service, :connection, :tags, :create).with(:key => "Name",
                                                         :value => "instance_id",
                                                         :resource_id => "instance_id")
-      @instance.server.should_receive(:dns_name).and_return("dns_name")
-      @instance.server.should_receive(:subnet_id).and_return("subnet_id")
-      @instance.server.should_receive(:tenancy).and_return("tenancy")
-      @instance.server.stub(:private_dns_name).and_return("private_dns_name")
-      @instance.server.stub(:placement_group).and_return("placement_group")
       @instance.server.stub(:root_device_type).and_return("ebs")
       @instance.server.stub_chain(:block_device_mapping, :first).and_return("block_device_mapping")
+      @instance.service.stub(:server_summary)
       @instance.should_receive(:bootstrap)
       @instance.after_exec_command
     end
