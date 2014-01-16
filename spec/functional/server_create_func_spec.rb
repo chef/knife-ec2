@@ -75,6 +75,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @knife_ec2_create.stub(:ui).and_return(double)
       @knife_ec2_create.ui.stub(:color)
       @knife_ec2_create.ui.should_receive(:info)           
+      @knife_ec2_create.service.stub_chain(:connection, :addresses, :detect).and_return(double)
     end
 
     context "for Linux" do
@@ -116,6 +117,5 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
         @knife_ec2_create.run
       end
     end
-
   end
 end

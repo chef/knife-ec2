@@ -64,9 +64,10 @@ class Chef
                              ami_map["volumeSize"].to_s
                            end
                          rescue ArgumentError
-                           puts "--ebs-size must be an integer"
+                           error_message = "--ebs-size must be an integer"
                            msg opt_parser
-                           exit 1
+                           ui.errors(error_message)
+                           raise CloudExceptions::ValidationError, error_message
                          end
               delete_term = if config[:ebs_no_delete_on_term]
                               "false"
@@ -109,7 +110,6 @@ class Chef
                                 {:label => 'Private IP Address', :key => 'private_ip_address'},
                                 {:label => 'IAM Profile', :key => 'iam_instance_profile'},
                                 {:label => 'Placement Group', :key => 'placement_group'},
-                                {:label => 'Public DNS Name', :key => 'dns_name'},
                                 {:label => 'Root Device Type', :key => 'root_device_type'},
                                 {:label => "Region", :value => service.connection.instance_variable_get(:@region)},
                                 {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")},
@@ -128,6 +128,13 @@ class Chef
           printed_security_group_ids = server.security_group_ids.join(", ") if server.security_group_ids
           @columns_with_info << {:label => 'Security Group Ids', :value =>  printed_security_group_ids} if vpc_mode? or server.security_group_ids          
 
+          requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
+
+          # For VPC EIP assignment we need the allocation ID so fetch full EIP details
+          elastic_ip = service.connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
+
+          # In case server is not 'ready?', so retry a couple times if needed.
+          tries = 6
           begin
             create_tags(hashed_tags) unless hashed_tags.empty?
             associate_eip(elastic_ip) if config[:associate_eip]
@@ -141,7 +148,9 @@ class Chef
           if vpc_mode?
             @columns_with_info << {:label => 'Subnet ID', :key => 'subnet_id'}
             @columns_with_info << {:label => 'Tenancy', :key => 'tenancy'}
+            @columns_with_info << {:label => 'Public DNS Name', :key => 'dns_name'} if config[:associate_public_ip]
           else
+            @columns_with_info << {:label => 'Public DNS Name', :key => 'dns_name'}
             @columns_with_info << {:label => 'Private DNS Name', :key => 'private_dns_name'}
           end
 
@@ -188,7 +197,7 @@ class Chef
             
           errors << "You must provide --image-os-type option [windows/linux]" if ! (%w(windows linux).include?(locate_config_value(:image_os_type)))
 
-          errors << "You are using a VPC, security groups specified with '-G' are not allowed, specify one or more security group ids with '-g' instead." if vpc_mode? and !!config[:security_groups]
+          errors << "You are using a VPC, security groups specified with '--ec2-groups' are not allowed, specify one or more security group ids with '--security-group-ids' instead." if vpc_mode? and !!config[:ec2_security_groups]
 
           errors << "You can only specify a private IP address if you are using VPC." if !vpc_mode? and !!config[:private_ip_address]
 
@@ -230,8 +239,9 @@ class Chef
         def tags
          tags = locate_config_value(:tags)
           if !tags.nil? and tags.length != tags.to_s.count('=')
-            ui.error("Tags should be entered in a key = value pair")
-            exit 1
+            error_message = "Tags should be entered in a key = value pair"
+            ui.error(error_message)
+            raise CloudExceptions::ValidationError, error_message
           end
          tags
         end
