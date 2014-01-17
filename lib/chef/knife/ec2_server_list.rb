@@ -18,6 +18,12 @@ class Chef
 
         banner "knife ec2 server list (options)"
 
+        option :az,
+          :long => "--availability-zone",
+          :boolean => true,
+          :default => false,
+          :description => "Show availability zones"
+
         def before_exec_command
           #set columns_with_info map
           @columns_with_info = [
@@ -25,16 +31,50 @@ class Chef
           {:label => 'Name', :key => 'tags', :value_callback => method(:get_instance_name)},
           {:label => 'Public IP', :key => 'public_ip_address'},
           {:label => 'Private IP', :key => 'private_ip_address'},
-          {:label => 'Flavor', :key => 'flavor_id'},
+          {:label => 'Flavor', :key => 'flavor_id', :value_callback => method(:fcolor)},
           {:label => 'Image', :key => 'image_id'},
-          {:label => 'Keypair', :key => 'key_name'},
-          {:label => 'State', :key => 'state'}
+          {:label => 'SSH Key', :key => 'key_name'},
+          {:label => 'State', :key => 'state', :value_callback => method(:format_server_state)},
+          {:label => 'IAM Profile', :key => 'iam_instance_profile'}
         ]
+          @columns_with_info << {:label => 'AZ', :key => 'availability_zone', :value_callback => method(:azcolor)} if config[:az]
           super
         end
 
         def get_instance_name(tags)
           return tags['Name'] if tags['Name']
+        end
+
+        def fcolor(flavor)
+          fcolor =  case flavor
+                    when "t1.micro"
+                      :blue
+                    when "m1.small"
+                      :magenta
+                    when "m1.medium"
+                      :cyan
+                    when "m1.large"
+                      :green
+                    when "m1.xlarge"
+                      :red
+                    end
+          ui.color(flavor, fcolor)
+        end
+
+        def azcolor(az)
+          color = case az
+                  when /a$/
+                    :blue
+                  when /b$/
+                    :green
+                  when /c$/
+                    :red
+                  when /d$/
+                    :magenta
+                  else
+                    :cyan
+                  end
+          ui.color(az, color)
         end  
       end
     end
