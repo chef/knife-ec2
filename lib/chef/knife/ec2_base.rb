@@ -87,7 +87,7 @@ class Chef
       end
 
       def is_image_windows?
-        image_info = connection.images.get(@server.image_id)
+        image_info = connection.images.get(locate_config_value(:image))
         return image_info.platform == 'windows'
       end
 

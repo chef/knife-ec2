@@ -19,6 +19,7 @@
 
 require 'chef/knife/ec2_base'
 require 'chef/knife/winrm_base'
+require 'chef/knife/helpers/erb'
 
 class Chef
   class Knife
@@ -262,6 +263,95 @@ class Chef
         :description => "Associate public ip to VPC instance.",
         :boolean => true,
         :default => false
+
+      # Options used to configure winrm ssl on VM
+      option :pfx_cert,
+        :long => "--server-cert PFX_FILE",
+        :description => "Certificate to be installed on VM for winrm ssl setup. (.pfx format)",
+        :proc => Proc.new { |path| Chef::Config[:knife][:pfx_cert] = path },
+        :default => nil
+
+      option :certificate_passwd,
+        :long => "--cert-passwd CERT_PASSWD",
+        :description => "Password for certificate specified with --server-cert",
+        :proc => Proc.new { |p| Chef::Config[:knife][:certificate_passwd] = p },
+        :default => ""
+
+      option :cert_hostname_pattern,
+        :long => "--cert-hostname-pattern PATTERN",
+        :description => "Hostname/pattern used for certificate subject and winrm ssl listener. (default: *)",
+        :proc => Proc.new { |pattern| Chef::Config[:knife][:template_file] = pattern },
+        :default => "*"
+
+      option :preserve_winrm_http,
+        :long => "--preserve-winrm-http",
+        :description => "Preserve winrm HTTP listener. Only useful when configuring winrm ssl where HTTP listener is removed by default.",
+        :boolean => true,
+        :default => false
+
+    def tcp_test_winrm(ip_addr, port)
+      tcp_socket = TCPSocket.new(ip_addr, port)
+      yield
+      true
+      rescue SocketError
+        sleep 2
+        false
+      rescue Errno::ETIMEDOUT
+        false
+      rescue Errno::EPERM
+        false
+      rescue Errno::ECONNREFUSED
+        sleep 2
+        false
+      rescue Errno::EHOSTUNREACH
+        sleep 2
+        false
+      rescue Errno::ENETUNREACH
+        sleep 2
+        false
+        ensure
+        tcp_socket && tcp_socket.close
+    end
+
+      def tcp_test_ssh(hostname, ssh_port)
+        tcp_socket = TCPSocket.new(hostname, ssh_port)
+        readable = IO.select([tcp_socket], nil, nil, 5)
+        if readable
+          Chef::Log.debug("sshd accepting connections on #{hostname}, banner is #{tcp_socket.gets}")
+          yield
+          true
+        else
+          false
+        end
+      rescue SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, IOError
+        sleep 2
+        false
+      rescue Errno::EPERM, Errno::ETIMEDOUT
+        false
+      # This happens on some mobile phone networks
+      rescue Errno::ECONNRESET
+        sleep 2
+        false
+      ensure
+        tcp_socket && tcp_socket.close
+      end
+
+      def decrypt_admin_password(encoded_password, key)
+        require 'base64'
+        require 'openssl'
+        private_key = OpenSSL::PKey::RSA.new(key)
+        encrypted_password = Base64.decode64(encoded_password)
+        password = private_key.private_decrypt(encrypted_password)
+        password
+      end
+
+      def check_windows_password_available(server_id)
+        response = connection.get_password_data(server_id)
+        if not response.body["passwordData"]
+          return false
+        end
+        response.body["passwordData"]
+      end
 
       option :ebs_volume_type,
         :long => "--ebs-volume-type TYPE",
@@ -586,6 +676,73 @@ class Chef
         end
       end
 
+      # Loads user data from user provided --user-data file and custom templates
+      # from "ec2-user-data" folder.
+      def load_windows_user_data
+        username = ""
+        password = ""
+        create_user_ps = ""
+        winrm_cfg_ps = ""
+        user_data_scripts_dir = File.join(File.dirname(__FILE__), "../../../ec2-user-data")
+        if(locate_config_value(:bootstrap_protocol) == "winrm")
+          username = locate_config_value(:winrm_user)
+          password = locate_config_value(:winrm_password)
+        else # is ssh
+          username = locate_config_value(:ssh_user)
+          password = locate_config_value(:ssh_password)
+        end
+        # If password is not specified on CLI, means user intends to use cert for auth
+        # which is yet to be implemented/supported, if the user is already in image we cannot yet
+        # retrieve it unless the VM is created.
+        create_user_ps = ERBHelpers::ERBCompiler.run(
+          File.read(File.join(user_data_scripts_dir, "create-win-user.erb")),
+          {:user_name => username, :user_passwd => password} )
+
+        # Load winrm configuration powershells from template.
+        if(locate_config_value(:bootstrap_protocol) == "winrm")
+          if (locate_config_value(:winrm_transport) == "ssl")
+            # Load the certificate in base64 format.
+            require "base64"
+
+            winrm_cfg_ps = ERBHelpers::ERBCompiler.run(
+              File.read(File.join(user_data_scripts_dir, "winrm-ssl.erb")),
+              { :user_data_scripts_dir => user_data_scripts_dir,
+                :base64_encoded_certificate => Base64.encode64(File.binread(locate_config_value(:pfx_cert))).chomp,
+                :certificate_passwd => locate_config_value(:certificate_passwd),
+                :hostname_pattern => locate_config_value(:cert_hostname_pattern),
+                :preserve_winrm_http => locate_config_value(:preserve_winrm_http)
+              })
+          else
+            winrm_cfg_ps = ERBHelpers::ERBCompiler.run(
+              File.read(File.join(user_data_scripts_dir, "winrm-http.erb")), {})
+          end
+        end
+
+        # Now merge all these loaded scripts with user provided --user-data file.
+        user_data = ""
+        # aws_user_data file can have 2 types of tags, <powershell> and <script>
+        if Chef::Config[:knife][:aws_user_data]
+          begin
+            user_data =  File.read(Chef::Config[:knife][:aws_user_data])
+            if(user_data.include? "<powershell>")
+              # prepend create-win-user and winrm PS
+              # we cannot have multiple <powershell> tags in the user-data. all PS scripts should be
+              # enclosed withing single <powershell>..</powershell> tag.
+              user_data.gsub!("<powershell>",
+                "<powershell>\n" + create_user_ps + "\n" + winrm_cfg_ps + "\n")
+            else
+              # user provided user-data file does not include PS, just append
+              user_data << "<powershell>\n" << create_user_ps << "\n" << winrm_cfg_ps << "\n" << "</powershell>"
+            end
+          rescue
+            ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+          end
+        else
+          user_data << "<powershell>\n" << create_user_ps << "\n" << winrm_cfg_ps << "\n" << "</powershell>"
+        end
+        user_data
+      end
+
       def create_server_def
         server_def = {
           :image_id => locate_config_value(:image),
@@ -602,13 +759,20 @@ class Chef
         server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
         server_def[:associate_public_ip] = locate_config_value(:associate_public_ip) if vpc_mode? and config[:associate_public_ip]
 
-        if Chef::Config[:knife][:aws_user_data]
-          begin
-            server_def.merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
-          rescue
-            ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+        if is_image_windows?
+          server_def.merge!(:user_data => load_windows_user_data)
+          puts load_windows_user_data
+          exit
+        else
+          if Chef::Config[:knife][:aws_user_data]
+            begin
+              server_def.merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
+            rescue
+              ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            end
           end
         end
+        Chef::Log.debug server_def[:user_data]
 
         if config[:ebs_optimized]
           server_def[:ebs_optimized] = "true"
@@ -739,7 +903,7 @@ class Chef
         gw_user ||= ssh_gateway_config[:user]
 
         # Always use the gateway keys from the SSH Config
-        gateway_keys = ssh_gateway_config[:keys]        
+        gateway_keys = ssh_gateway_config[:keys]
 
         # Use the keys specificed on the command line if available (overrides SSH Config)
         if config[:ssh_gateway_identity]
