@@ -761,8 +761,6 @@ class Chef
 
         if is_image_windows?
           server_def.merge!(:user_data => load_windows_user_data)
-          puts load_windows_user_data
-          exit
         else
           if Chef::Config[:knife][:aws_user_data]
             begin
