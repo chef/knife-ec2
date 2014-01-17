@@ -1,0 +1,55 @@
+    # Generates the run log on VM at location: $env:temp\knife-ec2-user-data.log
+    # Variables used in template
+    # - user_data_scripts_dir: folder containing the included script templates
+    # - base64_encoded_certificate: base64 encoded string for the (*.pfx) certificate contents to be deployed on the VM. 
+    # - certificate_passwd: password used during certificate (*.pfx) generation.
+    # - hostname_pattern: hostname pattern used in cert subject which is used to configure ssl listener
+    # - preserve_winrm_http: flag indicating whether to delete the winrm HTTP listener
+
+    echo "Starting knife winrm-ssl user-data script..." >> $env:temp\knife-ec2-user-data.log
+
+    <%= ERB.new(File.read(File.join(user_data_scripts_dir, "winrm-http.erb"))).result(binding) %>
+    
+    echo "Configuring winrm for SSL..." >> $env:temp\knife-ec2-user-data.log
+
+    # Delete the default listener and create one with cert thumb print
+    <%= "winrm delete winrm/config/Listener?Address=*+Transport=HTTP" if not preserve_winrm_http %>
+    
+    # write the cert in to local file
+    $Base64 = '<%= base64_encoded_certificate %>'
+
+    $Content = [System.Convert]::FromBase64String($Base64)
+
+    echo "Creating $env:temp\cert.pfx..." >> $env:temp\knife-ec2-user-data.log
+    Set-Content -Path $env:temp\cert.pfx -Value $Content -Encoding Byte
+
+    certutil -p <%= certificate_passwd %> -importPFX $env:temp\cert.pfx AT_KEYEXCHANGE >> $env:temp\knife-ec2-user-data.log
+    
+    $thumbprint = ls Cert:\LocalMachine\My | Select-Object -ExpandProperty Thumbprint
+
+    echo "Certificate thumbprint = $thumbprint" >> $env:temp\knife-ec2-user-data.log
+
+    # Create a HTTPS listener
+    echo "Creating winrm HTTPS listener..." >> $env:temp\knife-ec2-user-data.log
+    $winrmcmd = "winrm create winrm/config/listener?Address=*+Transport=HTTPS @{Hostname=`"<%= hostname_pattern %>`";CertificateThumbprint=`"$thumbprint`";Port=`"5986`"}"
+    
+    echo "Executing $winrmcmd..." >> $env:temp\knife-ec2-user-data.log
+    CMD /C $winrmcmd >> $env:temp\knife-ec2-user-data.log
+
+    echo "winrm e winrm/config/listener" >> $env:temp\knife-ec2-user-data.log
+    winrm e winrm/config/listener >> $env:temp\knife-ec2-user-data.log
+    
+    # Open port 5986 in firewall
+    # Create an instance of the firewall rule object
+    $fwrule = New-Object -ComObject HNetCfg.FwRule
+
+    # Set the firewall rule properties
+    $fwrule.Name = "knife-winrmssl"
+    $fwrule.Protocol = 6
+    $fwrule.LocalPorts = 5986
+    $fwrule.Description = "Open winrm ssl port"
+    $fwrule.Enabled = $true
+
+    # Create an instance of the firewall policy object
+    $fwpolicy = New-Object -ComObject HNetCfg.FwPolicy2
+    $fwpolicy.Rules.Add($fwrule)

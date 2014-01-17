@@ -1,0 +1,12 @@
+
+    $computer = [ADSI]"WinNT://$env:computername,computer"
+    $username = "<%= user_name %>"
+    $splitusername = $username.split("\\")
+    if ($splitusername[1] -eq $null) { $username = $splitusername[0] }
+    else { $username = $splitusername[1] }
+    $newuser = $computer.Create("user", $username)
+    $newuser.Path = $newuser.Path -replace(".\\", "")
+    $newuser.SetPassword("<%= user_passwd %>")
+    $newuser.SetInfo()
+    $localadmin = ([adsi]("WinNT://./Administrators,group"))
+    $localadmin.PSBase.Invoke("Add",$newuser.PSBase.Path)
