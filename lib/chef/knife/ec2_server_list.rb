@@ -34,8 +34,9 @@ class Chef
           {:label => 'Flavor', :key => 'flavor_id', :value_callback => method(:fcolor)},
           {:label => 'Image', :key => 'image_id'},
           {:label => 'SSH Key', :key => 'key_name'},
+          {:label => 'Security Groups', :key => 'groups', :value_callback => method(:get_security_groups)},
           {:label => 'State', :key => 'state', :value_callback => method(:format_server_state)},
-          {:label => 'IAM Profile', :key => 'iam_instance_profile'}
+          {:label => 'IAM Profile', :key => 'iam_instance_profile', :value_callback => method(:iam_name_from_profile)}
         ]
           @columns_with_info << {:label => 'AZ', :key => 'availability_zone', :value_callback => method(:azcolor)} if config[:az]
           super
@@ -43,6 +44,10 @@ class Chef
 
         def get_instance_name(tags)
           return tags['Name'] if tags['Name']
+        end
+
+        def get_security_groups(groups)
+          groups.join(", ")
         end
 
         def fcolor(flavor)
@@ -75,7 +80,15 @@ class Chef
                     :cyan
                   end
           ui.color(az, color)
-        end  
+        end 
+
+        def iam_name_from_profile(profile)
+          # The IAM profile object only contains the name as part of the arn
+          if profile && profile.key?('arn')
+            name = profile['arn'].split('/')[-1]
+          end
+          name ||= ''
+        end 
       end
     end
   end
