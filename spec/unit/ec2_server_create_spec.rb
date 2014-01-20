@@ -208,7 +208,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "set default distro to windows-chef-client-msi for windows" do
       @knife_ec2_create.config[:winrm_password] = 'winrm-password'
-      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'      
+      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
       @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
       Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
       @bootstrap_winrm.should_receive(:run)
@@ -498,7 +498,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.ui.stub(:msg)
     end
 
-    describe "when reading aws_credential_file" do 
+    describe "when reading aws_credential_file" do
       before do
         Chef::Config[:knife].delete(:aws_access_key_id)
         Chef::Config[:knife].delete(:aws_secret_access_key)
@@ -671,29 +671,29 @@ describe Chef::Knife::Ec2ServerCreate do
 
       server_def[:iam_instance_profile_name].should == nil
     end
-    
+
     it 'Set Tenancy Dedicated when both VPC mode and Flag is True' do
       @knife_ec2_create.config[:dedicated_instance] = true
       @knife_ec2_create.stub(:vpc_mode? => true)
-      
+
       server_def = @knife_ec2_create.create_server_def
       server_def[:tenancy].should == "dedicated"
     end
-    
+
     it 'Tenancy should be default with no vpc mode even is specified' do
       @knife_ec2_create.config[:dedicated_instance] = true
-      
+
       server_def = @knife_ec2_create.create_server_def
       server_def[:tenancy].should == nil
     end
-    
+
     it 'Tenancy should be default with vpc but not requested' do
       @knife_ec2_create.stub(:vpc_mode? => true)
-      
+
       server_def = @knife_ec2_create.create_server_def
       server_def[:tenancy].should == nil
     end
-    
+
     it "sets associate_public_ip to true if specified and in vpc_mode" do
       @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
       @knife_ec2_create.config[:associate_public_ip] = true
@@ -753,6 +753,124 @@ describe Chef::Knife::Ec2ServerCreate do
         server_def[:block_device_mapping].first['Ebs.Iops'].should == '123'
       end
     end
+
+        context "when image is windows" do
+      before(:each) do
+        @knife_ec2_create.stub(:is_image_windows?).and_return(true)
+      end
+
+      it "loads ec2 user data script for windows" do
+        @knife_ec2_create.should_receive(:load_windows_user_data)
+        @knife_ec2_create.create_server_def
+      end
+
+      context "bootstrap protocol winrm" do
+        before(:each) do
+          @knife_ec2_create.config[:bootstrap_protocol] = "winrm"
+          @knife_ec2_create.config[:winrm_user] = "testuser_winrm"
+          @knife_ec2_create.config[:winrm_password] = "testpassword_winrm"
+        end
+
+        it "user data includes user create script for testuser_winrm" do
+          server_def = @knife_ec2_create.create_server_def
+          server_def[:user_data].should include("<powershell>")
+          server_def[:user_data].should include("</powershell>")
+          server_def[:user_data].should include("testuser_winrm")
+          server_def[:user_data].should include("$newuser.SetPassword(\"testpassword_winrm\")")
+        end
+
+        it "user data includes winrm config script" do
+          server_def = @knife_ec2_create.create_server_def
+          server_def[:user_data].should include("testuser_winrm")
+          server_def[:user_data].should include("winrm quickconfig -q")
+          server_def[:user_data].should include("winrm e winrm/config/listener")
+          server_def[:user_data].should include("$fwrule = New-Object -ComObject HNetCfg.FwRule")
+          server_def[:user_data].should include("$fwrule.Name = \"knife-winrm\"")
+          server_def[:user_data].should include("$fwpolicy = New-Object -ComObject HNetCfg.FwPolicy2")
+          server_def[:user_data].should include("$fwpolicy.Rules.Add($fwrule)")
+        end
+
+        context "winrm-transport set to ssl" do
+          before(:each) do
+            @knife_ec2_create.config[:winrm_transport] = "ssl"
+            @knife_ec2_create.config[:certificate_passwd] = "testwinrmcertgen"
+            @knife_ec2_create.config[:cert_hostname_pattern] = "*.compute-1.amazonaws.com"
+            @knife_ec2_create.config[:pfx_cert] = "C:\Users\cert.pfx"
+            File.should_receive(:binread).with("C:\Users\cert.pfx").and_return(" \n")
+            Base64.stub(:encode64).and_return("")
+          end
+
+          it "user data includes winrm ssl configuration commands" do
+            @knife_ec2_create.config[:preserve_winrm_http] = false
+            server_def = @knife_ec2_create.create_server_def
+            server_def[:user_data].should include("testuser_winrm")
+            server_def[:user_data].should include("winrm quickconfig -q")
+            server_def[:user_data].should include("winrm e winrm/config/listener")
+            server_def[:user_data].should include("winrm delete winrm/config/Listener?Address=*+Transport=HTTP")
+            server_def[:user_data].should include("$winrmcmd = \"winrm create winrm/config/listener?Address=*+Transport=HTTPS @{Hostname=`\"*.compute-1.amazonaws.com`\";CertificateThumbprint=`\"$thumbprint`\";Port=`\"5986`\"}\"")
+            server_def[:user_data].should include("$fwrule = New-Object -ComObject HNetCfg.FwRule")
+            server_def[:user_data].should include("$fwrule.LocalPorts = 5986")
+            server_def[:user_data].should include("$fwrule.Description = \"Open winrm ssl port\"")
+          end
+
+          it "user data includes winrm ssl configuration with preserve_winrm_http" do
+            @knife_ec2_create.config[:preserve_winrm_http] = true
+            server_def = @knife_ec2_create.create_server_def
+            server_def[:user_data].should include("testuser_winrm")
+            server_def[:user_data].should_not include("winrm delete winrm/config/Listener?Address=*+Transport=HTTP")
+          end
+        end
+      end
+
+      context "bootstrap protocol is ssh" do
+        before(:each) do
+          @knife_ec2_create.config[:bootstrap_protocol] = "ssh"
+          @knife_ec2_create.config[:ssh_user] = "testuser_ssh"
+          @knife_ec2_create.config[:ssh_password] = "testpassword_ssh"
+        end
+
+        it "user data include user create script for testuser_ssh" do
+          server_def = @knife_ec2_create.create_server_def
+          server_def[:user_data].should include("<powershell>")
+          server_def[:user_data].should include("</powershell>")
+          server_def[:user_data].should include("testuser_ssh")
+          server_def[:user_data].should include("testpassword_ssh")
+        end
+      end
+
+      context "--user-data cli option specified" do
+        before(:each) do
+          Chef::Config[:knife][:aws_user_data] = "C:\Users\testuser"
+          @knife_ec2_create.config[:bootstrap_protocol] = "winrm"
+          @knife_ec2_create.config[:winrm_user] = "testuser_winrm"
+          @knife_ec2_create.config[:winrm_password] = "testpassword_winrm"
+        end
+
+        it "append user data to create user data when script tag is present" do
+          File.stub(:read).and_call_original
+          File.stub(:read).with("C:\Users\testuser").and_return("<script> echo \"test user data script\" </script>")
+          server_def = @knife_ec2_create.create_server_def
+          server_def[:user_data].should include("<script> echo \"test user data script\" </script>")
+          server_def[:user_data].should include("Starting knife winrm user-data script...")
+          server_def[:user_data].should include("testuser_winrm")
+          server_def[:user_data].should include("testpassword_winrm")
+          server_def[:user_data].should include("$newuser.SetPassword(\"testpassword_winrm\")")
+        end
+
+        it "append user data to create user data when powershell tag is present" do
+          File.stub(:read).and_call_original
+          File.stub(:read).with("C:\Users\testuser").and_return("<powershell> write-host \"test user data script\" </powershell>")
+          server_def = @knife_ec2_create.create_server_def
+          server_def[:user_data].should include("testuser_winrm")
+          server_def[:user_data].should include("testpassword_winrm")
+          server_def[:user_data].should include("write-host \"test user data script\"")
+          server_def[:user_data].should include("$newuser.SetPassword(\"testpassword_winrm\")")
+
+          # check for only two powershell tag (i.e one opening and one closing)
+          server_def[:user_data].scan("powershell>").length.should eq(2)
+        end
+      end
+    end
   end
 
   describe "wait_for_sshd" do
@@ -804,6 +922,7 @@ describe Chef::Knife::Ec2ServerCreate do
       Net::SSH::Config.stub(:for).and_return(:user => "darius")
       @knife_ec2_create.get_ssh_gateway_for(hostname).should be_nil
     end
+
   end
 
   describe "ssh_connect_host" do
