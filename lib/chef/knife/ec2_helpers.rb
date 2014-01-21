@@ -21,6 +21,7 @@ class Chef
             unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
               errors << "Either provide a credentials file or the access key and secret keys but not both."
             end
+            
             # File format:
             # AWSAccessKeyId=somethingsomethingdarkside
             # AWSSecretKey=somethingsomethingcomplete
