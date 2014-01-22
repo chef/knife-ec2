@@ -74,6 +74,7 @@ Additionally the following options may be set in your `knife.rb`:
 - image
 - availability_zone
 - aws_ssh_key_id
+- aws_session_token
 - region
 - distro
 - template_file
