@@ -7,7 +7,7 @@ require 'chef/knife/cloud/server/list_command'
 require 'chef/knife/ec2_helpers'
 require 'chef/knife/cloud/ec2_service_options'
 require 'chef/knife/cloud/server/list_options'
-
+require 'pry'
 class Chef
   class Knife
     class Cloud
@@ -57,9 +57,13 @@ class Chef
 
           if config[:tags]
             config[:tags].split(",").collect do |tag_name|
-              @columns_with_info << {:label => 'Tags:'+tag_name, :key => 'tags', :nested_values => tag_name}
+              # define callback method
+              self.class.send(:define_method, "get_#{tag_name}_from_tag") do |tags|
+                tags[tag_name]
+              end
+              @columns_with_info << {:label => 'Tags:'+tag_name, :key => 'tags', :value_callback => method("get_#{tag_name}_from_tag".to_sym)}
             end
-          end  
+          end 
 
           super
         end
