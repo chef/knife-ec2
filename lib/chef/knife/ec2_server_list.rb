@@ -7,7 +7,7 @@ require 'chef/knife/cloud/server/list_command'
 require 'chef/knife/ec2_helpers'
 require 'chef/knife/cloud/ec2_service_options'
 require 'chef/knife/cloud/server/list_options'
-require 'pry'
+
 class Chef
   class Knife
     class Cloud
