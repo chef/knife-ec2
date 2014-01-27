@@ -19,10 +19,17 @@ describe Chef::Knife::Cloud::Ec2ServerList do
       instance.stub_chain(:groups, :join)
       instance.stub(:create_service_instance).and_return(Chef::Knife::Cloud::Ec2Service.new)
       instance.stub(:validate!)
+      instance.config[:name] = true
     end
 
     it "lists formatted list of resources" do
       instance.ui.should_receive(:list).with(["Instance ID", "Name", "Public IP", "Private IP", "Flavor", "Image", "SSH Key", "Security Groups", "State", "IAM Profile", "resource-1", "ubuntu01", "172.31.6.132", "172.31.6.133", "m1.small", "image01", "keypair", "group1", "active", "", "resource-2", "windows2008", "172.31.6.132", "", "m1.micro", "image02", "keypair", "group2", "active", "", "resource-3-err", "windows2008", "", "", "m1.small", "image02", "keypair", "group3", "error", ""], :uneven_columns_across, 10)
+      instance.run
+    end
+
+    it "lists formatted list of resources without Name column when --no-name option is set." do
+      instance.config[:name] = false
+      instance.ui.should_receive(:list).with(["Instance ID", "Public IP", "Private IP", "Flavor", "Image", "SSH Key", "Security Groups", "State", "IAM Profile", "resource-1", "172.31.6.132", "172.31.6.133", "m1.small", "image01", "keypair", "group1", "active", "", "resource-2", "172.31.6.132", "", "m1.micro", "image02", "keypair", "group2", "active", "", "resource-3-err", "", "", "m1.small", "image02", "keypair", "group3", "error", ""], :uneven_columns_across, 9)
       instance.run
     end
 
@@ -33,7 +40,6 @@ describe Chef::Knife::Cloud::Ec2ServerList do
         Chef::Node.stub(:list).and_return({"server-4" => @node})
         instance.config[:chef_data] = true
         instance.stub_chain(:groups, :join)
-        # @resources.each {|res| res.stub_chain(:attributes, :include?).and_return(false)}
       end
 
       it "lists formatted list of resources on chef data option set" do
@@ -60,6 +66,32 @@ describe Chef::Knife::Cloud::Ec2ServerList do
         instance.config[:chef_node_attribute] = "platform_family"
         instance.ui.should_receive(:list).with(["Instance ID", "Name", "Public IP", "Private IP", "Flavor", "Image", "SSH Key", "Security Groups", "State", "IAM Profile", "resource-1", "ubuntu01", "172.31.6.132", "172.31.6.133", "m1.small", "image01", "keypair", "group1", "active", "", "resource-2", "windows2008", "172.31.6.132", "", "m1.micro", "image02", "keypair", "group2", "active", "", "resource-3-err", "windows2008", "", "", "m1.small", "image02", "keypair", "group3", "error", "", "server-4", "server-4", "172.31.6.132", "172.31.6.133", "m1.small", "image1", "keypair", "group1", "active", ""], :uneven_columns_across, 10)
         instance.run
+      end
+    end
+
+    context "when tags option is set." do
+      before(:each) do
+        @resources.push(TestResource.new({:id => "server-4", :tags => {"Name" => "server-4", "address" => "address01"}, :public_ip_address => "172.31.6.132", :private_ip_address => "172.31.6.133", :flavor_id => "m1.small", :image_id => "image1", :key_name => "keypair", :state => "ACTIVE", :groups => ['group1'], :iam_instance_profile => {}}))
+        instance.config[:tags] = "address"
+        instance.stub_chain(:groups, :join)
+      end
+
+      it "lists formatted list of resources with the tags column." do
+        instance.ui.should_receive(:list).with(["Instance ID", "Name", "Public IP", "Private IP", "Flavor", "Image", "SSH Key", "Security Groups", "State", "IAM Profile", "Tags:address", "resource-1", "ubuntu01", "172.31.6.132", "172.31.6.133", "m1.small", "image01", "keypair", "group1", "active", "", nil, "resource-2", "windows2008", "172.31.6.132", "", "m1.micro", "image02", "keypair", "group2", "active", "", nil, "resource-3-err", "windows2008", "", "", "m1.small", "image02", "keypair", "group3", "error", "", nil, "server-4", "server-4", "172.31.6.132", "172.31.6.133", "m1.small", "image1", "keypair", "group1", "active", "", "address01"], :uneven_columns_across, 11)
+        instance.run
+      end
+
+      context "when tags option is set with multiple values." do
+        before(:each) do
+          @resources.push(TestResource.new({:id => "server-4", :tags => {"Name" => "server-4", "address" => "address01", "domain" => "test"}, :public_ip_address => "172.31.6.132", :private_ip_address => "172.31.6.133", :flavor_id => "m1.small", :image_id => "image1", :key_name => "keypair", :state => "ACTIVE", :groups => ['group1'], :iam_instance_profile => {}}))
+          instance.config[:tags] = "address,domain"
+          instance.stub_chain(:groups, :join)
+        end
+
+        it "lists formatted list of resources with the tags columns for each tag provided." do
+          instance.ui.should_receive(:list).with(["Instance ID", "Name", "Public IP", "Private IP", "Flavor", "Image", "SSH Key", "Security Groups", "State", "IAM Profile", "Tags:address", "Tags:domain", "resource-1", "ubuntu01", "172.31.6.132", "172.31.6.133", "m1.small", "image01", "keypair", "group1", "active", "", nil, nil, "resource-2", "windows2008", "172.31.6.132", "", "m1.micro", "image02", "keypair", "group2", "active", "", nil, nil, "resource-3-err", "windows2008", "", "", "m1.small", "image02", "keypair", "group3", "error", "", nil, nil, "server-4", "server-4", "172.31.6.132", "172.31.6.133", "m1.small", "image1", "keypair", "group1", "active", "", "address01", nil, "server-4", "server-4", "172.31.6.132", "172.31.6.133", "m1.small", "image1", "keypair", "group1", "active", "", "address01", "test"], :uneven_columns_across, 12)
+          instance.run
+        end
       end
     end
   end
