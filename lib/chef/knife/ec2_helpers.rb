@@ -33,6 +33,12 @@ class Chef
           end
           super(:aws_access_key_id, :aws_secret_access_key)
         end
+
+        def iam_name_from_profile(profile)
+          # The IAM profile object only contains the name as part of the arn
+          name = profile['arn'].split('/')[-1] if profile && profile.key?('arn')
+          name ||= ''
+        end
       end
     end
   end

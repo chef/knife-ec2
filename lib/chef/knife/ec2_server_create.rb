@@ -140,7 +140,7 @@ class Chef
                                 {:label => 'Availability Zone', :key => 'availability_zone'},
                                 {:label => 'Public IP Address', :key => 'public_ip_address'},
                                 {:label => 'Private IP Address', :key => 'private_ip_address'},
-                                {:label => 'IAM Profile', :key => 'iam_instance_profile'},
+                                {:label => 'IAM Profile', :key => 'iam_instance_profile', :value_callback => method(:iam_name_from_profile)},
                                 {:label => 'Placement Group', :key => 'placement_group'},
                                 {:label => 'Root Device Type', :key => 'root_device_type'},
                                 {:label => "Region", :value => service.connection.instance_variable_get(:@region)},
