@@ -31,89 +31,20 @@ class Chef
                 :groups => locate_config_value(:ec2_security_groups),
                 :security_group_ids => locate_config_value(:security_group_ids),
                 :key_name => locate_config_value(:ec2_ssh_key_id),
-                :availability_zone => locate_config_value(:availability_zone)
+                :availability_zone => locate_config_value(:availability_zone),
+                :placement_group => locate_config_value(:placement_group),
+                :iam_instance_profile_name => locate_config_value(:iam_instance_profile)
               },
               :server_create_timeout => locate_config_value(:server_create_timeout)
             }
 
-            if vpc_mode?
-              @create_options[:server_def][:subnet_id] = locate_config_value(:subnet_id)
-              @create_options[:server_def][:private_ip_address] = locate_config_value(:private_ip_address)
-              @create_options[:server_def][:tenancy] = "dedicated" if locate_config_value(:dedicated_instance)
-              @create_options[:server_def][:associate_public_ip] = locate_config_value(:associate_public_ip) if config[:associate_public_ip]
-            end
+            load_vpc_create_options if vpc_mode?
 
-            @create_options[:server_def][:placement_group] = locate_config_value(:placement_group)
-            @create_options[:server_def][:iam_instance_profile_name] = locate_config_value(:iam_instance_profile)
+            # Load user data scripts in @create_options[:server_def][:user_data]
+            load_user_data
 
-            if service.is_image_windows?(locate_config_value(:image))
-              # we cannot have multiple <powershell> tags in the user-data. all PS scripts should be
-              # enclosed withing single <powershell>..</powershell> tag.
-              @create_options[:server_def].merge!(:user_data => "<powershell>")
-              if(locate_config_value(:bootstrap_protocol) == "winrm")
-                @create_options[:server_def][:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$username = \"#{locate_config_value(:winrm_user)}\"\n$splitusername=$username.split(\"\\\\\")\nif($splitusername[1] -eq $null) { $username = $splitusername[0] }\nelse { $username = $splitusername[1] }\n$newuser = $computer.Create(\"user\", $username)\n $newuser.Path = $newuser.Path -replace(\".\\\\\", \"\")\n $newuser.SetPassword(\"#{windows_password}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:winrm_user).downcase != "administrator"
-              else
-                @create_options[:server_def][:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:ssh_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:ssh_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:ssh_user).downcase != "administrator"
-              end
-              if Chef::Config[:knife][:aws_user_data]
-                begin
-                  user_data_file = File.read(Chef::Config[:knife][:aws_user_data]).gsub("<powershell>", "").gsub("</powershell>", "")
-                  if(user_data_file.include? "<script>")
-                    @create_options[:server_def][:user_data] << "</powershell>"
-                    @create_options[:server_def][:user_data ] << user_data_file
-                  else
-                    @create_options[:server_def][:user_data ] << user_data_file
-                    @create_options[:server_def][:user_data] << "</powershell>"
-                  end
-                rescue
-                  ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
-                end
-              else
-                @create_options[:server_def][:user_data] << "</powershell>"
-              end
-              
-              # in case there is no PS script, we dont send empty <powershell> script to ec2 user-data
-              @create_options[:server_def][:user_data].gsub("<powershell></powershell>", "")
-              Chef::Log.debug @create_options[:server_def][:user_data]
-            else
-              if Chef::Config[:knife][:aws_user_data]
-                begin
-                  @create_options[:server_def].merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
-                rescue
-                  ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
-                end
-              end
-            end
-
-            @create_options[:server_def][:ebs_optimized] = config[:ebs_optimized] ? "true" : "false"
-
-            if ami.root_device_type == "ebs"
-              ami_map = ami.block_device_mapping.first
-              ebs_size = begin
-                           if config[:ebs_size]
-                             Integer(config[:ebs_size]).to_s
-                           else
-                             ami_map["volumeSize"].to_s
-                           end
-                         rescue ArgumentError
-                           error_message = "--ebs-size must be an integer"
-                           msg opt_parser
-                           ui.errors(error_message)
-                           raise CloudExceptions::ValidationError, error_message
-                         end
-              delete_term = if config[:ebs_no_delete_on_term]
-                              "false"
-                            else
-                              ami_map["deleteOnTermination"]
-                            end
-
-              @create_options[:server_def][:block_device_mapping] =
-                [{
-                   'DeviceName' => ami_map["deviceName"],
-                   'Ebs.VolumeSize' => ebs_size,
-                   'Ebs.DeleteOnTermination' => delete_term
-                 }]
-            end
+            # Load options related to EBS
+            load_ebs_create_options
 
             (config[:ephemeral] || []).each_with_index do |device_name, i|
               @create_options[:server_def][:block_device_mapping] = (@create_options[:server_def][:block_device_mapping] || []) << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
@@ -336,6 +267,81 @@ class Chef
         def check_windows_password_available(server_id)
           response = service.connection.get_password_data(server_id)
           response.body["passwordData"] ? response.body["passwordData"] : false
+        end
+
+        def load_vpc_create_options
+          @create_options[:server_def][:subnet_id] = locate_config_value(:subnet_id)
+          @create_options[:server_def][:private_ip_address] = locate_config_value(:private_ip_address)
+          @create_options[:server_def][:tenancy] = "dedicated" if locate_config_value(:dedicated_instance)
+          @create_options[:server_def][:associate_public_ip] = locate_config_value(:associate_public_ip) if config[:associate_public_ip]
+        end
+
+        def load_ebs_create_options
+          if ami.root_device_type == "ebs"
+            ami_map = ami.block_device_mapping.first
+            ebs_size = begin
+                         config[:ebs_size] ? Integer(config[:ebs_size]).to_s : ami_map["volumeSize"].to_s
+                       rescue ArgumentError
+                         error_message = "--ebs-size must be an integer"
+                         msg opt_parser
+                         ui.errors(error_message)
+                         raise CloudExceptions::ValidationError, error_message
+                       end
+            delete_term = config[:ebs_no_delete_on_term] ? "false" : ami_map["deleteOnTermination"]
+
+            @create_options[:server_def][:block_device_mapping] =
+              [{
+                 'DeviceName' => ami_map["deviceName"],
+                 'Ebs.VolumeSize' => ebs_size,
+                 'Ebs.DeleteOnTermination' => delete_term
+               }]
+          end
+          @create_options[:server_def][:ebs_optimized] = config[:ebs_optimized] ? "true" : "false"
+        end
+
+        def load_user_data_for_win
+          # we cannot have multiple <powershell> tags in the user-data. all PS scripts should be
+          # enclosed withing single <powershell>..</powershell> tag.
+          @create_options[:server_def].merge!(:user_data => "<powershell>")
+          if(locate_config_value(:bootstrap_protocol) == "winrm")
+            @create_options[:server_def][:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$username = \"#{locate_config_value(:winrm_user)}\"\n$splitusername=$username.split(\"\\\\\")\nif($splitusername[1] -eq $null) { $username = $splitusername[0] }\nelse { $username = $splitusername[1] }\n$newuser = $computer.Create(\"user\", $username)\n $newuser.Path = $newuser.Path -replace(\".\\\\\", \"\")\n $newuser.SetPassword(\"#{windows_password}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:winrm_user).downcase != "administrator"
+          else
+            @create_options[:server_def][:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:ssh_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:ssh_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:ssh_user).downcase != "administrator"
+          end
+          if Chef::Config[:knife][:aws_user_data]
+            begin
+              user_data_file = File.read(Chef::Config[:knife][:aws_user_data]).gsub("<powershell>", "").gsub("</powershell>", "")
+              if(user_data_file.include? "<script>")
+                @create_options[:server_def][:user_data] << "</powershell>"
+                @create_options[:server_def][:user_data ] << user_data_file
+              else
+                @create_options[:server_def][:user_data ] << user_data_file
+                @create_options[:server_def][:user_data] << "</powershell>"
+              end
+            rescue
+              ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            end
+          else
+            @create_options[:server_def][:user_data] << "</powershell>"
+          end
+
+          # in case there is no PS script, we dont send empty <powershell> script to ec2 user-data
+          @create_options[:server_def][:user_data].gsub("<powershell></powershell>", "")
+        end
+
+        def load_user_data
+          if service.is_image_windows?(locate_config_value(:image))
+            load_user_data_for_win
+            Chef::Log.debug @create_options[:server_def][:user_data]
+          else
+            if Chef::Config[:knife][:aws_user_data]
+              begin
+                @create_options[:server_def].merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
+              rescue
+                ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+              end
+            end
+          end
         end
       end
     end
