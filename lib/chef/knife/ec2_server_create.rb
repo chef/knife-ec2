@@ -54,36 +54,8 @@ class Chef
             super
         end
 
-        # Setup the floating ip after server creation.
+        # Setup the floating ip and add tags after server creation. Addtionally display VM summary.
         def after_exec_command
-
-          @columns_with_info = [{:label => 'Instance Name', :value => service.get_server_name(server)},
-                                {:label => 'Instance ID', :key => 'id'},
-                                {:label => 'Flavor', :key => 'flavor_id'},
-                                {:label => 'Image', :key => 'image_id'}, 
-                                {:label => 'Availability Zone', :key => 'availability_zone'},
-                                {:label => 'Public IP Address', :key => 'public_ip_address'},
-                                {:label => 'Private IP Address', :key => 'private_ip_address'},
-                                {:label => 'IAM Profile', :key => 'iam_instance_profile', :value_callback => method(:iam_name_from_profile)},
-                                {:label => 'Placement Group', :key => 'placement_group'},
-                                {:label => 'Root Device Type', :key => 'root_device_type'},
-                                {:label => "Region", :value => service.connection.instance_variable_get(:@region)},
-                                {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")},
-                                {:label => "SSH Key", :key => 'key_name'} 
-                               ]
-
-          # If we don't specify a security group or security group id, Fog will
-          # pick the appropriate default one. In case of a VPC we don't know the
-          # default security group id at this point unless we look it up, hence
-          # 'default' is printed if no id was specified.
-          printed_security_groups = "default"
-          printed_security_groups = server.groups.join(", ") if server.groups
-          @columns_with_info << {:label => 'Security Groups', :value => printed_security_groups} unless vpc_mode? or (server.groups.nil? and server.security_group_ids)
-
-          printed_security_group_ids = "default"
-          printed_security_group_ids = server.security_group_ids.join(", ") if server.security_group_ids
-          @columns_with_info << {:label => 'Security Group Ids', :value =>  printed_security_group_ids} if vpc_mode? or server.security_group_ids          
-
           # In case server is not 'ready?', so retry a couple times if needed.
           tries = 6
           begin
@@ -96,33 +68,18 @@ class Chef
             retry
           end
 
-          if vpc_mode?
-            @columns_with_info << {:label => 'Subnet ID', :key => 'subnet_id'}
-            @columns_with_info << {:label => 'Tenancy', :key => 'tenancy'}
-            @columns_with_info << {:label => 'Public DNS Name', :key => 'dns_name'} if config[:associate_public_ip]
-          else
-            @columns_with_info << {:label => 'Public DNS Name', :key => 'dns_name'}
-            @columns_with_info << {:label => 'Private DNS Name', :key => 'private_dns_name'}
-          end
-
-          if server.root_device_type == "ebs"
-            device_map = server.block_device_mapping.first
-            @columns_with_info << {:label => "Root Volume ID", :value => device_map['volumeId']}
-            @columns_with_info << {:label => "Root Device Name", :value => device_map['deviceName']}
-            @columns_with_info << {:label => "Root Device Delete on Terminate", :value => device_map['deleteOnTermination'].to_s}
-
-            if config[:ebs_size]
-              if ami.block_device_mapping.first['volumeSize'].to_i < config[:ebs_size].to_i
-                volume_too_large_warning = "#{config[:ebs_size]}GB " +
-                            "EBS volume size is larger than size set in AMI of " +
-                            "#{ami.block_device_mapping.first['volumeSize']}GB.\n" +
-                            "Use file system tools to make use of the increased volume size."
-                ui.warn(volume_too_large_warning)            
-              end
+          # Any warnings? Display.
+          if server.root_device_type == "ebs" and config[:ebs_size]
+            if ami.block_device_mapping.first['volumeSize'].to_i < config[:ebs_size].to_i
+              volume_too_large_warning = "#{config[:ebs_size]}GB " +
+                          "EBS volume size is larger than size set in AMI of " +
+                          "#{ami.block_device_mapping.first['volumeSize']}GB.\n" +
+                          "Use file system tools to make use of the increased volume size."
+              ui.warn(volume_too_large_warning)
             end
           end
-          
-          @columns_with_info << {:label => "EBS is Optimized", :key => 'ebs_optimized'} if config[:ebs_optimized]
+
+          setup_summary_colinfo
           service.server_summary(server, @columns_with_info)
           super
         end
@@ -358,6 +315,54 @@ class Chef
             end
             hashed_tags
           end
+        end
+
+        # setup the @columns_with_info to display the server summary.
+        def setup_summary_colinfo
+          @columns_with_info = [{:label => 'Instance Name', :value => service.get_server_name(server)},
+                                {:label => 'Instance ID', :key => 'id'},
+                                {:label => 'Flavor', :key => 'flavor_id'},
+                                {:label => 'Image', :key => 'image_id'},
+                                {:label => 'Availability Zone', :key => 'availability_zone'},
+                                {:label => 'Public IP Address', :key => 'public_ip_address'},
+                                {:label => 'Private IP Address', :key => 'private_ip_address'},
+                                {:label => 'IAM Profile', :key => 'iam_instance_profile', :value_callback => method(:iam_name_from_profile)},
+                                {:label => 'Placement Group', :key => 'placement_group'},
+                                {:label => 'Root Device Type', :key => 'root_device_type'},
+                                {:label => "Region", :value => service.connection.instance_variable_get(:@region)},
+                                {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")},
+                                {:label => "SSH Key", :key => 'key_name'}
+                               ]
+
+          # If we don't specify a security group or security group id, Fog will
+          # pick the appropriate default one. In case of a VPC we don't know the
+          # default security group id at this point unless we look it up, hence
+          # 'default' is printed if no id was specified.
+          printed_security_groups = "default"
+          printed_security_groups = server.groups.join(", ") if server.groups
+          @columns_with_info << {:label => 'Security Groups', :value => printed_security_groups} unless vpc_mode? or (server.groups.nil? and server.security_group_ids)
+
+          printed_security_group_ids = "default"
+          printed_security_group_ids = server.security_group_ids.join(", ") if server.security_group_ids
+          @columns_with_info << {:label => 'Security Group Ids', :value =>  printed_security_group_ids} if vpc_mode? or server.security_group_ids
+
+          if vpc_mode?
+            @columns_with_info << {:label => 'Subnet ID', :key => 'subnet_id'}
+            @columns_with_info << {:label => 'Tenancy', :key => 'tenancy'}
+            @columns_with_info << {:label => 'Public DNS Name', :key => 'dns_name'} if config[:associate_public_ip]
+          else
+            @columns_with_info << {:label => 'Public DNS Name', :key => 'dns_name'}
+            @columns_with_info << {:label => 'Private DNS Name', :key => 'private_dns_name'}
+          end
+
+          if server.root_device_type == "ebs"
+            device_map = server.block_device_mapping.first
+            @columns_with_info << {:label => "Root Volume ID", :value => device_map['volumeId']}
+            @columns_with_info << {:label => "Root Device Name", :value => device_map['deviceName']}
+            @columns_with_info << {:label => "Root Device Delete on Terminate", :value => device_map['deleteOnTermination'].to_s}
+          end
+
+          @columns_with_info << {:label => "EBS is Optimized", :key => 'ebs_optimized'} if config[:ebs_optimized]
         end
       end
     end
