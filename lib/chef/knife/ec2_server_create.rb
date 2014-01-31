@@ -179,7 +179,9 @@ class Chef
             eips = service.connection.addresses.collect{|addr| addr if addr.domain == eip_scope}.compact
 
             unless eips.detect{|addr| addr.public_ip == config[:associate_eip] && addr.server_id == nil}
-              errors << "Elastic IP requested is not available."
+              error_message = "Requested elastic IP is not available.[#{config[:associate_eip]}]"
+              ui.error(error_message)
+              raise CloudExceptions::ValidationError, error_message
             end
           end
         end
