@@ -56,13 +56,6 @@ class Chef
 
         # Setup the floating ip after server creation.
         def after_exec_command
-          hashed_tags={}
-          tags.map{ |t| key, val=t.split('='); hashed_tags[key]=val} unless tags.nil?
-
-          # Always set the Name tag
-          unless hashed_tags.keys.include? "Name"
-            hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
-          end
 
           @columns_with_info = [{:label => 'Instance Name', :value => service.get_server_name(server)},
                                 {:label => 'Instance ID', :key => 'id'},
@@ -94,7 +87,7 @@ class Chef
           # In case server is not 'ready?', so retry a couple times if needed.
           tries = 6
           begin
-            create_tags(hashed_tags) unless hashed_tags.empty?
+            create_tags
             associate_eip
           rescue Fog::Compute::AWS::NotFound, Fog::Errors::Error => e
             raise if (tries -= 1) <= 0
@@ -149,6 +142,9 @@ class Chef
 
         def validate_params!
           super
+
+          validate_tags
+
           errors = []
           
           errors << "You must provide SSH Key." if locate_config_value(:bootstrap_protocol) == 'ssh' && !locate_config_value(:identity_file).nil? && locate_config_value(:ec2_ssh_key_id).nil?
@@ -206,21 +202,20 @@ class Chef
           @ami ||= service.connection.images.get(locate_config_value(:image))
         end
 
-        def tags
+        def validate_tags
          tags = locate_config_value(:tags)
           if !tags.nil? and tags.length != tags.to_s.count('=')
             error_message = "Tags should be entered in a key = value pair"
             ui.error(error_message)
             raise CloudExceptions::ValidationError, error_message
           end
-         tags
         end
 
         def eip_scope
           vpc_mode? ? "vpc" : "standard"
         end
 
-        def create_tags(hashed_tags)
+        def create_tags
           hashed_tags.each_pair do |key, val|
             service.connection.tags.create :key => key, :value => val, :resource_id => server.id
           end
@@ -347,6 +342,21 @@ class Chef
                 ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
               end
             end
+          end
+        end
+
+        def hashed_tags
+          @hashed_tags ||= begin
+            tags = locate_config_value(:tags)
+
+            hashed_tags={}
+            tags.map{ |t| key, val = t.split('='); hashed_tags[key] = val } unless tags.nil?
+
+            # Always set the Name tag
+            unless hashed_tags.keys.include? "Name"
+              hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
+            end
+            hashed_tags
           end
         end
       end
