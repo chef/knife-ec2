@@ -91,16 +91,11 @@ class Chef
           printed_security_group_ids = server.security_group_ids.join(", ") if server.security_group_ids
           @columns_with_info << {:label => 'Security Group Ids', :value =>  printed_security_group_ids} if vpc_mode? or server.security_group_ids          
 
-          requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
-
-          # For VPC EIP assignment we need the allocation ID so fetch full EIP details
-          elastic_ip = service.connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
-
           # In case server is not 'ready?', so retry a couple times if needed.
           tries = 6
           begin
             create_tags(hashed_tags) unless hashed_tags.empty?
-            associate_eip(elastic_ip) if config[:associate_eip]
+            associate_eip
           rescue Fog::Compute::AWS::NotFound, Fog::Errors::Error => e
             raise if (tries -= 1) <= 0
             ui.warn("server not ready, retrying tag application (retries left: #{tries})")
@@ -235,9 +230,18 @@ class Chef
           validate_ebs
         end
 
-        def associate_eip(elastic_ip)
-          service.connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
-          server.wait_for { public_ip_address == elastic_ip.public_ip }
+        def associate_eip
+          if config[:associate_eip]
+            requested_elastic_ip = config[:associate_eip]
+
+            # For VPC EIP assignment we need the allocation ID so fetch full EIP details
+            elastic_ip = service.connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
+
+            if elastic_ip
+             service.connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
+              server.wait_for { public_ip_address == elastic_ip.public_ip }
+            end
+          end
         end
 
         def set_image_os_type
