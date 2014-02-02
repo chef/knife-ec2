@@ -22,6 +22,19 @@ require 'resource_spec_helper'
 require 'test/knife-utils/test_bed'
 require "securerandom"
 
+def find_instance_id(instance_name, file)
+  file.lines.each do |line|
+    if line.include?("#{instance_name}")
+      return "#{line}".split(" ")[2].strip
+    end
+  end
+end
+
+def delete_instance_cmd(stdout)
+  "knife ec2 server delete " + find_instance_id("Instance ID", stdout) +
+  append_ec2_creds + " --yes"
+end
+
 def is_config_present
   if ! ENV['RUN_INTEGRATION_TESTS']
     puts("\nPlease set RUN_INTEGRATION_TESTS environment variable to run integration tests")
@@ -44,7 +57,7 @@ def is_config_present
   err_msg = err_msg + ( unset_env_var.length > 1 ? " variables " : " variable " ) + "for integration tests."
   puts err_msg unless unset_env_var.empty?
   
-  %w(EC2_SSH_USER EC2_GROUPS EC2_SSH_KEY_ID EC2_PRI_KEY EC2_INVALID_FLAVOR EC2_LINUX_IMAGE EC2_WINDOWS_IMAGE EC2_WINDOWS_SSH_IMAGE EC2_WINDOWS_SSH_USER EC2_WINDOWS_SSH_PASSWORD).each do |ec2_config_opt|
+  %w(EC2_SSH_USER EC2_GROUPS EC2_SSH_KEY_ID EC2_PRI_KEY EC2_INVALID_FLAVOR EC2_LINUX_IMAGE EC2_WINDOWS_IMAGE EC2_WINDOWS_SSH_IMAGE EC2_WINDOWS_SSH_USER EC2_WINDOWS_SSH_PASSWORD PLACEMENT_GROUP SUBNET_ID SECURITY_GROUP_IDS).each do |ec2_config_opt|
     option_value = ENV[ec2_config_opt] || (ec2_config[ec2_config_opt] if ec2_config)
     if option_value.nil?
       unset_config_options << ec2_config_opt
@@ -80,7 +93,7 @@ def init_ec2_test
   config_file_exist = File.exist?(File.expand_path("../integration/config/environment.yml", __FILE__))
   ec2_config = YAML.load(File.read(File.expand_path("../integration/config/environment.yml", __FILE__))) if config_file_exist
 
-  %w(EC2_SSH_USER EC2_GROUPS EC2_SSH_KEY_ID EC2_PRI_KEY EC2_INVALID_FLAVOR EC2_LINUX_IMAGE EC2_WINDOWS_IMAGE EC2_WINDOWS_SSH_IMAGE EC2_WINDOWS_SSH_USER EC2_WINDOWS_SSH_PASSWORD).each do |ec2_config_opt|
+  %w(EC2_SSH_USER EC2_GROUPS EC2_SSH_KEY_ID EC2_PRI_KEY EC2_INVALID_FLAVOR EC2_LINUX_IMAGE EC2_WINDOWS_IMAGE EC2_WINDOWS_SSH_IMAGE EC2_WINDOWS_SSH_USER EC2_WINDOWS_SSH_PASSWORD PLACEMENT_GROUP SUBNET_ID SECURITY_GROUP_IDS).each do |ec2_config_opt|
     instance_variable_set("@#{ec2_config_opt.downcase}", (ec2_config[ec2_config_opt] if ec2_config) || ENV[ec2_config_opt])
   end
 
