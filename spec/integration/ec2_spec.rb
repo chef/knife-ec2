@@ -181,7 +181,7 @@ describe 'knife-ec2' , :if => is_config_present do
           context 'with standard options and placement group with valid flavor' do
             before(:each) { create_node_name("linux") }
 
-            let(:command) { "knife ec2 server create -N #{@name_node} --placement-group #{@placement_group} --flavor m1.large" +
+            let(:command) { "knife ec2 server create -N #{@name_node} --placement-group #{@placement_group} --flavor c3.large" +
             append_ec2_creds + get_linux_create_options + get_ssh_credentials }
 
             after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
@@ -267,7 +267,7 @@ describe 'knife-ec2' , :if => is_config_present do
           context 'with standard options and public subnet in vpc' do
             before(:each) { create_node_name("linux") }
 
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} --subnet #{@subnet_id} --security-group-ids #{@security_group_ids} --associate-public-ip --server-connect-attribute public_ip_address" +
+            let(:command) { "knife ec2 server create -N #{@name_node} --subnet #{@subnet_id} --security-group-ids #{@security_group_ids} --associate-public-ip --server-connect-attribute public_ip_address" +
             append_ec2_creds + get_linux_create_options + get_ssh_credentials }
 
             after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
