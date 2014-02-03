@@ -98,9 +98,7 @@ def init_ec2_test
   end
 
   begin
-    key_file_path = @ec2_pri_key
-    key_file_exist = File.exist?(File.expand_path(key_file_path, __FILE__))
-    data_to_write = File.read(File.expand_path(key_file_path, __FILE__)) if key_file_exist
+    data_to_write = @ec2_pri_key
     File.open("#{temp_dir}/ec2.pem", 'w') {|f| f.write(data_to_write)}
   rescue
     puts "Error while creating file - ec2.pem"
