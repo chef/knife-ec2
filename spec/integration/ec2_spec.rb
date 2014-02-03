@@ -37,15 +37,13 @@ def get_winrm_credentials
 end
 
 def get_windows_create_options(bootstrap_protocol = "winrm")
-  ec2_win_create_cmd = " -I #{@ec2_windows_image} " +
-  " --template-file " + get_windows_msi_template_file_path +
+  ec2_win_create_cmd = " --template-file " + get_windows_msi_template_file_path +
   " --server-url http://localhost:8889" +
-  " --identity-file #{temp_dir}/ec2.pem" +
   " --yes --server-create-timeout 1800"
   if bootstrap_protocol == "winrm"
-    ec2_win_create_cmd += " --bootstrap-protocol winrm" + " --user-data #{ENV['EC2_USER_DATA']}"
+    ec2_win_create_cmd += " -I #{@ec2_windows_image} --bootstrap-protocol winrm" + " --user-data #{ENV['EC2_USER_DATA']}"
   else
-    ec2_win_create_cmd += " --bootstrap-protocol ssh --ec2-ssh-key-id #{@ec2_ssh_key_id}" + " --ssh-user #{@ec2_windows_ssh_user} --ssh-password #{@ec2_windows_ssh_password}"
+    ec2_win_create_cmd += " -I #{@ec2_windows_ssh_image} --bootstrap-protocol ssh --ec2-ssh-key-id #{@ec2_ssh_key_id}" + " --ssh-user #{@ec2_windows_ssh_user} --ssh-password #{@ec2_windows_ssh_password}"
   end
   ec2_win_create_cmd
 end
@@ -412,26 +410,27 @@ describe 'knife-ec2' , :if => is_config_present do
           end
 
           context 'with standard options and ssh bootstrap protocol' do
-            cmd_out = ""
             before(:each) { create_node_name("windows") }
             
             let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
             append_ec2_creds + get_windows_create_options(bootstrap_protocol = "ssh") }
-
-            after(:each) do
-              cmd_out = "#{cmd_stdout}"
-            end
+            
+            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
             
             it 'should successfully create the (windows VM) server with the provided options.' do
               match_status("should succeed")
             end
+          end
 
-            context "delete server after create" do
-              let(:command) { delete_instance_cmd(cmd_out) }
+          context 'with standard options and ssh bootstrap protocol and user-data' do
+            before(:each) { create_node_name("windows") }
+            
+            let(:command) { "knife ec2 server create -N #{@name_node} --user-data #{ENV['EC2_USER_DATA']} --ec2-groups #{@ec2_groups}" + append_ec2_creds + get_windows_create_options(bootstrap_protocol = "ssh") }
 
-              it "should successfully delete the server." do
-                match_status("should succeed")
-              end
+            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+            
+            it 'should successfully create the (windows VM) server with the provided options.' do
+              match_status("should succeed")
             end
           end
         end
