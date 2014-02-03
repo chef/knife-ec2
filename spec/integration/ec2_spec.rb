@@ -45,7 +45,7 @@ def get_windows_create_options(bootstrap_protocol = "winrm")
   if bootstrap_protocol == "winrm"
     ec2_win_create_cmd += " --bootstrap-protocol winrm" + " --user-data #{ENV['EC2_USER_DATA']}"
   else
-    ec2_win_create_cmd += " --bootstrap-protocol ssh" + " --ssh-user #{@ec2_windows_ssh_user} --ssh-password #{@ec2_windows_ssh_password}"
+    ec2_win_create_cmd += " --bootstrap-protocol ssh --ec2-ssh-key-id #{@ec2_ssh_key_id}" + " --ssh-user #{@ec2_windows_ssh_user} --ssh-password #{@ec2_windows_ssh_password}"
   end
   ec2_win_create_cmd
 end
@@ -152,7 +152,7 @@ describe 'knife-ec2' , :if => is_config_present do
             append_ec2_creds + get_linux_create_options + get_ssh_credentials }
             
             after(:each) do
-              cmd_out = "#{cmd_stdout}" 
+              cmd_out = "#{cmd_stdout}"
             end
 
             it 'should successfully create the server with the provided options.' do
@@ -388,6 +388,7 @@ describe 'knife-ec2' , :if => is_config_present do
           before(:each) {rm_known_host}
 
           context 'with standard options' do
+            cmd_out = ""
             before(:each) { create_node_name("windows") }
 
             let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
@@ -411,6 +412,7 @@ describe 'knife-ec2' , :if => is_config_present do
           end
 
           context 'with standard options and ssh bootstrap protocol' do
+            cmd_out = ""
             before(:each) { create_node_name("windows") }
             
             let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
