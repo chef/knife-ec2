@@ -338,7 +338,6 @@ class Chef
         end
         msg_pair("Private IP Address", @server.private_ip_address)
 
-
         #Check if Server is Windows or Linux
         if is_image_windows?
           protocol = locate_config_value(:bootstrap_protocol)
@@ -361,11 +360,12 @@ class Chef
             }
             ssh_override_winrm
           end
-          bootstrap_for_windows_node(@server,ssh_connect_host).run
+          bootstrap_for_windows_node(@server, ssh_connect_host).run
         else
-            wait_for_sshd(ssh_connect_host)
-            ssh_override_winrm
-            bootstrap_for_linux_node(@server,ssh_connect_host).run
+          print "\n#{ui.color("Waiting for sshd", :magenta)}"
+          wait_for_sshd(ssh_connect_host)
+          ssh_override_winrm
+          bootstrap_for_linux_node(@server, ssh_connect_host).run
         end
 
         puts "\n"
@@ -620,9 +620,14 @@ class Chef
       end
 
       def wait_for_tunnelled_sshd(hostname)
-        print(".")
-        print(".") until tunnel_test_ssh(ssh_connect_host) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+        initial = true
+        print(".") until tunnel_test_ssh(hostname) {
+          if initial
+            initial = false
+            sleep (vpc_mode? ? 40 : 10)
+          else
+            sleep 10
+          end
           puts("done")
         }
       end
@@ -645,7 +650,7 @@ class Chef
 
       def wait_for_direct_sshd(hostname, ssh_port)
         initial = true
-        print(".") until tcp_test_ssh(ssh_connect_host, ssh_port) {
+        print(".") until tcp_test_ssh(hostname, ssh_port) {
           if initial
             initial = false
             sleep (vpc_mode? ? 40 : 10)
@@ -658,10 +663,14 @@ class Chef
 
       def ssh_connect_host
         @ssh_connect_host ||= if config[:server_connect_attribute]
-          server.send(config[:server_connect_attribute])
-        else
-          vpc_mode? ? server.private_ip_address : server.dns_name
-        end
+                                server.send(config[:server_connect_attribute])
+                              else
+                                if vpc_mode? && !config[:associate_public_ip]
+                                  server.private_ip_address
+                                else
+                                  server.dns_name
+                                end
+                              end
       end
 
       def create_tags(hashed_tags)
@@ -733,15 +742,15 @@ class Chef
           false
         end
       rescue SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, IOError
-        Chef::Log.debug("sshd failed to connect: #{hostname}")
+        Chef::Log.debug("ssh failed to connect: #{hostname}")
         sleep 2
         false
       rescue Errno::EPERM, Errno::ETIMEDOUT
-        Chef::Log.debug("sshd timed out: #{hostname}")
+        Chef::Log.debug("ssh timed out: #{hostname}")
         false
       # This happens on some mobile phone networks
       rescue Errno::ECONNRESET
-        Chef::Log.debug("sshd reset its connection: #{hostname}")
+        Chef::Log.debug("ssh reset its connection: #{hostname}")
         sleep 2
         false
       ensure
