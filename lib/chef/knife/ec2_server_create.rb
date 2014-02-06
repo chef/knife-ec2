@@ -285,7 +285,7 @@ class Chef
 
       option :preserve_winrm_http,
         :long => "--preserve-winrm-http",
-        :description => "Preserve winrm HTTP listener. Only useful when configuring winrm ssl where HTTP listener is removed by default.",
+        :description => "Preserve winrm HTTP listener. Useful when image has preconfigured http transport (port 5985) which needs to be preserved. Default is false.",
         :boolean => true,
         :default => false
 
