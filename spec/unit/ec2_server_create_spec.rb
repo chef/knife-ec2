@@ -242,7 +242,13 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @instance.ui.stub(:error)
       @instance.server.stub(:public_ip_address).and_return(nil)
       expect { @instance.before_bootstrap }.to raise_error(Chef::Knife::Cloud::CloudExceptions::BootstrapError, "No IP address available for bootstrapping.")
-    end    
+    end
+
+    it "set hint config" do
+      @instance.server.stub(:public_ip_address).and_return("127.0.0.1")
+      @instance.before_bootstrap
+      Chef::Config[:knife][:hints].should == {"ec2"=>{}}
+    end
   end
 
   describe "#validate_ebs" do
