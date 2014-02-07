@@ -219,6 +219,11 @@ class Chef
             raise CloudExceptions::BootstrapError, error_message
           end
           config[:bootstrap_ip_address] = bootstrap_ip_address
+    
+          # Modify global configuration state to ensure hint gets set by
+          # knife-bootstrap.
+          Chef::Config[:knife][:hints] ||= {}
+          Chef::Config[:knife][:hints]["ec2"] ||= {}
         end
 
         def validate_params!
