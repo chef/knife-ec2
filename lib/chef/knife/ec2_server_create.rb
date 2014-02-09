@@ -14,8 +14,8 @@ class Chef
     class Cloud
       class Ec2ServerCreate < ServerCreateCommand
         include Ec2Helpers
-        include Ec2ServerCreateOptions
         include Ec2ServiceOptions
+        include Ec2ServerCreateOptions
 
         banner "knife ec2 server create (options)"
 

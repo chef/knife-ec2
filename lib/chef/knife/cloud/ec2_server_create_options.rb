@@ -28,7 +28,6 @@ class Chef
               :proc => Proc.new { |key| Chef::Config[:knife][:availability_zone] = key }
 
             option :ec2_ssh_key_id,
-              :short => "-S KEY",
               :long => "--ec2-ssh-key-id KEY",
               :description => "The ec2 SSH keypair id",
               :proc => Proc.new { |key| Chef::Config[:knife][:ec2_ssh_key_id] = key }
