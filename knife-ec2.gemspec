@@ -16,7 +16,7 @@ Gem::Specification.new do |s|
   s.test_files   = `git ls-files -- {test,spec,features}/*`.split("\n")
   s.executables  = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
 
-  s.add_dependency 'fog',           '~> 1.16.0'
+  s.add_dependency 'fog',           '~> 1.20.0'
   s.add_dependency 'knife-windows', '>= 0.5.12'
 
   s.add_development_dependency 'mixlib-config', '~> 2.0'
