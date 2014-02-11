@@ -27,7 +27,7 @@ class Chef
         end
 
         def query_resource
-          @service.list_flavors
+          @service.list_resource_configurations
         end
 
         def ram_in_mb(ram)
