@@ -54,7 +54,33 @@ class Chef
             super
         end
 
-        # Setup the floating ip and add tags after server creation. Addtionally display VM summary.
+        def execute_command
+          begin
+            super
+          rescue  Fog::Compute::AWS::Error => e
+            ebs_optimized_fog_msg = "ebs-optimized instances are not supported for your requested configuration"
+            placement_grp_fog_msg = "placement groups may not be used with instances of type"
+            fog_err_msg = e.message.downcase
+
+            # Fog uses "m1.small" as a default flavor
+            flavor = locate_config_value(:flavor).nil? ? "m1.small" : locate_config_value(:flavor)
+
+            if fog_err_msg.include?(ebs_optimized_fog_msg)
+              error_message = "Please check if flavor #{flavor} is supported for EBS-optimized instances."
+              ui.error(error_message)
+              raise CloudExceptions::ServerCreateError, error_message
+            elsif fog_err_msg.include?(placement_grp_fog_msg)
+              error_message = "Please check if flavor #{flavor} is supported for Placement groups."
+              ui.error(error_message)
+              raise CloudExceptions::ServerCreateError, error_message
+            else
+              ui.error(fog_err_msg)
+              raise CloudExceptions::ServerCreateError, fog_err_msg
+            end
+          end
+        end
+
+        # Setup the floating ip after server creation.
         def after_exec_command
           # In case server is not 'ready?', so retry a couple times if needed.
           tries = 6
