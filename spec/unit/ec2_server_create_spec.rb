@@ -233,6 +233,33 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
     end
   end
 
+  describe "#execute_command" do
+    before(:each) do
+      @instance = Chef::Knife::Cloud::Ec2ServerCreate.new
+      @instance.stub(:service).and_return(double)
+    end
+
+    it "create server sucessfully." do
+      @instance.service.should_receive(:create_server)
+      @instance.service.should_receive(:server_summary)
+      @instance.execute_command
+    end
+
+    it "raise error on invalid flavor used with ebs optimized." do
+      @instance.service.stub(:create_server).and_raise(Fog::Compute::AWS::Error, "Unsupported => EBS-optimized instances are not supported for your requested configuration. Please check the documentation for supported configurations")
+      error_msg = "Please check if flavor m1.small is supported for EBS-optimized instances."
+      @instance.ui.should_receive(:error).with(error_msg)
+      expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, error_msg)
+    end
+
+    it "raise error on invalid flavor used with placement group." do
+      @instance.service.stub(:create_server).and_raise(Fog::Compute::AWS::Error, "InvalidParameterCombination => Placement groups may not be used with instances of type")
+      error_msg = "Please check if flavor m1.small is supported for Placement groups."
+      @instance.ui.should_receive(:error).with(error_msg)
+      expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, error_msg)
+    end
+  end
+
   describe "#after_exec_command" do
     before(:each) do
       @instance = Chef::Knife::Cloud::Ec2ServerCreate.new
