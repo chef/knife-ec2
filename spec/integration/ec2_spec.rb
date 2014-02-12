@@ -74,364 +74,368 @@ describe 'knife-ec2' , :if => is_config_present do
   end
 
   context 'gem' do
-    describe 'knife' do
-      context 'ec2' do
-        context 'flavor list --help' do
+    describe 'knife ec2 integration test' do
+      describe 'display help for command' do
+        context 'when --help option used with flavor list command' do
          let(:command) { "knife ec2 flavor list --help" }
-           it 'should list all the options available for flavors list command.' do
+           it 'list all the options available for flavors list command.' do
             match_stdout(/--help/)
           end
         end
 
-        context 'server create --help' do
+        context 'when --help option used with server create command' do
          let(:command) { "knife ec2 server create --help" }
-           it 'should list all the options available for server create command.' do
+           it 'list all the options available for server create command.' do
             match_stdout(/--help/)
           end
         end
 
-        context 'server delete --help' do
+        context 'when --help option used with server delete command' do
          let(:command) { "knife ec2 server delete --help" }
-           it 'should list all the options available for server delete command.' do
+           it 'list all the options available for server delete command.' do
             match_stdout(/--help/)
           end
         end
 
-        context 'server list --help' do
+        context 'when --help option used with server list command' do
          let(:command) { "knife ec2 server list --help" }
-           it 'should list all the options available for server list command.' do
+           it 'list all the options available for server list command.' do
             match_stdout(/--help/)
           end
         end
+      end
 
-        context 'server list' do
+      describe 'display server list' do
+        context 'when standard options specified' do
           let(:command) { "knife ec2 server list" + append_ec2_creds }
-          it 'should successfully list all the servers.' do
+          it 'successfully list all the servers.' do
             match_status("should succeed")
           end
         end
-        
-        context 'server list with --availability-zone' do
+      
+        context 'when --availability-zone option specified' do
           let(:command) { "knife ec2 server list" + append_ec2_creds + " --availability-zone"}
-          it 'should successfully list all the servers with availability-zone details.' do
+          it 'successfully list all the servers with availability-zone details.' do
             match_status("should succeed")
           end
         end
 
-        context 'server list without instance name attribute' do
+        context 'when --no-name option specified' do
           let(:command) { "knife ec2 server list" + append_ec2_creds + " --no-name"}
-          it 'should successfully list all the servers without Instance Name field' do
+          it 'successfully list all the servers without Instance Name field' do
             match_status("should succeed")
           end
         end
 
-        context 'server list with tags' do
+        context 'when -t option specified' do
           let(:command) { "knife ec2 server list" + append_ec2_creds + " -t name"}
-          it 'should successfully list all the servers with given tag.' do
+          it 'successfully list all the servers with given tag.' do
             match_status("should succeed")
           end
         end
+      end
 
-        context 'flavor list' do
+      describe 'display flavor list' do
+        context 'when standard options specified' do
           let(:command) { "knife ec2 flavor list" + append_ec2_creds }
-          it 'should successfully list all the available flavors.' do
+          it 'successfully list all the available flavors.' do
             match_status("should succeed")
           end
         end
-        
-        describe 'Cerate and bootstrap Linux Server'  do
-          before(:each) {rm_known_host}
+      end
+      
+      describe 'create and bootstrap Linux Server'  do
+        before(:each) {rm_known_host}
 
-          context 'with standard options' do
-            cmd_out = ""
-            before(:each) { create_node_name("linux") }
+        context 'when standard options specified' do
+          cmd_out = ""
+          before(:each) { create_node_name("linux") }
 
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials }
-            
-            after(:each) do
-              cmd_out = "#{cmd_stdout}"
-            end
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+          
+          after(:each) do
+            cmd_out = "#{cmd_stdout}"
+          end
 
-            it 'should successfully create the server with the provided options.' do
+          it 'successfully create the server with the provided options.' do
+            match_status("should succeed")
+          end
+
+          context "delete server after create" do
+            let(:command) { delete_instance_cmd(cmd_out) }
+            it "successfully delete the server." do
               match_status("should succeed")
-            end
-
-            context "delete server after create" do
-              let(:command) { delete_instance_cmd(cmd_out) }
-              it "should successfully delete the server." do
-                match_status("should succeed")
-              end
-            end
-          end
-
-          context 'with standard options and invalid ec2 security group' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups invalid-#{SecureRandom.hex(4)}" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials }
-
-            it 'should throw error and fail to create server.' do
-              match_status("should fail")
-            end
-          end
-
-          context 'with standard options and placement group with valid flavor' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --placement-group #{@placement_group} --flavor c3.large" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials }
-
-            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
-
-            it 'should successfully create the server with the provided options.' do
-              match_status("should succeed")
-            end
-          end
-
-          context 'with standard options and placement group with invalid flavor' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --placement-group #{@placement_group} --flavor t1.micro" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials }
-
-            it 'should throw error and fail to create server.' do
-              match_status("should fail")
-            end
-          end
-
-          context 'with standard options and valid ebs size' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --ebs-size 15 --ec2-groups #{@ec2_groups}" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials }
-
-            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
-
-            it 'should successfully create the server with the provided options.' do
-              match_status("should succeed")
-            end
-          end
-
-          context 'with standard options and valid ebs size and preserve ebs volume after instance delete' do
-            before(:each) { create_node_name("linux") }
-            
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} --ebs-size 15 --ebs-no-delete-on-term" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials }
-
-            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
-
-            it 'should successfully create the server with the provided options.' do
-              match_status("should succeed")
-              puts("Preserved ebs volume, Please delete it by using AWS console")
-            end
-          end
-
-          context 'with standard options and invalid ebs size' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} --ebs-size 5" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials }
-
-            it 'should throw error message and fail to create server.' do
-              match_status("should fail")
-            end
-          end
-
-          context 'with standard options and ebs-optimized with valid flavor' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} --ebs-optimized --flavor m1.large" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials }
-
-            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
-
-            it 'should successfully create the server with the provided options.' do
-              match_status("should succeed")
-            end
-          end
-
-          context 'with standard options and ebs-optimized with invalid flavor' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} --ebs-optimized --flavor t1.micro" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials }
-
-            it 'should throw error message and fail to create server.' do
-              match_status("should fail")
-            end
-          end
-
-          context 'with standard options and public subnet in vpc' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --subnet #{@subnet_id} --security-group-ids #{@security_group_ids} --associate-public-ip --server-connect-attribute public_ip_address" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials }
-
-            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
-
-            it 'should successfully create the server with the provided options.' do
-              match_status("should succeed")
-            end
-          end
-
-          context 'with standard options and public subnet in vpc with security group name' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --subnet #{@subnet_id} --ec2-groups #{@ec2_groups} --associate-public-ip --server-connect-attribute public_ip_address" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials }
-
-            it 'should throw error and fail to create server.' do
-              match_status("should fail")
-            end
-          end
-
-          context 'with standard options and chef node name prefix default value(i.e ec2)' do
-            let(:command) { "knife ec2 server create --ec2-groups #{@ec2_groups}" + append_ec2_creds + 
-            get_linux_create_options + get_ssh_credentials }
-            
-            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
-            
-            it 'should successfully create the server with the provided options.' do
-              match_status("should succeed")
-            end
-          end
-
-          context 'with standard options and chef node name prefix user specified value' do
-            let(:command) { "knife ec2 server create --ec2-groups #{@ec2_groups}" + append_ec2_creds + get_linux_create_options +
-            " --chef-node-name-prefix ec2-integration-test-" + get_ssh_credentials }
-
-            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
-
-            it 'should successfully create the server with the provided options.' do
-              match_status("should succeed")
-            end
-          end
-
-          context 'with standard options and delete-server-on-failure' do
-            before(:each) { create_node_name("linux") }
-            
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials +
-            " --delete-server-on-failure" }
-
-            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
-            
-            it 'should successfully create the server with the provided options.' do
-              match_status("should succeed")
-            end
-          end
-
-          context 'with standard options and delete-server-on-failure' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
-            append_ec2_creds + get_linux_create_options(invalid_key = true) + get_ssh_credentials +
-            " --delete-server-on-failure" }
-
-            it 'should delete server on bootstrap failure' do
-              match_status("should fail")
-            end
-          end
-
-          context 'without ec2 credentials' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" + 
-            get_linux_create_options + get_ssh_credentials}
-            
-            it 'should throw error message and stop execution.' do
-              match_status("should fail")
-            end
-          end
-
-          context 'without ssh-password and identity-file parameters' do
-            cmd_out = ""
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} -I #{@ec2_linux_image} --server-url http://localhost:8889 --yes --server-create-timeout 1800 --template-file " + get_linux_template_file_path + append_ec2_creds }
-            
-            it 'should throw error message and stop execution.' do
-              match_status("should fail")
-            end
-          end
-
-          context 'with invalid key_pair' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
-            append_ec2_creds + get_linux_create_options + get_ssh_credentials(invalid_key_id = true) }
-            
-            it 'should throw error message and stop execution.' do
-              match_status("should fail")
-            end
-          end
-
-          context 'with incorrect ec2 private_key.pem file' do
-            before(:each) { create_node_name("linux") }
-
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
-            append_ec2_creds + get_linux_create_options(invalid_key = true) + 
-            get_ssh_credentials }
-
-            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
-            
-            it 'should throw Error message and stop execution.' do
-              match_status("should fail")
             end
           end
         end
 
-        describe 'Cerate and bootstrap Windows Server'  do
-          before(:each) {rm_known_host}
+        context 'when standard options and invalid ec2 security group specified' do
+          before(:each) { create_node_name("linux") }
 
-          context 'with standard options' do
-            cmd_out = ""
-            before(:each) { create_node_name("windows") }
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups invalid-#{SecureRandom.hex(4)}" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials }
 
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
-            append_ec2_creds + get_windows_create_options + get_winrm_credentials }
+          it 'throw error and fail to create server.' do
+            match_status("should fail")
+          end
+        end
 
-            after(:each) do
-              cmd_out = "#{cmd_stdout}"
-            end
-            
-            it 'should successfully create the (windows VM) server with the provided options.' do
-              match_status("should succeed")
-            end
+        context 'when standard options and placement group specified with valid flavor' do
+          before(:each) { create_node_name("linux") }
 
-            context "delete server after create" do
-              let(:command) { delete_instance_cmd(cmd_out) }
+          let(:command) { "knife ec2 server create -N #{@name_node} --placement-group #{@placement_group} --flavor c3.large" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials }
 
-              it "should successfully delete the server." do
-                match_status("should succeed")
-              end
-            end
+          after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+
+          it 'successfully create the server with the provided options.' do
+            match_status("should succeed")
+          end
+        end
+
+        context 'when standard options and placement group specified with invalid flavor' do
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --placement-group #{@placement_group} --flavor t1.micro" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+          it 'throw error and fail to create server.' do
+            match_status("should fail")
+          end
+        end
+
+        context 'when standard options and valid ebs size specified' do
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --ebs-size 15 --ec2-groups #{@ec2_groups}" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+          after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+
+          it 'successfully create the server with the provided options.' do
+            match_status("should succeed")
+          end
+        end
+
+        context 'when standard options and valid ebs size and preserve ebs volume specified' do
+          before(:each) { create_node_name("linux") }
+          
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} --ebs-size 15 --ebs-no-delete-on-term" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+          after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+
+          it 'successfully create the server with the provided options.' do
+            match_status("should succeed")
+            puts("Preserved ebs volume, Please delete it by using AWS console")
+          end
+        end
+
+        context 'when standard options and invalid ebs size specified' do
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} --ebs-size 5" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+          it 'throw error message and fail to create server.' do
+            match_status("should fail")
+          end
+        end
+
+        context 'when standard options and ebs-optimized specified with valid flavor' do
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} --ebs-optimized --flavor m1.large" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+          after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+
+          it 'successfully create the server with the provided options.' do
+            match_status("should succeed")
+          end
+        end
+
+        context 'when standard options and ebs-optimized specified with invalid flavor' do
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} --ebs-optimized --flavor t1.micro" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+          it 'throw error message and fail to create server.' do
+            match_status("should fail")
+          end
+        end
+
+        context 'when standard options and public subnet in vpc' do
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --subnet #{@subnet_id} --security-group-ids #{@security_group_ids} --associate-public-ip --server-connect-attribute public_ip_address" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+          after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+
+          it 'successfully create the server with the provided options.' do
+            match_status("should succeed")
+          end
+        end
+
+        context 'when standard options and public subnet in vpc with security group name' do
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --subnet #{@subnet_id} --ec2-groups #{@ec2_groups} --associate-public-ip --server-connect-attribute public_ip_address" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+          it 'throw error and fail to create server.' do
+            match_status("should fail")
+          end
+        end
+
+        context 'when standard options and chef node name prefix is default value(i.e ec2)' do
+          let(:command) { "knife ec2 server create --ec2-groups #{@ec2_groups}" + append_ec2_creds + 
+          get_linux_create_options + get_ssh_credentials }
+          
+          after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+          
+          it 'successfully create the server with the provided options.' do
+            match_status("should succeed")
+          end
+        end
+
+        context 'when standard options and chef node name prefix is user specified value' do
+          let(:command) { "knife ec2 server create --ec2-groups #{@ec2_groups}" + append_ec2_creds + get_linux_create_options +
+          " --chef-node-name-prefix ec2-integration-test-" + get_ssh_credentials }
+
+          after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+
+          it 'successfully create the server with the provided options.' do
+            match_status("should succeed")
+          end
+        end
+
+        context 'when standard options and delete-server-on-failure specified' do
+          before(:each) { create_node_name("linux") }
+          
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials +
+          " --delete-server-on-failure" }
+
+          after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+          
+          it 'successfully create the server with the provided options.' do
+            match_status("should succeed")
+          end
+        end
+
+        context 'when delete-server-on-failure specified and bootstrap fails' do
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
+          append_ec2_creds + get_linux_create_options(invalid_key = true) + get_ssh_credentials +
+          " --delete-server-on-failure" }
+
+          it 'delete server on failure' do
+            match_status("should fail")
+          end
+        end
+
+        context 'when ec2 credentials not specified' do
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" + 
+          get_linux_create_options + get_ssh_credentials}
+          
+          it 'throw error message and stop execution.' do
+            match_status("should fail")
+          end
+        end
+
+        context 'when ssh-password and identity-file parameters not specified' do
+          cmd_out = ""
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} -I #{@ec2_linux_image} --server-url http://localhost:8889 --yes --server-create-timeout 1800 --template-file " + get_linux_template_file_path + append_ec2_creds }
+          
+          it 'throw error message and stop execution.' do
+            match_status("should fail")
+          end
+        end
+
+        context 'when invalid key_pair specified' do
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
+          append_ec2_creds + get_linux_create_options + get_ssh_credentials(invalid_key_id = true) }
+          
+          it 'throw error message and stop execution.' do
+            match_status("should fail")
+          end
+        end
+
+        context 'when incorrect ec2 private_key.pem file is used' do
+          before(:each) { create_node_name("linux") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
+          append_ec2_creds + get_linux_create_options(invalid_key = true) + 
+          get_ssh_credentials }
+
+          after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+          
+          it 'throw Error message and stop execution.' do
+            match_status("should fail")
+          end
+        end
+      end
+
+      describe 'create and bootstrap Windows Server'  do
+        before(:each) {rm_known_host}
+
+        context 'when standard options specified' do
+          cmd_out = ""
+          before(:each) { create_node_name("windows") }
+
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
+          append_ec2_creds + get_windows_create_options + get_winrm_credentials }
+
+          after(:each) do
+            cmd_out = "#{cmd_stdout}"
+          end
+          
+          it 'successfully create the (windows VM) server with the provided options.' do
+            match_status("should succeed")
           end
 
-          context 'with standard options and ssh bootstrap protocol' do
-            before(:each) { create_node_name("windows") }
-            
-            let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
-            append_ec2_creds + get_windows_create_options(bootstrap_protocol = "ssh") }
-            
-            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
-            
-            it 'should successfully create the (windows VM) server with the provided options.' do
+          context "delete server after create" do
+            let(:command) { delete_instance_cmd(cmd_out) }
+
+            it "should successfully delete the server." do
               match_status("should succeed")
             end
           end
+        end
 
-          context 'with standard options and ssh bootstrap protocol and user-data' do
-            before(:each) { create_node_name("windows") }
-            
-            let(:command) { "knife ec2 server create -N #{@name_node} --user-data #{ENV['EC2_USER_DATA']} --ec2-groups #{@ec2_groups}" + append_ec2_creds + get_windows_create_options(bootstrap_protocol = "ssh") }
+        context 'when standard options and ssh bootstrap protocol specified' do
+          before(:each) { create_node_name("windows") }
+          
+          let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups}" +
+          append_ec2_creds + get_windows_create_options(bootstrap_protocol = "ssh") }
+          
+          after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+          
+          it 'successfully create the (windows VM) server with the provided options.' do
+            match_status("should succeed")
+          end
+        end
 
-            after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
-            
-            it 'should successfully create the (windows VM) server with the provided options.' do
-              match_status("should succeed")
-            end
+        context 'when standard options and ssh bootstrap protocol and user-data specified' do
+          before(:each) { create_node_name("windows") }
+          
+          let(:command) { "knife ec2 server create -N #{@name_node} --user-data #{ENV['EC2_USER_DATA']} --ec2-groups #{@ec2_groups}" + append_ec2_creds + get_windows_create_options(bootstrap_protocol = "ssh") }
+
+          after(:each)  { run(delete_instance_cmd("#{cmd_stdout}")) }
+          
+          it 'successfully create the (windows VM) server with the provided options.' do
+            match_status("should succeed")
           end
         end
       end
