@@ -54,7 +54,6 @@ class Chef
             super
         end
 
-<<<<<<< HEAD
         # Override to parse error messages
         def execute_command
           begin
