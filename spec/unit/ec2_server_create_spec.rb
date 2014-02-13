@@ -211,15 +211,17 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
     end
 
     it "raise error on invalid flavor used with ebs optimized." do
-      @instance.service.stub(:create_server).and_raise(Fog::Compute::AWS::Error, "Unsupported => EBS-optimized instances are not supported for your requested configuration. Please check the documentation for supported configurations")
-      error_msg = "Please check if flavor m1.small is supported for EBS-optimized instances."
+      fog_err = "Unsupported => EBS-optimized instances are not supported for your requested configuration. Please check the documentation for supported configurations"
+      @instance.service.stub(:create_server).and_raise(Fog::Compute::AWS::Error, fog_err)
+      error_msg = "Please check if default flavor is supported for EBS-optimized instances. #{fog_err}."
       @instance.ui.should_receive(:error).with(error_msg)
       expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, error_msg)
     end
 
     it "raise error on invalid flavor used with placement group." do
-      @instance.service.stub(:create_server).and_raise(Fog::Compute::AWS::Error, "InvalidParameterCombination => Placement groups may not be used with instances of type")
-      error_msg = "Please check if flavor m1.small is supported for Placement groups."
+      fog_err = "InvalidParameterCombination => Placement groups may not be used with instances of type"
+      @instance.service.stub(:create_server).and_raise(Fog::Compute::AWS::Error, fog_err)
+      error_msg = "Please check if default flavor is supported for Placement groups. #{fog_err}."
       @instance.ui.should_receive(:error).with(error_msg)
       expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, error_msg)
     end
