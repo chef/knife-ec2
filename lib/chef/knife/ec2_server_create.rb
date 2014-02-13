@@ -62,20 +62,20 @@ class Chef
             placement_grp_fog_msg = "placement groups may not be used with instances of type"
             fog_err_msg = e.message.downcase
 
-            # Fog uses "m1.small" as a default flavor
-            flavor = locate_config_value(:flavor).nil? ? "m1.small" : locate_config_value(:flavor)
+            flavor = locate_config_value(:flavor)
+            error_message = "Please check if " + (flavor.nil? ? "default flavor is supported for " : "flavor #{flavor} is supported for ")
 
             if fog_err_msg.include?(ebs_optimized_fog_msg)
-              error_message = "Please check if flavor #{flavor} is supported for EBS-optimized instances."
+              error_message += "EBS-optimized instances. #{e.message}."
               ui.error(error_message)
               raise CloudExceptions::ServerCreateError, error_message
             elsif fog_err_msg.include?(placement_grp_fog_msg)
-              error_message = "Please check if flavor #{flavor} is supported for Placement groups."
+              error_message += "Placement groups. #{e.message}."
               ui.error(error_message)
               raise CloudExceptions::ServerCreateError, error_message
             else
-              ui.error(fog_err_msg)
-              raise CloudExceptions::ServerCreateError, fog_err_msg
+              ui.error(e.message)
+              raise CloudExceptions::ServerCreateError, e.message
             end
           end
         end
