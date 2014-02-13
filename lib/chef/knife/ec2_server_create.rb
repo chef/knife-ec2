@@ -31,89 +31,20 @@ class Chef
                 :groups => locate_config_value(:ec2_security_groups),
                 :security_group_ids => locate_config_value(:security_group_ids),
                 :key_name => locate_config_value(:ec2_ssh_key_id),
-                :availability_zone => locate_config_value(:availability_zone)
+                :availability_zone => locate_config_value(:availability_zone),
+                :placement_group => locate_config_value(:placement_group),
+                :iam_instance_profile_name => locate_config_value(:iam_instance_profile)
               },
               :server_create_timeout => locate_config_value(:server_create_timeout)
             }
 
-            if vpc_mode?
-              @create_options[:server_def][:subnet_id] = locate_config_value(:subnet_id)
-              @create_options[:server_def][:private_ip_address] = locate_config_value(:private_ip_address)
-              @create_options[:server_def][:tenancy] = "dedicated" if locate_config_value(:dedicated_instance)
-              @create_options[:server_def][:associate_public_ip] = locate_config_value(:associate_public_ip) if config[:associate_public_ip]
-            end
+            load_vpc_create_options if vpc_mode?
 
-            @create_options[:server_def][:placement_group] = locate_config_value(:placement_group)
-            @create_options[:server_def][:iam_instance_profile_name] = locate_config_value(:iam_instance_profile)
+            # Load user data scripts in @create_options[:server_def][:user_data]
+            load_user_data
 
-            if service.is_image_windows?(locate_config_value(:image))
-              # we cannot have multiple <powershell> tags in the user-data. all PS scripts should be
-              # enclosed withing single <powershell>..</powershell> tag.
-              @create_options[:server_def].merge!(:user_data => "<powershell>")
-              if(locate_config_value(:bootstrap_protocol) == "winrm")
-                @create_options[:server_def][:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$username = \"#{locate_config_value(:winrm_user)}\"\n$splitusername=$username.split(\"\\\\\")\nif($splitusername[1] -eq $null) { $username = $splitusername[0] }\nelse { $username = $splitusername[1] }\n$newuser = $computer.Create(\"user\", $username)\n $newuser.Path = $newuser.Path -replace(\".\\\\\", \"\")\n $newuser.SetPassword(\"#{windows_password}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:winrm_user).downcase != "administrator"
-              else
-                @create_options[:server_def][:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:ssh_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:ssh_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:ssh_user).downcase != "administrator"
-              end
-              if Chef::Config[:knife][:aws_user_data]
-                begin
-                  user_data_file = File.read(Chef::Config[:knife][:aws_user_data]).gsub("<powershell>", "").gsub("</powershell>", "")
-                  if(user_data_file.include? "<script>")
-                    @create_options[:server_def][:user_data] << "</powershell>"
-                    @create_options[:server_def][:user_data ] << user_data_file
-                  else
-                    @create_options[:server_def][:user_data ] << user_data_file
-                    @create_options[:server_def][:user_data] << "</powershell>"
-                  end
-                rescue
-                  ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
-                end
-              else
-                @create_options[:server_def][:user_data] << "</powershell>"
-              end
-              
-              # in case there is no PS script, we dont send empty <powershell> script to ec2 user-data
-              @create_options[:server_def][:user_data].gsub("<powershell></powershell>", "")
-              Chef::Log.debug @create_options[:server_def][:user_data]
-            else
-              if Chef::Config[:knife][:aws_user_data]
-                begin
-                  @create_options[:server_def].merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
-                rescue
-                  ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
-                end
-              end
-            end
-
-            @create_options[:server_def][:ebs_optimized] = config[:ebs_optimized] ? "true" : "false"
-
-            if ami.root_device_type == "ebs"
-              ami_map = ami.block_device_mapping.first
-              ebs_size = begin
-                           if config[:ebs_size]
-                             Integer(config[:ebs_size]).to_s
-                           else
-                             ami_map["volumeSize"].to_s
-                           end
-                         rescue ArgumentError
-                           error_message = "--ebs-size must be an integer"
-                           msg opt_parser
-                           ui.errors(error_message)
-                           raise CloudExceptions::ValidationError, error_message
-                         end
-              delete_term = if config[:ebs_no_delete_on_term]
-                              "false"
-                            else
-                              ami_map["deleteOnTermination"]
-                            end
-
-              @create_options[:server_def][:block_device_mapping] =
-                [{
-                   'DeviceName' => ami_map["deviceName"],
-                   'Ebs.VolumeSize' => ebs_size,
-                   'Ebs.DeleteOnTermination' => delete_term
-                 }]
-            end
+            # Load options related to EBS
+            load_ebs_create_options
 
             (config[:ephemeral] || []).each_with_index do |device_name, i|
               @create_options[:server_def][:block_device_mapping] = (@create_options[:server_def][:block_device_mapping] || []) << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
@@ -123,53 +54,13 @@ class Chef
             super
         end
 
-        # Setup the floating ip after server creation.
+        # Setup the floating ip and add tags after server creation. Addtionally display VM summary.
         def after_exec_command
-          hashed_tags={}
-          tags.map{ |t| key, val=t.split('='); hashed_tags[key]=val} unless tags.nil?
-
-          # Always set the Name tag
-          unless hashed_tags.keys.include? "Name"
-            hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
-          end
-
-          @columns_with_info = [{:label => 'Instance Name', :value => service.get_server_name(server)},
-                                {:label => 'Instance ID', :key => 'id'},
-                                {:label => 'Flavor', :key => 'flavor_id'},
-                                {:label => 'Image', :key => 'image_id'}, 
-                                {:label => 'Availability Zone', :key => 'availability_zone'},
-                                {:label => 'Public IP Address', :key => 'public_ip_address'},
-                                {:label => 'Private IP Address', :key => 'private_ip_address'},
-                                {:label => 'IAM Profile', :key => 'iam_instance_profile', :value_callback => method(:iam_name_from_profile)},
-                                {:label => 'Placement Group', :key => 'placement_group'},
-                                {:label => 'Root Device Type', :key => 'root_device_type'},
-                                {:label => "Region", :value => service.connection.instance_variable_get(:@region)},
-                                {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")},
-                                {:label => "SSH Key", :key => 'key_name'} 
-                               ]
-
-          # If we don't specify a security group or security group id, Fog will
-          # pick the appropriate default one. In case of a VPC we don't know the
-          # default security group id at this point unless we look it up, hence
-          # 'default' is printed if no id was specified.
-          printed_security_groups = "default"
-          printed_security_groups = server.groups.join(", ") if server.groups
-          @columns_with_info << {:label => 'Security Groups', :value => printed_security_groups} unless vpc_mode? or (server.groups.nil? and server.security_group_ids)
-
-          printed_security_group_ids = "default"
-          printed_security_group_ids = server.security_group_ids.join(", ") if server.security_group_ids
-          @columns_with_info << {:label => 'Security Group Ids', :value =>  printed_security_group_ids} if vpc_mode? or server.security_group_ids          
-
-          requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
-
-          # For VPC EIP assignment we need the allocation ID so fetch full EIP details
-          elastic_ip = service.connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
-
           # In case server is not 'ready?', so retry a couple times if needed.
           tries = 6
           begin
-            create_tags(hashed_tags) unless hashed_tags.empty?
-            associate_eip(elastic_ip) if config[:associate_eip]
+            create_tags
+            associate_eip
           rescue Fog::Compute::AWS::NotFound, Fog::Errors::Error => e
             raise if (tries -= 1) <= 0
             ui.warn("server not ready, retrying tag application (retries left: #{tries})")
@@ -177,33 +68,18 @@ class Chef
             retry
           end
 
-          if vpc_mode?
-            @columns_with_info << {:label => 'Subnet ID', :key => 'subnet_id'}
-            @columns_with_info << {:label => 'Tenancy', :key => 'tenancy'}
-            @columns_with_info << {:label => 'Public DNS Name', :key => 'dns_name'} if config[:associate_public_ip]
-          else
-            @columns_with_info << {:label => 'Public DNS Name', :key => 'dns_name'}
-            @columns_with_info << {:label => 'Private DNS Name', :key => 'private_dns_name'}
-          end
-
-          if server.root_device_type == "ebs"
-            device_map = server.block_device_mapping.first
-            @columns_with_info << {:label => "Root Volume ID", :value => device_map['volumeId']}
-            @columns_with_info << {:label => "Root Device Name", :value => device_map['deviceName']}
-            @columns_with_info << {:label => "Root Device Delete on Terminate", :value => device_map['deleteOnTermination'].to_s}
-
-            if config[:ebs_size]
-              if ami.block_device_mapping.first['volumeSize'].to_i < config[:ebs_size].to_i
-                volume_too_large_warning = "#{config[:ebs_size]}GB " +
-                            "EBS volume size is larger than size set in AMI of " +
-                            "#{ami.block_device_mapping.first['volumeSize']}GB.\n" +
-                            "Use file system tools to make use of the increased volume size."
-                ui.warn(volume_too_large_warning)            
-              end
+          # Any warnings? Display.
+          if server.root_device_type == "ebs" and config[:ebs_size]
+            if ami.block_device_mapping.first['volumeSize'].to_i < config[:ebs_size].to_i
+              volume_too_large_warning = "#{config[:ebs_size]}GB " +
+                          "EBS volume size is larger than size set in AMI of " +
+                          "#{ami.block_device_mapping.first['volumeSize']}GB.\n" +
+                          "Use file system tools to make use of the increased volume size."
+              ui.warn(volume_too_large_warning)
             end
           end
-          
-          @columns_with_info << {:label => "EBS is Optimized", :key => 'ebs_optimized'} if config[:ebs_optimized]
+
+          setup_summary_colinfo
           service.server_summary(server, @columns_with_info)
           super
         end
@@ -223,6 +99,9 @@ class Chef
 
         def validate_params!
           super
+
+          validate_tags
+
           errors = []
           
           errors << "You must provide SSH Key." if locate_config_value(:bootstrap_protocol) == 'ssh' && !locate_config_value(:identity_file).nil? && locate_config_value(:ec2_ssh_key_id).nil?
@@ -253,7 +132,9 @@ class Chef
             eips = service.connection.addresses.collect{|addr| addr if addr.domain == eip_scope}.compact
 
             unless eips.detect{|addr| addr.public_ip == config[:associate_eip] && addr.server_id == nil}
-              errors << "Elastic IP requested is not available."
+              error_message = "Requested elastic IP is not available.[#{config[:associate_eip]}]"
+              ui.error(error_message)
+              raise CloudExceptions::ValidationError, error_message
             end
           end
         end
@@ -278,21 +159,20 @@ class Chef
           @ami ||= service.connection.images.get(locate_config_value(:image))
         end
 
-        def tags
+        def validate_tags
          tags = locate_config_value(:tags)
           if !tags.nil? and tags.length != tags.to_s.count('=')
             error_message = "Tags should be entered in a key = value pair"
             ui.error(error_message)
             raise CloudExceptions::ValidationError, error_message
           end
-         tags
         end
 
         def eip_scope
           vpc_mode? ? "vpc" : "standard"
         end
 
-        def create_tags(hashed_tags)
+        def create_tags
           hashed_tags.each_pair do |key, val|
             service.connection.tags.create :key => key, :value => val, :resource_id => server.id
           end
@@ -304,9 +184,18 @@ class Chef
           validate_ebs
         end
 
-        def associate_eip(elastic_ip)
-          service.connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
-          server.wait_for { public_ip_address == elastic_ip.public_ip }
+        def associate_eip
+          if config[:associate_eip]
+            requested_elastic_ip = config[:associate_eip]
+
+            # For VPC EIP assignment we need the allocation ID so fetch full EIP details
+            elastic_ip = service.connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
+
+            if elastic_ip
+             service.connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
+              server.wait_for { public_ip_address == elastic_ip.public_ip }
+            end
+          end
         end
 
         def set_image_os_type
@@ -336,6 +225,144 @@ class Chef
         def check_windows_password_available(server_id)
           response = service.connection.get_password_data(server_id)
           response.body["passwordData"] ? response.body["passwordData"] : false
+        end
+
+        def load_vpc_create_options
+          @create_options[:server_def][:subnet_id] = locate_config_value(:subnet_id)
+          @create_options[:server_def][:private_ip_address] = locate_config_value(:private_ip_address)
+          @create_options[:server_def][:tenancy] = "dedicated" if locate_config_value(:dedicated_instance)
+          @create_options[:server_def][:associate_public_ip] = locate_config_value(:associate_public_ip) if config[:associate_public_ip]
+        end
+
+        def load_ebs_create_options
+          if ami.root_device_type == "ebs"
+            ami_map = ami.block_device_mapping.first
+            ebs_size = begin
+                         config[:ebs_size] ? Integer(config[:ebs_size]).to_s : ami_map["volumeSize"].to_s
+                       rescue ArgumentError
+                         error_message = "--ebs-size must be an integer"
+                         msg opt_parser
+                         ui.errors(error_message)
+                         raise CloudExceptions::ValidationError, error_message
+                       end
+            delete_term = config[:ebs_no_delete_on_term] ? "false" : ami_map["deleteOnTermination"]
+
+            @create_options[:server_def][:block_device_mapping] =
+              [{
+                 'DeviceName' => ami_map["deviceName"],
+                 'Ebs.VolumeSize' => ebs_size,
+                 'Ebs.DeleteOnTermination' => delete_term
+               }]
+          end
+          @create_options[:server_def][:ebs_optimized] = config[:ebs_optimized] ? "true" : "false"
+        end
+
+        def load_user_data_for_win
+          # we cannot have multiple <powershell> tags in the user-data. all PS scripts should be
+          # enclosed withing single <powershell>..</powershell> tag.
+          @create_options[:server_def].merge!(:user_data => "<powershell>")
+          if(locate_config_value(:bootstrap_protocol) == "winrm")
+            @create_options[:server_def][:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$username = \"#{locate_config_value(:winrm_user)}\"\n$splitusername=$username.split(\"\\\\\")\nif($splitusername[1] -eq $null) { $username = $splitusername[0] }\nelse { $username = $splitusername[1] }\n$newuser = $computer.Create(\"user\", $username)\n $newuser.Path = $newuser.Path -replace(\".\\\\\", \"\")\n $newuser.SetPassword(\"#{windows_password}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:winrm_user).downcase != "administrator"
+          else
+            @create_options[:server_def][:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:ssh_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:ssh_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:ssh_user).downcase != "administrator"
+          end
+          if Chef::Config[:knife][:aws_user_data]
+            begin
+              user_data_file = File.read(Chef::Config[:knife][:aws_user_data]).gsub("<powershell>", "").gsub("</powershell>", "")
+              if(user_data_file.include? "<script>")
+                @create_options[:server_def][:user_data] << "</powershell>"
+                @create_options[:server_def][:user_data ] << user_data_file
+              else
+                @create_options[:server_def][:user_data ] << user_data_file
+                @create_options[:server_def][:user_data] << "</powershell>"
+              end
+            rescue
+              ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            end
+          else
+            @create_options[:server_def][:user_data] << "</powershell>"
+          end
+
+          # in case there is no PS script, we dont send empty <powershell> script to ec2 user-data
+          @create_options[:server_def][:user_data].gsub("<powershell></powershell>", "")
+        end
+
+        def load_user_data
+          if service.is_image_windows?(locate_config_value(:image))
+            load_user_data_for_win
+            Chef::Log.debug @create_options[:server_def][:user_data]
+          else
+            if Chef::Config[:knife][:aws_user_data]
+              begin
+                @create_options[:server_def].merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
+              rescue
+                ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+              end
+            end
+          end
+        end
+
+        def hashed_tags
+          @hashed_tags ||= begin
+            tags = locate_config_value(:tags)
+
+            hashed_tags={}
+            tags.map{ |t| key, val = t.split('='); hashed_tags[key] = val } unless tags.nil?
+
+            # Always set the Name tag
+            unless hashed_tags.keys.include? "Name"
+              hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
+            end
+            hashed_tags
+          end
+        end
+
+        # setup the @columns_with_info to display the server summary.
+        def setup_summary_colinfo
+          @columns_with_info = [{:label => 'Instance Name', :value => service.get_server_name(server)},
+                                {:label => 'Instance ID', :key => 'id'},
+                                {:label => 'Flavor', :key => 'flavor_id'},
+                                {:label => 'Image', :key => 'image_id'},
+                                {:label => 'Availability Zone', :key => 'availability_zone'},
+                                {:label => 'Public IP Address', :key => 'public_ip_address'},
+                                {:label => 'Private IP Address', :key => 'private_ip_address'},
+                                {:label => 'IAM Profile', :key => 'iam_instance_profile', :value_callback => method(:iam_name_from_profile)},
+                                {:label => 'Placement Group', :key => 'placement_group'},
+                                {:label => 'Root Device Type', :key => 'root_device_type'},
+                                {:label => "Region", :value => service.connection.instance_variable_get(:@region)},
+                                {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")},
+                                {:label => "SSH Key", :key => 'key_name'}
+                               ]
+
+          # If we don't specify a security group or security group id, Fog will
+          # pick the appropriate default one. In case of a VPC we don't know the
+          # default security group id at this point unless we look it up, hence
+          # 'default' is printed if no id was specified.
+          printed_security_groups = "default"
+          printed_security_groups = server.groups.join(", ") if server.groups
+          @columns_with_info << {:label => 'Security Groups', :value => printed_security_groups} unless vpc_mode? or (server.groups.nil? and server.security_group_ids)
+
+          printed_security_group_ids = "default"
+          printed_security_group_ids = server.security_group_ids.join(", ") if server.security_group_ids
+          @columns_with_info << {:label => 'Security Group Ids', :value =>  printed_security_group_ids} if vpc_mode? or server.security_group_ids
+
+          if vpc_mode?
+            @columns_with_info << {:label => 'Subnet ID', :key => 'subnet_id'}
+            @columns_with_info << {:label => 'Tenancy', :key => 'tenancy'}
+            @columns_with_info << {:label => 'Public DNS Name', :key => 'dns_name'} if config[:associate_public_ip]
+          else
+            @columns_with_info << {:label => 'Public DNS Name', :key => 'dns_name'}
+            @columns_with_info << {:label => 'Private DNS Name', :key => 'private_dns_name'}
+          end
+
+          if server.root_device_type == "ebs"
+            device_map = server.block_device_mapping.first
+            @columns_with_info << {:label => "Root Volume ID", :value => device_map['volumeId']}
+            @columns_with_info << {:label => "Root Device Name", :value => device_map['deviceName']}
+            @columns_with_info << {:label => "Root Device Delete on Terminate", :value => device_map['deleteOnTermination'].to_s}
+          end
+
+          @columns_with_info << {:label => "EBS is Optimized", :key => 'ebs_optimized'} if config[:ebs_optimized]
         end
       end
     end
