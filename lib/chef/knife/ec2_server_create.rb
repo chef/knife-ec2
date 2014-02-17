@@ -54,28 +54,27 @@ class Chef
             super
         end
 
-        # Catch and handle Fog errors
+        # Override to parse error messages
         def execute_command
           begin
             super
-          rescue  Fog::Compute::AWS::Error => e
+          rescue CloudExceptions::ServerCreateError => e
             ebs_optimized_fog_msg = "ebs-optimized instances are not supported for your requested configuration"
             placement_grp_fog_msg = "placement groups may not be used with instances of type"
-            fog_err_msg = e.message.downcase
+            err_msg = e.message.downcase
 
             flavor = locate_config_value(:flavor)
             error_message = "Please check if " + (flavor.nil? ? "default flavor is supported for " : "flavor #{flavor} is supported for ")
 
-            if fog_err_msg.include?(ebs_optimized_fog_msg)
-              error_message += "EBS-optimized instances. #{e.message}."
+            if err_msg.include?(ebs_optimized_fog_msg)
+              error_message += "EBS-optimized instances."
               ui.error(error_message)
               raise CloudExceptions::ServerCreateError, error_message
-            elsif fog_err_msg.include?(placement_grp_fog_msg)
-              error_message += "Placement groups. #{e.message}."
+            elsif err_msg.include?(placement_grp_fog_msg)
+              error_message += "Placement groups."
               ui.error(error_message)
               raise CloudExceptions::ServerCreateError, error_message
             else
-              ui.error(e.message)
               raise CloudExceptions::ServerCreateError, e.message
             end
           end
