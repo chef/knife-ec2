@@ -69,14 +69,12 @@ class Chef
             if err_msg.include?(ebs_optimized_fog_msg)
               error_message += "EBS-optimized instances."
               ui.error(error_message)
-              raise CloudExceptions::ServerCreateError, error_message
             elsif err_msg.include?(placement_grp_fog_msg)
               error_message += "Placement groups."
               ui.error(error_message)
-              raise CloudExceptions::ServerCreateError, error_message
-            else
-              raise CloudExceptions::ServerCreateError, e.message
             end
+
+            raise e
           end
         end
 
