@@ -219,7 +219,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       error_msg = "Please check if default flavor is supported for EBS-optimized instances."
       @instance.ui.should_receive(:error).with(error_msg)
       @instance.ui.stub(:fatal)
-      expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, error_msg)
+      expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, fog_err)
     end
 
     it "raise error on invalid flavor used with placement group." do
@@ -229,7 +229,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       error_msg = "Please check if default flavor is supported for Placement groups."
       @instance.ui.should_receive(:error).with(error_msg)
       @instance.ui.stub(:fatal)
-      expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, error_msg)
+      expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, fog_err)
     end
   end
 
