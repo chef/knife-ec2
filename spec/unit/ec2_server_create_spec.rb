@@ -25,6 +25,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
 
   context "Windows instance" do
     before do
+      create_instance.ui.stub(:error)
       create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg| 
         true
       end
@@ -34,6 +35,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
   
   context "Linux instance" do
     before do
+      create_instance.ui.stub(:error)
       create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg| 
         false
       end
@@ -212,17 +214,21 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
 
     it "raise error on invalid flavor used with ebs optimized." do
       fog_err = "Unsupported => EBS-optimized instances are not supported for your requested configuration. Please check the documentation for supported configurations"
-      @instance.service.stub(:create_server).and_raise(Fog::Compute::AWS::Error, fog_err)
-      error_msg = "Please check if default flavor is supported for EBS-optimized instances. #{fog_err}."
+      @instance.service.stub(:create_server).and_raise(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, fog_err)
+      @instance.service.stub(:delete_server_dependencies)
+      error_msg = "Please check if default flavor is supported for EBS-optimized instances."
       @instance.ui.should_receive(:error).with(error_msg)
+      @instance.ui.stub(:fatal)
       expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, error_msg)
     end
 
     it "raise error on invalid flavor used with placement group." do
       fog_err = "InvalidParameterCombination => Placement groups may not be used with instances of type"
-      @instance.service.stub(:create_server).and_raise(Fog::Compute::AWS::Error, fog_err)
-      error_msg = "Please check if default flavor is supported for Placement groups. #{fog_err}."
+      @instance.service.stub(:create_server).and_raise(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, fog_err)
+      @instance.service.stub(:delete_server_dependencies)
+      error_msg = "Please check if default flavor is supported for Placement groups."
       @instance.ui.should_receive(:error).with(error_msg)
+      @instance.ui.stub(:fatal)
       expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, error_msg)
     end
   end
