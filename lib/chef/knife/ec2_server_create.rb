@@ -284,8 +284,8 @@ class Chef
         :boolean => true,
         :default => false
 
-      option :create_user,
-        :long => "--create-user",
+      option :create_winrm_user,
+        :long => "--create-winrm-user",
         :description => "Creates the user specified with --winrm-user flag. Default is false.",
         :boolean => true,
         :default => false
@@ -660,7 +660,7 @@ class Chef
           end
         end
 
-        if locate_config_value(:bootstrap_protocol) == "winrm" and locate_config_value(:create_user)
+        if locate_config_value(:bootstrap_protocol) == "winrm" and locate_config_value(:create_winrm_user)
           toks = locate_config_value(:winrm_user).split("\\")
           user = (toks.length == 2) ? toks[1] : toks[0]
           if ['administrator', 'guest', 'admin'].include?(user.downcase)
@@ -669,7 +669,7 @@ class Chef
           end
           # Also password is must when creating a user on VM.
           if locate_config_value(:winrm_password).nil?
-            ui.error("--winrm-password is required when creating a user with --create-user option.")
+            ui.error("--winrm-password is required when creating a user with --create-winrm-user option.")
             exit 1
           end
         end
@@ -710,7 +710,7 @@ class Chef
         # If password is not specified on CLI, means user intends to use cert for auth
         # which is yet to be implemented/supported, if the user is already in image we cannot yet
         # retrieve it unless the VM is created.
-        if locate_config_value(:create_user)
+        if locate_config_value(:create_winrm_user)
           # Only create if explicitly requested
           create_user_ps = ERBHelpers::ERBCompiler.run(
             File.read(File.join(user_data_scripts_dir, "create-win-user.erb")),
