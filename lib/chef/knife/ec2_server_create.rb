@@ -667,6 +667,11 @@ class Chef
             ui.error("Creating well known user names [admin, administator, guest] during VM creation is not supported.")
             exit 1
           end
+          # Also password is must when creating a user on VM.
+          if locate_config_value(:winrm_password).nil?
+            ui.error("--winrm-password is required when creating a user with --create-user option.")
+            exit 1
+          end
         end
       end
 
