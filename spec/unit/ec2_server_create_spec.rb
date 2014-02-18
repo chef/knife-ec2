@@ -521,6 +521,24 @@ describe Chef::Knife::Ec2ServerCreate do
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
+
+    it "disallows well known user names when --create-user option is specified" do
+      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
+      @knife_ec2_create.config[:winrm_user] = "Administrator"
+      @knife_ec2_create.config[:winrm_password] = "password"
+      @knife_ec2_create.config[:create_user] = true
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
+
+    it "password is compulsory when --create-user option is specified" do
+      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
+      @knife_ec2_create.config[:winrm_user] = "Administrator"
+      @knife_ec2_create.config[:winrm_password] = nil
+      @knife_ec2_create.config[:create_user] = true
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
   end
 
   describe "when creating the server definition" do
@@ -651,6 +669,7 @@ describe Chef::Knife::Ec2ServerCreate do
           @knife_ec2_create.config[:bootstrap_protocol] = "winrm"
           @knife_ec2_create.config[:winrm_user] = "testuser_winrm"
           @knife_ec2_create.config[:winrm_password] = "testpassword_winrm"
+          @knife_ec2_create.config[:create_user] = true
         end
 
         it "user data includes user create script for testuser_winrm" do
@@ -709,6 +728,7 @@ describe Chef::Knife::Ec2ServerCreate do
           @knife_ec2_create.config[:bootstrap_protocol] = "ssh"
           @knife_ec2_create.config[:ssh_user] = "testuser_ssh"
           @knife_ec2_create.config[:ssh_password] = "testpassword_ssh"
+          @knife_ec2_create.config[:create_user] = true
         end
 
         it "user data include user create script for testuser_ssh" do
@@ -726,6 +746,7 @@ describe Chef::Knife::Ec2ServerCreate do
           @knife_ec2_create.config[:bootstrap_protocol] = "winrm"
           @knife_ec2_create.config[:winrm_user] = "testuser_winrm"
           @knife_ec2_create.config[:winrm_password] = "testpassword_winrm"
+          @knife_ec2_create.config[:create_user] = true
         end
 
         it "append user data to create user data when script tag is present" do
