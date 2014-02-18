@@ -21,6 +21,7 @@ require 'chef/knife/bootstrap_windows_ssh'
 require 'resource_spec_helper'
 require 'test/knife-utils/test_bed'
 require "securerandom"
+require 'server_command_common_spec_helper'
 
 def find_instance_id(instance_name, file)
   file.lines.each do |line|
