@@ -666,7 +666,7 @@ class Chef
         if locate_config_value(:bootstrap_protocol) == "winrm" and locate_config_value(:create_user)
           toks = locate_config_value(:winrm_user).split("\\")
           user = (toks.length == 2) ? toks[1] : toks[0]
-          if ['administator', 'guest', 'admin'].include?(user.downcase)
+          if ['administrator', 'guest', 'admin'].include?(user.downcase)
             ui.error("Creating well known user names [admin, administator, guest] during VM creation is not supported.")
             exit 1
           end
