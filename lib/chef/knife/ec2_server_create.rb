@@ -289,6 +289,12 @@ class Chef
         :boolean => true,
         :default => false
 
+      option :create_user,
+        :long => "--create-user",
+        :description => "Creates the user specified with --winrm-user flag. Default is false.",
+        :boolean => true,
+        :default => false
+
     def tcp_test_winrm(ip_addr, port)
       tcp_socket = TCPSocket.new(ip_addr, port)
       yield
@@ -656,6 +662,14 @@ class Chef
           ui.error("--ebs-volume-type must be 'standard' or 'io1' or 'gp2'")
           msg opt_parser
           exit 1
+
+        if locate_config_value(:bootstrap_protocol) == "winrm" and locate_config_value(:create_user)
+          toks = locate_config_value(:winrm_user).split("\\")
+          user = (toks.length == 2) ? toks[1] : toks[0]
+          if ['administator', 'guest', 'admin'].include?(user.downcase)
+            ui.error("Creating well known user names [admin, administator, guest] during VM creation is not supported.")
+            exit 1
+          end
         end
       end
 
@@ -694,9 +708,12 @@ class Chef
         # If password is not specified on CLI, means user intends to use cert for auth
         # which is yet to be implemented/supported, if the user is already in image we cannot yet
         # retrieve it unless the VM is created.
-        create_user_ps = ERBHelpers::ERBCompiler.run(
-          File.read(File.join(user_data_scripts_dir, "create-win-user.erb")),
-          {:user_name => username, :user_passwd => password} )
+        if locate_config_value(:create_user)
+          # Only create if explicitly requested
+          create_user_ps = ERBHelpers::ERBCompiler.run(
+            File.read(File.join(user_data_scripts_dir, "create-win-user.erb")),
+            {:user_name => username, :user_passwd => password} )
+        end
 
         # Load winrm configuration powershells from template.
         if(locate_config_value(:bootstrap_protocol) == "winrm")
