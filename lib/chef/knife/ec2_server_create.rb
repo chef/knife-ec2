@@ -286,9 +286,14 @@ class Chef
         tcp_socket = TCPSocket.new(hostname, ssh_port)
         readable = IO.select([tcp_socket], nil, nil, 5)
         if readable
-          Chef::Log.debug("sshd accepting connections on #{hostname}, banner is #{tcp_socket.gets}")
-          yield
-          true
+          ssh_banner = tcp_socket.gets
+          if ssh_banner.nil? or ssh_banner.empty?
+            false
+          else
+            Chef::Log.debug("sshd accepting connections on #{hostname}, banner is #{ssh_banner}")
+            yield
+            true
+          end
         else
           false
         end

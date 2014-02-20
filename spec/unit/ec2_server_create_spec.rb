@@ -667,4 +667,29 @@ describe Chef::Knife::Ec2ServerCreate do
       end
     end
   end
+
+  describe "tcp_test_ssh" do
+    # Normally we would only get the header after we send a client header, e.g. 'SSH-2.0-client'
+    it "should return true if we get an ssh header" do
+      @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
+      TCPSocket.stub(:new).and_return(StringIO.new("SSH-2.0-OpenSSH_6.1p1 Debian-4"))
+      IO.stub(:select).and_return(true)
+      @knife_ec2_create.should_receive(:tcp_test_ssh).and_yield.and_return(true)
+      @knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22) {nil}
+    end
+
+    it "should return false if we do not get an ssh header" do
+      @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
+      TCPSocket.stub(:new).and_return(StringIO.new(""))
+      IO.stub(:select).and_return(true)
+      @knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22).should be_false
+    end
+
+    it "should return false if the socket isn't ready" do
+      @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
+      TCPSocket.stub(:new)
+      IO.stub(:select).and_return(false)
+      @knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22).should be_false
+    end
+  end
 end
