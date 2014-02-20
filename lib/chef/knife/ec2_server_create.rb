@@ -19,6 +19,7 @@
 
 require 'chef/knife/ec2_base'
 require 'chef/knife/winrm_base'
+require 'timeout'
 
 class Chef
   class Knife
@@ -251,6 +252,84 @@ class Chef
         :short => "-a ATTRIBUTE",
         :description => "The EC2 server attribute to use for SSH connection",
         :default => nil
+        
+        
+    def ready_to_run_winrm_commands(server)
+      '''
+        The primary goal here is to ensure that the WinRM service is ready
+        to accept commands.
+        This function runs a simple "ipconfig" command and returns false if there is an error 
+        or true if it runs successfully.  
+      '''
+        session_opts = {}
+        command = 'ipconfig'
+
+        server_ip = vpc_mode? ? server.private_ip_address : server.public_ip_address 
+
+        session_opts[:user] = locate_config_value(:winrm_user)
+        session_opts[:password] = locate_config_value(:winrm_password)
+        session_opts[:transport] = locate_config_value(:winrm_transport)
+        session_opts[:port] = locate_config_value(:winrm_port)
+        session_opts[:keytab] = locate_config_value(:kerberos_keytab_file)
+        session_opts[:realm] = locate_config_value(:kerberos_realm)
+        session_opts[:service] = locate_config_value(:kerberos_service)
+        session_opts[:ca_trust_path] = locate_config_value(:ca_trust_file)
+        session_opts[:operation_timeout] = 60 # 1 min OperationTimeout for long bootstraps fix for KNIFE_WINDOWS-8
+        session_opts[:basic_auth_only] = true
+
+        ## If you have a \\ in your name you need to use NTLM domain authentication
+        if !session_opts[:user].nil? and session_opts[:user].split("\\").length.eql?(2)
+          session_opts[:basic_auth_only] = false
+        else
+          session_opts[:basic_auth_only] = true
+        end
+
+        if config.keys.any? {|k| k.to_s =~ /kerberos/ }
+          session_opts[:transport] = :kerberos
+          session_opts[:basic_auth_only] = false
+        else
+          session_opts[:transport] = (Chef::Config[:knife][:winrm_transport] || config[:winrm_transport]).to_sym
+          session_opts[:disable_sspi] = true
+
+          if session_opts[:user] and 
+              (not session_opts[:password])
+            session_opts[:password] = Chef::Config[:knife][:winrm_password] = config[:winrm_password] = get_password
+          end
+        end
+
+        begin
+          @session ||= begin
+            session = EventMachine::WinRM::Session.new(session_opts)
+            Chef::Log.debug(session_opts)
+
+            Chef::Log.debug("Setting session opts")
+            session.use(server_ip,session_opts)
+
+            Chef::Log.debug("Running ipconfig test command")
+            session.relay_command(command)
+            
+            session.on_output do |host, data|
+              Chef::Log.debug("WinRM command ran successfully: #{data}")
+              return true
+            end
+            session.on_error do |host, err|
+              Chef::Log.debug("Error #{err}")
+              return false
+            end
+            session.on_command_complete do |host|
+              host = host == :all ? 'All Servers' : host
+              Chef::Log.debug("command complete on #{host}")
+              return true
+            end
+          end
+    
+        rescue => error
+          Chef::Log.debug("#{error}")
+
+          sleep 5
+          false
+        end
+    end  
 
       option :associate_public_ip,
         :long => "--associate-public-ip",
@@ -322,6 +401,7 @@ class Chef
       def check_windows_password_available(server_id)
         response = connection.get_password_data(server_id)
         if not response.body["passwordData"]
+          sleep 5
           return false
         end
         response.body["passwordData"]
@@ -459,7 +539,25 @@ class Chef
             }
             ssh_override_winrm
           end
-          bootstrap_for_windows_node(@server,ssh_connect_host).run
+          bootstrap = bootstrap_for_windows_node(@server,ssh_connect_host)
+          
+          if config[:bootstrap_protocol] == 'winrm'
+            print "\n#{ui.color("Attempting to run a test command via WinRM", :magenta)}"
+            begin
+              # Timeout after 10 minutes
+              Timeout::timeout(600) do
+                 print(".") until ready_to_run_winrm_commands(@server) {
+                  puts("done")
+                }
+                print "\n\n#{ui.color(" *****  Ready to cook! *****\n", :green)}"
+              end
+            rescue Timeout::Error
+              puts "\n\n#{ui.color("Timed out.  Failed to successfully run WinRM commands against the server.", :red)}" 
+              exit 1
+            end
+          end
+          
+          bootstrap.run
         else
             wait_for_sshd(ssh_connect_host)
             ssh_override_winrm
