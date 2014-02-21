@@ -175,13 +175,18 @@ describe 'knife ec2 integration test' , :if => is_config_present do
     end
 
     context 'when standard options and valid ebs size and preserve ebs volume specified' do
-      server_create_common_bfr_aftr
+      cmd_out = ""
+      
+      before { create_node_name("linux") }
+
+      after { cmd_out = "#{cmd_output}" }
 
       let(:command) { "knife ec2 server create -N #{@name_node} --ec2-groups #{@ec2_groups} --ebs-size 15 --ebs-no-delete-on-term" +
       append_ec2_creds + get_linux_create_options + get_ssh_credentials }
 
       run_cmd_check_status_and_output("succeed", "#{@name_node}")
-      puts("Preserved ebs volume, Please delete it by using AWS console")
+
+      it { check_and_delete_preserved_ebs_volume(cmd_out) }
     end
 
     context 'when standard options and invalid ebs size specified' do
