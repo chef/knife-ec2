@@ -720,11 +720,18 @@ class Chef
       end
 
       def wait_for_tunnelled_sshd(hostname)
-        print(".")
-        print(".") until tunnel_test_ssh(ssh_connect_host) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
-          puts("done")
-        }
+        begin
+          Timeout::timeout(Chef::Config[:knife][:ssh_timeout] || 90) do
+            print(".")
+            print(".") until tunnel_test_ssh(ssh_connect_host) {
+              sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+              puts("done")
+            }
+          end
+        rescue Timeout::Error
+          print "\n #{ui.error('Fail to establish SSH connection. Please check ssh port (default: 22) or try increasing timeout using option --ssh-timeout.')}"
+          exit 1
+        end
       end
 
       def tunnel_test_ssh(hostname, &block)
@@ -743,11 +750,19 @@ class Chef
         false
       end
 
+      # Wait for sshd to start
       def wait_for_direct_sshd(hostname, ssh_port)
-        print(".") until tcp_test_ssh(ssh_connect_host, ssh_port) {
-          sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
-          puts("done")
-        }
+        begin
+          Timeout::timeout(Chef::Config[:knife][:ssh_timeout] || 90) do
+            print(".") until tcp_test_ssh(ssh_connect_host, ssh_port) {
+              sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
+              puts("done")
+            }
+          end
+        rescue Timeout::Error
+          print "\n #{ui.error('Fail to establish SSH connection. Please check ssh port (default: 22) or try increasing timeout using option --ssh-timeout.')}"
+          exit 1
+        end
       end
 
       def ssh_connect_host
