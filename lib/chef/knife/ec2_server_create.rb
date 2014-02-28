@@ -172,6 +172,10 @@ class Chef
         :long => "--ebs-no-delete-on-term",
         :description => "Do not delete EBS volume on instance termination"
 
+      option :ebs_delete_on_term,
+        :long => "--ebs-delete-on-term",
+        :description => "Delete EBS volume on instance termination"
+
       option :run_list,
         :short => "-r RUN_LIST",
         :long => "--run-list RUN_LIST",
@@ -596,6 +600,8 @@ class Chef
                      end
           delete_term = if config[:ebs_no_delete_on_term]
                           "false"
+                        elsif config[:ebs_delete_on_term]
+                          "true"
                         else
                           ami_map["deleteOnTermination"]
                         end
