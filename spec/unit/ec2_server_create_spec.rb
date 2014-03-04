@@ -494,6 +494,33 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.ui.stub(:error)
     end
 
+    describe "when reading aws_credential_file" do 
+      before do
+        Chef::Config[:knife].delete(:aws_access_key_id)
+        Chef::Config[:knife].delete(:aws_secret_access_key)
+
+        Chef::Config[:knife][:aws_credential_file] = '/apple/pear'
+        @access_key_id = 'access_key_id'
+        @secret_key = 'secret_key'
+      end
+
+      it "reads UNIX Line endings" do
+        File.stub(:read).
+          and_return("AWSAccessKeyId=#{@access_key_id}\nAWSSecretKey=#{@secret_key}")
+        @knife_ec2_create.validate!
+        Chef::Config[:knife][:aws_access_key_id].should == @access_key_id
+        Chef::Config[:knife][:aws_secret_access_key].should == @secret_key
+      end
+
+      it "reads DOS Line endings" do
+        File.stub(:read).
+          and_return("AWSAccessKeyId=#{@access_key_id}\r\nAWSSecretKey=#{@secret_key}")
+        @knife_ec2_create.validate!
+        Chef::Config[:knife][:aws_access_key_id].should == @access_key_id
+        Chef::Config[:knife][:aws_secret_access_key].should == @secret_key
+      end
+    end
+
     it "disallows security group names when using a VPC" do
       @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
       @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd'

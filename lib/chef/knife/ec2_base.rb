@@ -95,7 +95,7 @@ class Chef
           # File format:
           # AWSAccessKeyId=somethingsomethingdarkside
           # AWSSecretKey=somethingsomethingcomplete
-          entries = Hash[*File.read(Chef::Config[:knife][:aws_credential_file]).split(/[=\n]/)]
+          entries = Hash[*File.read(Chef::Config[:knife][:aws_credential_file]).split(/[=\n]/).map(&:chomp)]
           Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId']
           Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey']
         end
