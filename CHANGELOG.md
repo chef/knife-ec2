@@ -8,7 +8,7 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 
 None.
 
-## Latest release changes: 0.8.0 (2014-03-10)
+## Last release: 0.8.0 (2014-03-10)
 
 * [KNIFE-458](https://tickets.opscode.com/browse/KNIFE-458) Docs: Increase detail about necessary
   options for VPC instance creation
@@ -19,6 +19,9 @@ None.
 * [KNIFE-430](https://tickets.opscode.com/browse/KNIFE-430) server creation tunnelling should wait for a valid banner before continuing
 * [KNIFE-381](https://tickets.opscode.com/browse/KNIFE-381) Gabriel Rosendorf Add ability to associate public ip with VPC
   instance on creation
-  
+
+## Releases prior to 0.8.0
+Please see <https://github.com/opscode/knife-ec2/commits> to view changes in
+the form of commits to the source repository for releases before 0.8.0.
 
 
