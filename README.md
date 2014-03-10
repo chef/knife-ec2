@@ -4,8 +4,13 @@ Knife EC2
 [![Build Status](https://travis-ci.org/opscode/knife-ec2.png?branch=master)](https://travis-ci.org/opscode/knife-ec2)
 [![Dependency Status](https://gemnasium.com/opscode/knife-ec2.png)](https://gemnasium.com/opscode/knife-ec2)
 
-This is the official Opscode Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
+This is the official Chef Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
 
+* Documentation: <http://docs.opscode.com/plugin_knife_ec2.html>
+* Source: <http://github.com/opscode/knife-ec2/tree/master>
+* Tickets/Issues: <http://tickets.opscode.com/browse/KNIFE>
+* IRC: `#chef` and `#chef-hacking` on Freenode
+* Mailing list: <http://lists.opscode.com>
 
 Installation
 ------------
@@ -108,10 +113,10 @@ In-depth usage instructions can be found on the [Chef Wiki](http://wiki.opscode.
 
 License and Authors
 -------------------
-- Author:: Adam Jacob (<adam@opscode.com>)
+- Author:: Adam Jacob (<adam@getchef.com>)
 
 ```text
-Copyright 2009-2013 Opscode, Inc.
+Copyright 2009-2014 Opscode, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
