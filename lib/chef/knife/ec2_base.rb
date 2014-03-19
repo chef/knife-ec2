@@ -69,7 +69,7 @@ class Chef
             :provider => 'AWS',
             :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
             :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-            :aws_session_token => Chef::Config[:knife][:aws_session_token],
+            :aws_session_token => locate_config_value(:aws_session_token),
             :region => locate_config_value(:region)
           )
         end
