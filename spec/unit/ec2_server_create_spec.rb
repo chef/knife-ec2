@@ -17,6 +17,8 @@
 #
 
 require File.expand_path('../../spec_helper', __FILE__)
+require 'net/ssh/proxy/command'
+require 'net/ssh/gateway'
 require 'fog'
 require 'chef/knife/bootstrap'
 require 'chef/knife/bootstrap_windows_winrm'
@@ -672,6 +674,37 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
+  describe "wait_for_sshd" do
+    let(:gateway) { 'test.gateway.com' }
+    let(:hostname) { 'test.host.com' }
+
+    it "should wait for tunnelled ssh if a gateway is provided" do
+      Net::SSH::Config.stub(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("ssh some.other.gateway.com nc %h %p"))
+      @knife_ec2_create.config[:ssh_gateway] = gateway
+      @knife_ec2_create.should_receive(:wait_for_tunnelled_sshd).with(gateway, hostname)
+      @knife_ec2_create.wait_for_sshd(hostname)
+    end
+
+    it "should wait for tunnelled ssh if a gateway is configured for the given host" do
+      Net::SSH::Config.stub(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("ssh #{gateway} nc %h %p"))
+      @knife_ec2_create.should_receive(:wait_for_tunnelled_sshd).with(gateway, hostname)
+      @knife_ec2_create.wait_for_sshd(hostname)
+    end
+
+    it "should wait for direct ssh if a gateway is configured for the given host but cannot be parsed" do
+      Net::SSH::Config.stub(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("cannot parse host"))
+      @knife_ec2_create.config[:ssh_port] = 22
+      @knife_ec2_create.should_receive(:wait_for_direct_sshd).with(hostname, 22)
+      @knife_ec2_create.wait_for_sshd(hostname)
+    end
+
+    it "should wait for direct ssh if no gateway is provided" do
+      @knife_ec2_create.config[:ssh_port] = 22
+      @knife_ec2_create.should_receive(:wait_for_direct_sshd).with(hostname, 22)
+      @knife_ec2_create.wait_for_sshd(hostname)
+    end
+  end
+
   describe "ssh_connect_host" do
     before(:each) do
       @new_ec2_server.stub(
@@ -700,6 +733,54 @@ describe Chef::Knife::Ec2ServerCreate do
         @knife_ec2_create.config[:server_connect_attribute] = 'custom'
         @knife_ec2_create.ssh_connect_host.should == 'custom'
       end
+    end
+  end
+
+  describe "tunnel_test_ssh" do
+    let(:gateway_host) { 'test.gateway.com' }
+    let(:gateway_user) { 'gateway_user' }
+    let(:gateway) { double('gateway') }
+    let(:hostname) { 'test.host.com' }
+    let(:local_port) { 23 }
+
+    before(:each) do
+      Net::SSH::Gateway.stub(:new).and_return(gateway)
+      gateway.stub(:open).and_yield(local_port)
+    end
+
+    it "should test ssh through a gateway with no host configuration" do
+      Net::SSH::Config.stub(:for).and_return({})
+      Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => 22)
+      @knife_ec2_create.should_receive(:tcp_test_ssh).with('localhost', local_port)
+      @knife_ec2_create.tunnel_test_ssh(gateway_host, hostname)
+    end
+
+    it "should test ssh through a gateway with the user specified in the host configuration" do
+      Net::SSH::Config.stub(:for).and_return({ :user => gateway_user })
+      Net::SSH::Gateway.should_receive(:new).with(gateway_host, gateway_user, :port => 22)
+      @knife_ec2_create.should_receive(:tcp_test_ssh).with('localhost', local_port)
+      @knife_ec2_create.tunnel_test_ssh(gateway_host, hostname)
+    end
+
+    it "should test ssh through a gateway with the user specified in the gateway" do
+      Net::SSH::Config.stub(:for).and_return({ :user => gateway_user })
+      Net::SSH::Gateway.should_receive(:new).with(gateway_host, 'override_user', :port => 22)
+      @knife_ec2_create.should_receive(:tcp_test_ssh).with('localhost', local_port)
+      @knife_ec2_create.tunnel_test_ssh("override_user@#{gateway_host}", hostname)
+    end
+
+    it "should test ssh through a gateway with the port specified in the gateway" do
+      Net::SSH::Config.stub(:for).and_return({})
+      Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => '24')
+      @knife_ec2_create.should_receive(:tcp_test_ssh).with('localhost', local_port)
+      @knife_ec2_create.tunnel_test_ssh("#{gateway_host}:24", hostname)
+    end
+
+    it "should test ssh through a gateway with the keys specified in the host configuration" do
+      Net::SSH::Config.stub(:for).and_return({ :keys => ['configuredkey'] })
+      Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => 22, :keys => ['configuredkey'])
+      @knife_ec2_create.should_receive(:tcp_test_ssh).with('localhost', local_port)
+      @knife_ec2_create.tunnel_test_ssh(gateway_host, hostname)
     end
   end
 
