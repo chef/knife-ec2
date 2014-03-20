@@ -616,12 +616,20 @@ class Chef
       end
 
       def wait_for_sshd(hostname)
-        config[:ssh_gateway] ? wait_for_tunnelled_sshd(hostname) : wait_for_direct_sshd(hostname, config[:ssh_port])
+        ssh_config = Net::SSH::Config.for(hostname)
+        ssh_proxy = ssh_config[:proxy]
+        ssh_gateway = config[:ssh_gateway]
+        if not ssh_proxy.nil? and ssh_gateway.nil?
+          proxy_pattern = /ssh\s+(\S+)\s+nc/
+          matchdata = proxy_pattern.match(ssh_proxy.command_line_template)
+          ssh_gateway = matchdata[1] unless matchdata.nil?
+        end
+        ssh_gateway ? wait_for_tunnelled_sshd(ssh_gateway, hostname) : wait_for_direct_sshd(hostname, config[:ssh_port])
       end
 
-      def wait_for_tunnelled_sshd(hostname)
+      def wait_for_tunnelled_sshd(ssh_gateway, hostname)
         initial = true
-        print(".") until tunnel_test_ssh(hostname) {
+        print(".") until tunnel_test_ssh(ssh_gateway, hostname) {
           if initial
             initial = false
             sleep (vpc_mode? ? 40 : 10)
@@ -632,10 +640,17 @@ class Chef
         }
       end
 
-      def tunnel_test_ssh(hostname, &block)
-        gw_host, gw_user = config[:ssh_gateway].split('@').reverse
+      def tunnel_test_ssh(ssh_gateway, hostname, &block)
+        gw_host, gw_user = ssh_gateway.split('@').reverse
         gw_host, gw_port = gw_host.split(':')
-        gateway = Net::SSH::Gateway.new(gw_host, gw_user, :port => gw_port || 22)
+        ssh_gateway_config = Net::SSH::Config.for(gw_host)
+        gw_user ||= ssh_gateway_config[:user]
+        gateway_options = { :port => gw_port || 22 }
+        gateway_keys = ssh_gateway_config[:keys]
+        unless gateway_keys.nil?
+          gateway_options[:keys] = gateway_keys
+        end
+        gateway = Net::SSH::Gateway.new(gw_host, gw_user, gateway_options)
         status = false
         gateway.open(hostname, config[:ssh_port]) do |local_tunnel_port|
           status = tcp_test_ssh('localhost', local_tunnel_port, &block)
