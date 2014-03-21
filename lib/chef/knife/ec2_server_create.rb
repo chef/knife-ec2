@@ -125,7 +125,7 @@ class Chef
       option :ssh_gateway,
         :short => "-w GATEWAY",
         :long => "--ssh-gateway GATEWAY",
-        :description => "The ssh gateway server",
+        :description => "The ssh gateway server. The ssh configuration settings will be used if no ssh gateway is provided.",
         :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway] = key }
 
       option :identity_file,
@@ -616,15 +616,27 @@ class Chef
       end
 
       def wait_for_sshd(hostname)
+        ssh_gateway = get_ssh_gateway_for(hostname)
+        ssh_gateway ? wait_for_tunnelled_sshd(ssh_gateway, hostname) : wait_for_direct_sshd(hostname, config[:ssh_port])
+      end
+
+      def get_ssh_gateway_for(hostname)
+        #The ssh_gateway specified in the knife config (if any) takes
+        #precedence over anything in the SSH configuration
+        ssh_gateway = config[:ssh_gateway]
+        return ssh_gateway if ssh_gateway
+
+        #Next, check if the SSH configuration has a ProxyCommand
+        #directive for this host. If there is one, parse out the
+        #host from the proxy command (ssh gateway nc %h %p)
         ssh_config = Net::SSH::Config.for(hostname)
         ssh_proxy = ssh_config[:proxy]
-        ssh_gateway = config[:ssh_gateway]
-        if not ssh_proxy.nil? and ssh_gateway.nil?
+        if ssh_proxy and ssh_proxy.respond_to?(:command_line_template)
           proxy_pattern = /ssh\s+(\S+)\s+nc/
           matchdata = proxy_pattern.match(ssh_proxy.command_line_template)
           ssh_gateway = matchdata[1] unless matchdata.nil?
         end
-        ssh_gateway ? wait_for_tunnelled_sshd(ssh_gateway, hostname) : wait_for_direct_sshd(hostname, config[:ssh_port])
+        ssh_gateway
       end
 
       def wait_for_tunnelled_sshd(ssh_gateway, hostname)
@@ -641,17 +653,8 @@ class Chef
       end
 
       def tunnel_test_ssh(ssh_gateway, hostname, &block)
-        gw_host, gw_user = ssh_gateway.split('@').reverse
-        gw_host, gw_port = gw_host.split(':')
-        ssh_gateway_config = Net::SSH::Config.for(gw_host)
-        gw_user ||= ssh_gateway_config[:user]
-        gateway_options = { :port => gw_port || 22 }
-        gateway_keys = ssh_gateway_config[:keys]
-        unless gateway_keys.nil?
-          gateway_options[:keys] = gateway_keys
-        end
-        gateway = Net::SSH::Gateway.new(gw_host, gw_user, gateway_options)
         status = false
+        gateway = configure_ssh_gateway(ssh_gateway)
         gateway.open(hostname, config[:ssh_port]) do |local_tunnel_port|
           status = tcp_test_ssh('localhost', local_tunnel_port, &block)
         end
@@ -661,6 +664,25 @@ class Chef
         false
       rescue Errno::EPERM, Errno::ETIMEDOUT
         false
+      end
+
+      def configure_ssh_gateway(ssh_gateway)
+        gw_host, gw_user = ssh_gateway.split('@').reverse
+        gw_host, gw_port = gw_host.split(':')
+        gateway_options = { :port => gw_port || 22 }
+
+        # Load the SSH config for the SSH gateway host.
+        # Set the gateway user if it was not part of the
+        # SSH gateway string, and use any configured
+        # SSH keys.
+        ssh_gateway_config = Net::SSH::Config.for(gw_host)
+        gw_user ||= ssh_gateway_config[:user]
+        gateway_keys = ssh_gateway_config[:keys]
+        unless gateway_keys.nil?
+          gateway_options[:keys] = gateway_keys
+        end
+
+        Net::SSH::Gateway.new(gw_host, gw_user, gateway_options)
       end
 
       def wait_for_direct_sshd(hostname, ssh_port)
