@@ -6,7 +6,8 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 
 ## Unreleased changes
 
-None.
+* [KNIFE-464](https://tickets.opscode.com/browse/KNIFE-464) Support EC2 STS, i.e. AWS Federation tokens for authentication
+
 
 ## Last release: 0.8.0 (2014-03-10)
 
