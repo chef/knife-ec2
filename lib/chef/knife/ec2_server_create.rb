@@ -128,6 +128,11 @@ class Chef
         :description => "The ssh gateway server. The ssh configuration settings will be used if no ssh gateway is provided.",
         :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway] = key }
 
+      option :ssh_gateway_identity,
+        :long => "--ssh-gateway-identity IDENTITY_FILE",
+        :description => "The private key for ssh gateway server",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway_identity] = key }
+
       option :identity_file,
         :short => "-i IDENTITY_FILE",
         :long => "--identity-file IDENTITY_FILE",
@@ -677,7 +682,13 @@ class Chef
         # SSH keys.
         ssh_gateway_config = Net::SSH::Config.for(gw_host)
         gw_user ||= ssh_gateway_config[:user]
-        gateway_keys = ssh_gateway_config[:keys]
+
+        gateway_keys = ssh_gateway_config[:keys]        
+
+        if config[:ssh_gateway_identity]
+          gateway_keys = locate_config_value[:ssh_gateway_identity]
+        end
+
         unless gateway_keys.nil?
           gateway_options[:keys] = gateway_keys
         end
