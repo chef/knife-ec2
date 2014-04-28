@@ -1,13 +1,13 @@
 # knife-ec2 change log
 
 Note: this log contains only changes from knife-ec2 release 0.8.0 and later
--- it does not contain the changes from prior release. To view change history
+-- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/opscode/knife-ec2/commits).
 
 ## Unreleased changes
 
 * [KNIFE-464](https://tickets.opscode.com/browse/KNIFE-464) Support EC2 STS, i.e. AWS Federation tokens for authentication
-
+* [KNIFE-464](https://tickets.opscode.com/browse/KNIFE-466) Knife ec2 should use gateway from net::ssh config if available
 
 ## Last release: 0.8.0 (2014-03-10)
 
