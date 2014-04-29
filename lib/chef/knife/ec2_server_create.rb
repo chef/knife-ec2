@@ -626,22 +626,34 @@ class Chef
       end
 
       def get_ssh_gateway_for(hostname)
-        #The ssh_gateway specified in the knife config (if any) takes
-        #precedence over anything in the SSH configuration
-        ssh_gateway = config[:ssh_gateway]
-        return ssh_gateway if ssh_gateway
-
-        #Next, check if the SSH configuration has a ProxyCommand
-        #directive for this host. If there is one, parse out the
-        #host from the proxy command (ssh gateway nc %h %p)
-        ssh_config = Net::SSH::Config.for(hostname)
-        ssh_proxy = ssh_config[:proxy]
-        if ssh_proxy and ssh_proxy.respond_to?(:command_line_template)
-          proxy_pattern = /ssh\s+(\S+)\s+nc/
-          matchdata = proxy_pattern.match(ssh_proxy.command_line_template)
-          ssh_gateway = matchdata[1] unless matchdata.nil?
+        if config[:ssh_gateway]
+          # The ssh_gateway specified in the knife config (if any) takes
+          # precedence over anything in the SSH configuration
+          Chef::Log.debug("Using ssh gateway #{config[:ssh_gateway]} from knife config")
+          config[:ssh_gateway]
+        else
+          # Next, check if the SSH configuration has a ProxyCommand
+          # directive for this host. If there is one, parse out the
+          # host from the proxy command
+          ssh_proxy = Net::SSH::Config.for(hostname)[:proxy]
+          if ssh_proxy.respond_to?(:command_line_template)
+            # ssh gateway_hostname nc %h %p
+            proxy_pattern = /ssh\s+(\S+)\s+nc/
+            matchdata = proxy_pattern.match(ssh_proxy.command_line_template)
+            if matchdata.nil?
+              Chef::Log.debug("Unable to determine ssh gateway for '#{hostname}' from ssh config template: #{ssh_proxy.command_line_template}")
+              nil
+            else
+              # Return hostname extracted from command line template
+              Chef::Log.debug("Using ssh gateway #{matchdata[1]} from ssh config")
+              matchdata[1]
+            end
+          else
+            # Return nil if we cannot find an ssh_gateway
+            Chef::Log.debug("No ssh gateway found, making a direct connection")
+            nil
+          end
         end
-        ssh_gateway
       end
 
       def wait_for_tunnelled_sshd(ssh_gateway, hostname)
