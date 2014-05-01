@@ -7,6 +7,5 @@ Example Contribution:
 # knife-ec2 0.10.0:
 
 * **chuckg*: Added ability to use AWS STS token (KNIFE-464)
-* **mdeallnoce**: Added ability to use SSH config for SSH Gateway/Proxy (KNIFE-466)
+* **mdellanoce**: Added ability to use SSH config (KNIFE-466)
 * **victorlin**: Added ability to pass identify file for SSH Gateway on the command line (KNIFE-422)
-
