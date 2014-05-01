@@ -125,7 +125,7 @@ class Chef
       option :ssh_gateway,
         :short => "-w GATEWAY",
         :long => "--ssh-gateway GATEWAY",
-        :description => "The ssh gateway server. The ssh configuration settings will be used if no ssh gateway is provided.",
+        :description => "The ssh gateway server. Any proxies configured in your ssh config are automatically used by default.",
         :proc => Proc.new { |key| Chef::Config[:knife][:ssh_gateway] = key }
 
       option :ssh_gateway_identity,
@@ -695,10 +695,12 @@ class Chef
         ssh_gateway_config = Net::SSH::Config.for(gw_host)
         gw_user ||= ssh_gateway_config[:user]
 
+        # Always use the gateway keys from the SSH Config
         gateway_keys = ssh_gateway_config[:keys]        
 
+        # Use the keys specificed on the command line if available (overrides SSH Config)
         if config[:ssh_gateway_identity]
-          gateway_keys = locate_config_value[:ssh_gateway_identity]
+          gateway_keys = Array(locate_config_value(:ssh_gateway_identity))
         end
 
         unless gateway_keys.nil?

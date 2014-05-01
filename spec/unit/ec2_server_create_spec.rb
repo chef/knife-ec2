@@ -703,7 +703,9 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.get_ssh_gateway_for(hostname).should == gateway
     end
 
-    it "should return the ssh gateway specified in the ssh configuration" do
+    it "should return the ssh gateway specified in the ssh configuration even if the config option is not set" do
+      # This should already be false, but test this explicitly for regression
+      @knife_ec2_create.config[:ssh_gateway] = false
       Net::SSH::Config.stub(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("ssh #{gateway} nc %h %p"))
       @knife_ec2_create.get_ssh_gateway_for(hostname).should == gateway
     end
@@ -715,6 +717,11 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "should return nil if the ssh proxy is not a proxy command" do
       Net::SSH::Config.stub(:for).and_return(:proxy => Net::SSH::Proxy::HTTP.new("httphost.com"))
+      @knife_ec2_create.get_ssh_gateway_for(hostname).should be_nil
+    end
+
+    it "returns nil if the ssh config has no proxy" do
+      Net::SSH::Config.stub(:for).and_return(:user => "darius")
       @knife_ec2_create.get_ssh_gateway_for(hostname).should be_nil
     end
   end
@@ -772,33 +779,47 @@ describe Chef::Knife::Ec2ServerCreate do
     let(:gateway_host) { 'test.gateway.com' }
     let(:gateway_user) { 'gateway_user' }
 
-    it "should configure a ssh gateway with no user and the default port" do
+    it "configures a ssh gateway with no user and the default port when the SSH Config is empty" do
       Net::SSH::Config.stub(:for).and_return({})
       Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => 22)
       @knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
 
-    it "should configure a ssh gateway with the user specified in the host configuration" do
+    it "configures a ssh gateway with the user specified in the SSH Config" do
       Net::SSH::Config.stub(:for).and_return({ :user => gateway_user })
       Net::SSH::Gateway.should_receive(:new).with(gateway_host, gateway_user, :port => 22)
       @knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
 
-    it "should configure a ssh gateway with the user specified in the ssh gateway string" do
+    it "configures a ssh gateway with the user specified in the ssh gateway string" do
       Net::SSH::Config.stub(:for).and_return({ :user => gateway_user })
       Net::SSH::Gateway.should_receive(:new).with(gateway_host, 'override_user', :port => 22)
       @knife_ec2_create.configure_ssh_gateway("override_user@#{gateway_host}")
     end
 
-    it "should configure a ssh gateway with the port specified in the ssh gateway string" do
+    it "configures a ssh gateway with the port specified in the ssh gateway string" do
       Net::SSH::Config.stub(:for).and_return({})
       Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => '24')
       @knife_ec2_create.configure_ssh_gateway("#{gateway_host}:24")
     end
 
-    it "should configure a ssh gateway with the keys specified in the host configuration" do
+    it "configures a ssh gateway with the keys specified in the SSH Config" do
       Net::SSH::Config.stub(:for).and_return({ :keys => ['configuredkey'] })
       Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => 22, :keys => ['configuredkey'])
+      @knife_ec2_create.configure_ssh_gateway(gateway_host)
+    end
+
+    it "configures the ssh gateway with the key specified on the knife config / command line" do
+      @knife_ec2_create.config[:ssh_gateway_identity] = "/home/fireman/.ssh/gateway.pem"
+      #Net::SSH::Config.stub(:for).and_return({ :keys => ['configuredkey'] })
+      Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => 22, :keys => ['/home/fireman/.ssh/gateway.pem'])
+      @knife_ec2_create.configure_ssh_gateway(gateway_host)
+    end
+
+    it "prefers the knife config over the ssh config for the gateway keys" do
+      @knife_ec2_create.config[:ssh_gateway_identity] = "/home/fireman/.ssh/gateway.pem"
+      Net::SSH::Config.stub(:for).and_return({ :keys => ['not_this_key_dude'] })
+      Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => 22, :keys => ['/home/fireman/.ssh/gateway.pem'])
       @knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
   end
