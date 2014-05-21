@@ -54,7 +54,7 @@ describe Chef::Knife::Cloud::Ec2ServerList do
         instance.run
       end
 
-      it "raise error on invalid chef-node-attribute set" do
+      it "raise error when chef-node-attribute is set to invalid" do
         instance.config[:chef_node_attribute] = "invalid_attribute"   
         @node.should_receive(:attribute?).with("invalid_attribute").and_return(false)
         instance.ui.should_receive(:fatal)
