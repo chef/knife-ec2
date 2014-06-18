@@ -23,9 +23,16 @@ require 'chef/knife/winrm_base'
 class Chef
   class Knife
     class Ec2ServerCreate < Knife
+      #
+      # The list of volume types
+      #
+      # @see http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html
+      #
+      VOLUME_TYPES = %w(gp2 io1 standard)
 
       include Knife::Ec2Base
       include Knife::WinrmBase
+
       deps do
         require 'fog'
         require 'readline'
@@ -176,6 +183,20 @@ class Chef
       option :ebs_no_delete_on_term,
         :long => "--ebs-no-delete-on-term",
         :description => "Do not delete EBS volume on instance termination"
+
+      option :ebs_volume_type,
+        :long => '--ebs-volume-type TYPE',
+        :description => "The type of EBS volume to create (#{VOLUME_TYPES.join(', ')})",
+        :default => 'io1',
+        :proc => ->(type) {
+          value = type.to_sdowncase
+
+          unless VOLUME_TYPES.include?(value)
+            raise "Unknown volume type #{type.inspect}. Valid types are #{VOLUME_TYPES.join(', ')}"
+          end
+
+          value
+        }
 
       option :run_list,
         :short => "-r RUN_LIST",
@@ -609,7 +630,8 @@ class Chef
             [{
                'DeviceName' => ami_map["deviceName"],
                'Ebs.VolumeSize' => ebs_size,
-               'Ebs.DeleteOnTermination' => delete_term
+               'Ebs.DeleteOnTermination' => delete_term,
+               'Ebs.VolumeType' => config[:ebs_volume_type]
              }]
         end
 
@@ -696,7 +718,7 @@ class Chef
         gw_user ||= ssh_gateway_config[:user]
 
         # Always use the gateway keys from the SSH Config
-        gateway_keys = ssh_gateway_config[:keys]        
+        gateway_keys = ssh_gateway_config[:keys]
 
         # Use the keys specificed on the command line if available (overrides SSH Config)
         if config[:ssh_gateway_identity]
