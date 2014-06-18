@@ -44,7 +44,7 @@ and merged, you **must** file a ticket.
 
 Once you've created the ticket, you can make a pull request to
 knife-ec2 on GitHub at <https://github.com/opscode/knife-ec2> that references
-that ticket. 
+that ticket.
 
 ## Testing Instructions
 
@@ -53,7 +53,7 @@ knife-ec2:
 
     bundle install
     bundle exec rspec spec
-    
+
 **All tests must pass** before your contribution can be merged. Thus it's a good idea
 to execute the tests without your change to be sure you understand how to run
 them, as well as after to validate that you've avoided regressions.

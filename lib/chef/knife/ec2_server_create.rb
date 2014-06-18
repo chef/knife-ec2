@@ -187,9 +187,9 @@ class Chef
       option :ebs_volume_type,
         :long => '--ebs-volume-type TYPE',
         :description => "The type of EBS volume to create (#{VOLUME_TYPES.join(', ')})",
-        :default => 'io1',
+        :default => 'standard',
         :proc => ->(type) {
-          value = type.to_sdowncase
+          value = type.to_s.downcase
 
           unless VOLUME_TYPES.include?(value)
             raise "Unknown volume type #{type.inspect}. Valid types are #{VOLUME_TYPES.join(', ')}"

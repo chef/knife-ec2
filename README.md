@@ -62,11 +62,11 @@ you already have a file with these keys somewhere in this format:
 
     AWSAccessKeyId=Your AWS Access Key ID
     AWSSecretKey=Your AWS Secret Access Key
-        
+
 In this case, you can point the <tt>aws_credential_file</tt> option to
 this file in your <tt>knife.rb</tt> file, like so:
 
-```ruby        
+```ruby
 knife[:aws_credential_file] = "/path/to/credentials/file/in/above/format"
 ```
 
