@@ -21,7 +21,7 @@ require 'chef/knife'
 class Chef
   class Knife
     class Ec2InstanceData < Knife
-      
+
       deps do
         require 'chef/json_compat'
       end

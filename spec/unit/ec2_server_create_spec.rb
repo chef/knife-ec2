@@ -208,7 +208,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "set default distro to windows-chef-client-msi for windows" do
       @knife_ec2_create.config[:winrm_password] = 'winrm-password'
-      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'      
+      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
       @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
       Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
       @bootstrap_winrm.should_receive(:run)
@@ -402,12 +402,12 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "configures the bootstrap to use prerelease versions of chef if specified" do
-      @bootstrap.config[:prerelease].should be_false
+      @bootstrap.config[:prerelease].should be_falsey
 
       @knife_ec2_create.config[:prerelease] = true
 
       bootstrap = @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name)
-      bootstrap.config[:prerelease].should be_true
+      bootstrap.config[:prerelease].should be_truthy
     end
 
     it "configures the bootstrap to use the desired distro-specific bootstrap script" do
@@ -415,7 +415,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "configures the bootstrap to use sudo" do
-      @bootstrap.config[:use_sudo].should be_true
+      @bootstrap.config[:use_sudo].should be_truthy
     end
 
     it "configured the bootstrap to use the desired template" do
@@ -497,7 +497,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.ui.stub(:error)
     end
 
-    describe "when reading aws_credential_file" do 
+    describe "when reading aws_credential_file" do
       before do
         Chef::Config[:knife].delete(:aws_access_key_id)
         Chef::Config[:knife].delete(:aws_secret_access_key)
@@ -642,29 +642,29 @@ describe Chef::Knife::Ec2ServerCreate do
 
       server_def[:iam_instance_profile_name].should == nil
     end
-    
+
     it 'Set Tenancy Dedicated when both VPC mode and Flag is True' do
       @knife_ec2_create.config[:dedicated_instance] = true
       @knife_ec2_create.stub(:vpc_mode? => true)
-      
+
       server_def = @knife_ec2_create.create_server_def
       server_def[:tenancy].should == "dedicated"
     end
-    
+
     it 'Tenancy should be default with no vpc mode even is specified' do
       @knife_ec2_create.config[:dedicated_instance] = true
-      
+
       server_def = @knife_ec2_create.create_server_def
       server_def[:tenancy].should == nil
     end
-    
+
     it 'Tenancy should be default with vpc but not requested' do
       @knife_ec2_create.stub(:vpc_mode? => true)
-      
+
       server_def = @knife_ec2_create.create_server_def
       server_def[:tenancy].should == nil
     end
-    
+
     it "sets associate_public_ip to true if specified and in vpc_mode" do
       @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
       @knife_ec2_create.config[:associate_public_ip] = true
@@ -771,7 +771,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:ssh_port] = 22
       gateway.should_receive(:open).with(hostname, 22).and_yield(local_port)
       @knife_ec2_create.should_receive(:tcp_test_ssh).with('localhost', local_port).and_return(true)
-      @knife_ec2_create.tunnel_test_ssh(gateway_host, hostname).should be_true
+      @knife_ec2_create.tunnel_test_ssh(gateway_host, hostname).should be_truthy
     end
   end
 
@@ -838,14 +838,14 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
       TCPSocket.stub(:new).and_return(StringIO.new(""))
       IO.stub(:select).and_return(true)
-      @knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22).should be_false
+      @knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22).should be_falsey
     end
 
     it "should return false if the socket isn't ready" do
       @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
       TCPSocket.stub(:new)
       IO.stub(:select).and_return(false)
-      @knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22).should be_false
+      @knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22).should be_falsey
     end
   end
 end
