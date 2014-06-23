@@ -619,7 +619,7 @@ class Chef
                           ami_map["deleteOnTermination"]
                         end
           ebs_type = if config[:ebs_volume_type] == "standard" || config[:ebs_volume_type] == "io1"
-                       ami_map["volumeType"]
+                       config[:ebs_volume_type]
                      else
                        puts "--ebs-volume-type must be standard or io1"
                        msg opt_parser
