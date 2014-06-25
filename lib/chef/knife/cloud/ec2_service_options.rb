@@ -12,7 +12,7 @@ class Chef
        def self.included(includer)
           includer.class_eval do
             include FogOptions
-            
+
             # Ec2 Connection params.
             option :aws_access_key_id,
               :short => "-A ID",

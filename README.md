@@ -4,7 +4,13 @@ Knife EC2
 [![Build Status](https://travis-ci.org/opscode/knife-ec2.png?branch=master)](https://travis-ci.org/opscode/knife-ec2)
 [![Dependency Status](https://gemnasium.com/opscode/knife-ec2.png)](https://gemnasium.com/opscode/knife-ec2)
 
-This is the official Opscode Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
+This is the official Chef Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
+
+Documentation: <http://docs.opscode.com/plugin_knife_ec2.html>
+ * Source: <http://github.com/opscode/knife-ec2/tree/master>
+ * Tickets/Issues: <http://tickets.opscode.com/browse/KNIFE>
+ * IRC: `#chef` and `#chef-hacking` on Freenode
+ * Mailing list: <http://lists.opscode.com>
 
 
 Installation
@@ -34,6 +40,8 @@ In order to communicate with the Amazon's EC2 API you will have to tell Knife ab
 ```ruby
 knife[:aws_access_key_id] = "Your AWS Access Key ID"
 knife[:aws_secret_access_key] = "Your AWS Secret Access Key"
+# Optional if you're using Amazon's STS
+knife[:aws_session_token] = ENV['AWS_SESSION_TOKEN']
 ```
 
 If your `knife.rb` file will be checked into a SCM system (ie readable by others) you may want to read the values from environment variables:
@@ -55,10 +63,10 @@ you already have a file with these keys somewhere in this format:
 
     AWSAccessKeyId=Your AWS Access Key ID
     AWSSecretKey=Your AWS Secret Access Key
-        
+
         In this case, you can point the <tt>aws_credential_file</tt> option to
         this file in your <tt>knife.rb</tt> file, like so:
-        
+
             knife[:aws_credential_file] = "/path/to/credentials/file/in/above/format"
 
 Additionally the following options may be set in your `knife.rb`:
@@ -67,6 +75,7 @@ Additionally the following options may be set in your `knife.rb`:
 - image
 - availability_zone
 - aws_ssh_key_id
+- aws_session_token
 - region
 - distro
 - template_file
@@ -106,10 +115,10 @@ In-depth usage instructions can be found on the [Chef Wiki](http://wiki.opscode.
 
 License and Authors
 -------------------
-- Author:: Adam Jacob (<adam@opscode.com>)
+- Author:: Adam Jacob (<adam@getchef.com>)
 
 ```text
-Copyright 2009-2013 Opscode, Inc.
+Copyright 2009-2014 Opscode, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

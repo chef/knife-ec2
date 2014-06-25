@@ -35,10 +35,10 @@ describe Chef::Knife::Cloud::Ec2ServerDelete do
     end
 
     @ec2_service = Chef::Knife::Cloud::Ec2Service.new
-    @ec2_service.stub(:msg_pair)
-    @knife_ec2_delete.stub(:create_service_instance).and_return(@ec2_service)
-    @knife_ec2_delete.ui.stub(:warn)
-    @knife_ec2_delete.ui.stub(:confirm)
+    allow(@ec2_service).to receive(:msg_pair)
+    allow(@knife_ec2_delete).to receive(:create_service_instance).and_return(@ec2_service)
+    allow(@knife_ec2_delete.ui).to receive(:warn)
+    allow(@knife_ec2_delete.ui).to receive(:confirm)
     @ec2_servers = double()
     @running_ec2_server = double()
     @ec2_server_attribs = { :tags => {'Name' =>  'Mock Server'},
@@ -48,31 +48,31 @@ describe Chef::Knife::Cloud::Ec2ServerDelete do
                           }
 
     @ec2_server_attribs.each_pair do |attrib, value|
-      @running_ec2_server.stub(attrib).and_return(value)
+      allow(@running_ec2_server).to receive(attrib).and_return(value)
     end
     @knife_ec2_delete.name_args = ['test001']
   end
 
   describe "run" do
     it "deletes an Ec2 instance." do
-      @ec2_servers.should_receive(:get).and_return(@running_ec2_server)
-      @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
-      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
-      @running_ec2_server.should_receive(:destroy)
+      expect(@ec2_servers).to receive(:get).and_return(@running_ec2_server)
+      expect(@ec2_connection).to receive(:servers).and_return(@ec2_servers)
+      expect(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+      expect(@running_ec2_server).to receive(:destroy)
       @knife_ec2_delete.run
     end
 
     it "deletes the instance along with the node and client on the chef-server when --purge is given as an option." do
       @knife_ec2_delete.config[:purge] = true
-      @knife_ec2_delete.should_receive(:fetch_node_name).and_return("testnode")
-      Chef::Node.should_receive(:load).and_return(@chef_node)
-      @chef_node.should_receive(:destroy)
-      Chef::ApiClient.should_receive(:load).and_return(@chef_client)
-      @chef_client.should_receive(:destroy)
-      @ec2_servers.should_receive(:get).and_return(@running_ec2_server)
-      @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
-      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
-      @running_ec2_server.should_receive(:destroy)
+      expect(@knife_ec2_delete).to receive(:fetch_node_name).and_return("testnode")
+      expect(Chef::Node).to receive(:load).and_return(@chef_node)
+      expect(@chef_node).to receive(:destroy)
+      expect(Chef::ApiClient).to receive(:load).and_return(@chef_client)
+      expect(@chef_client).to receive(:destroy)
+      expect(@ec2_servers).to receive(:get).and_return(@running_ec2_server)
+      expect(@ec2_connection).to receive(:servers).and_return(@ec2_servers)
+      expect(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+      expect(@running_ec2_server).to receive(:destroy)
       @knife_ec2_delete.run
     end
   end

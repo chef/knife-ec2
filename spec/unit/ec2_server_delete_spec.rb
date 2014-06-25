@@ -13,7 +13,7 @@ describe Chef::Knife::Cloud::Ec2ServerDelete do
   let (:instance) {Chef::Knife::Cloud::Ec2ServerDelete.new}
 
   before(:each) do
-    instance.stub(:exit)
+    allow(instance).to receive(:exit)
   end
 
   context "#validate!" do
@@ -21,7 +21,7 @@ describe Chef::Knife::Cloud::Ec2ServerDelete do
     before(:each) do
       Chef::Config[:knife][:aws_access_key_id] = "testaccesskey"
       Chef::Config[:knife][:aws_secret_access_key] = "testaccesssecret"
-      instance.stub(:exit)
+      allow(instance).to receive(:exit)
     end
 
     it "validate ec2 mandatory options" do
@@ -30,13 +30,13 @@ describe Chef::Knife::Cloud::Ec2ServerDelete do
 
     it "raise error on aws_access_key_id missing" do
       Chef::Config[:knife].delete(:aws_access_key_id)
-      instance.ui.should_receive(:error).with("You did not provide a valid 'AWS Access Key Id' value.")
+      expect(instance.ui).to receive(:error).with("You did not provide a valid 'AWS Access Key Id' value.")
       expect { instance.validate! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError)
     end
 
     it "raise error on aws_secret_access_key missing" do
       Chef::Config[:knife].delete(:aws_secret_access_key)
-      instance.ui.should_receive(:error).with("You did not provide a valid 'AWS Secret Access Key' value.")
+      expect(instance.ui).to receive(:error).with("You did not provide a valid 'AWS Secret Access Key' value.")
       expect { instance.validate! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError)
     end
   end
@@ -51,30 +51,30 @@ describe Chef::Knife::Cloud::Ec2ServerDelete do
     end
 
     it "raise error while specifying credentials file and aws keys together." do
-      File.stub(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
-      instance.ui.should_receive(:error).with("Either provide a credentials file or the access key and secret keys but not both.")
-      lambda { instance.validate! }.should raise_error 
+      allow(File).to receive(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
+      expect(instance.ui).to receive(:error).with("Either provide a credentials file or the access key and secret keys but not both.")
+      expect(lambda { instance.validate! }).to raise_error
     end
 
     it "validate ec2 mandatory options when aws_credential_file is not provided." do
       Chef::Config[:knife].delete(:aws_credential_file)
-      expect {instance.validate!}.to_not raise_error 
+      expect {instance.validate!}.to_not raise_error
     end
 
     it "raise error while specifying credentials file with only aws_access_key_id." do
       Chef::Config[:knife].delete(:aws_access_key_id)
       Chef::Config[:knife].delete(:aws_secret_access_key)
-      File.stub(:read).and_return("AWSAccessKeyId=b")
-      instance.ui.should_receive(:error).with("You did not provide a valid 'AWS Secret Access Key' value.")
-      lambda { instance.validate! }.should raise_error 
+      allow(File).to receive(:read).and_return("AWSAccessKeyId=b")
+      expect(instance.ui).to receive(:error).with("You did not provide a valid 'AWS Secret Access Key' value.")
+      expect(lambda { instance.validate! }).to raise_error
     end
 
     it "raise error while specifying credentials file with only aws_secret_access_key." do
       Chef::Config[:knife].delete(:aws_access_key_id)
       Chef::Config[:knife].delete(:aws_secret_access_key)
-      File.stub(:read).and_return("AWSSecretKey=a")
-      instance.ui.should_receive(:error).with("You did not provide a valid 'AWS Access Key Id' value.")
-      lambda { instance.validate! }.should raise_error 
+      allow(File).to receive(:read).and_return("AWSSecretKey=a")
+      expect(instance.ui).to receive(:error).with("You did not provide a valid 'AWS Access Key Id' value.")
+      expect(lambda { instance.validate! }).to raise_error
     end
   end
 
@@ -84,8 +84,8 @@ describe Chef::Knife::Cloud::Ec2ServerDelete do
       server_name = "test_server"
       instance.config[:purge] = true
       instance.config[:chef_node_name] = nil
-      instance.stub_chain(:destroy_item, :query)
-      instance.should_receive(:fetch_node_name).with(server_name).and_return("testnode")
+      allow(instance).to receive_message_chain(:destroy_item, :query)
+      expect(instance).to receive(:fetch_node_name).with(server_name).and_return("testnode")
       instance.delete_from_chef(server_name)
     end
 
@@ -93,8 +93,8 @@ describe Chef::Knife::Cloud::Ec2ServerDelete do
       server_name = "test_server"
       instance.config[:purge] = true
       instance.config[:chef_node_name] = "testnode"
-      instance.stub_chain(:destroy_item, :query)
-      instance.should_not_receive(:fetch_node_name)
+      allow(instance).to receive_message_chain(:destroy_item, :query)
+      expect(instance).to_not receive(:fetch_node_name)
       instance.delete_from_chef(server_name)
     end
   end
@@ -104,12 +104,12 @@ describe Chef::Knife::Cloud::Ec2ServerDelete do
     it "get instance id by using chef_node_name" do
       instance.service = double
       chef_node_name = "testnode"
-      instance.stub(:ui).and_return(double)
+      allow(instance).to receive(:ui).and_return(double)
       instance.config[:chef_node_name] = chef_node_name
-      instance.should_receive(:fetch_instance_id).with(chef_node_name).and_return("instance_id")
-      instance.ui.should_receive(:info).with("No Instance Id is specified, trying to retrieve it from node name")
-      instance.service.should_receive(:delete_server)
-      instance.should_receive(:delete_from_chef)
+      expect(instance).to receive(:fetch_instance_id).with(chef_node_name).and_return("instance_id")
+      expect(instance.ui).to receive(:info).with("No Instance Id is specified, trying to retrieve it from node name")
+      expect(instance.service).to receive(:delete_server)
+      expect(instance).to receive(:delete_from_chef)
       instance.execute_command
     end
   end
@@ -117,8 +117,8 @@ describe Chef::Knife::Cloud::Ec2ServerDelete do
   context "#fetch_node_name" do
     it "uses chef search" do
       instance_id = "i-89dw90"
-      instance.stub(:query).and_return(double)
-      instance.query.should_receive(:search).with(:node, "ec2_instance_id:#{instance_id}").and_return([[]])
+      allow(instance).to receive(:query).and_return(double)
+      expect(instance.query).to receive(:search).with(:node, "ec2_instance_id:#{instance_id}").and_return([[]])
       instance.fetch_node_name(instance_id)
     end
   end
@@ -126,16 +126,16 @@ describe Chef::Knife::Cloud::Ec2ServerDelete do
   context "#fetch_instance_id" do
     it "uses chef search" do
       chef_node_name = "testnode"
-      instance.stub(:query).and_return(double)
-      instance.query.should_receive(:search).with(:node, "name:#{chef_node_name}").and_return([[]])
+      allow(instance).to receive(:query).and_return(double)
+      expect(instance.query).to receive(:search).with(:node, "name:#{chef_node_name}").and_return([[]])
       instance.fetch_instance_id(chef_node_name)
     end
   end
 
   context "#query" do
     it "returns chef query object" do
-      Chef::Search::Query.should_receive(:new)
+      expect(Chef::Search::Query).to receive(:new)
       instance.query
     end
-  end  
+  end
 end

@@ -86,8 +86,16 @@ class Chef
 
         def before_bootstrap
           super
+          bootstrap_ip_address ||= if config[:server_connect_attribute]
+                                      server.send(config[:server_connect_attribute])
+                                  else
+                                    if vpc_mode? && !config[:associate_public_ip]
+                                      server.private_ip_address
+                                    else
+                                      server.dns_name
+                                    end
+                                  end
           # Which IP address to bootstrap
-          bootstrap_ip_address = server.public_ip_address if server.public_ip_address
           Chef::Log.debug("Bootstrap IP Address: #{bootstrap_ip_address}")
           if bootstrap_ip_address.nil?
             error_message = "No IP address available for bootstrapping."
@@ -95,7 +103,7 @@ class Chef
             raise CloudExceptions::BootstrapError, error_message
           end
           config[:bootstrap_ip_address] = bootstrap_ip_address
-    
+
           # Modify global configuration state to ensure hint gets set by
           # knife-bootstrap.
           Chef::Config[:knife][:hints] ||= {}
@@ -108,9 +116,9 @@ class Chef
           validate_tags
 
           errors = []
-          
+
           errors << "You must provide SSH Key." if locate_config_value(:bootstrap_protocol) == 'ssh' && !locate_config_value(:identity_file).nil? && locate_config_value(:ec2_ssh_key_id).nil?
-            
+
           errors << "You must provide --image-os-type option [windows/linux]" if ! (%w(windows linux).include?(locate_config_value(:image_os_type)))
 
           errors << "You are using a VPC, security groups specified with '--ec2-groups' are not allowed, specify one or more security group ids with '--security-group-ids' instead." if vpc_mode? and !!config[:ec2_security_groups]
@@ -120,14 +128,14 @@ class Chef
           errors << "You can only specify a Dedicated Instance if you are using VPC." if config[:dedicated_instance] and !vpc_mode?
 
           errors << "--associate-public-ip option only applies to VPC instances, and you have not specified a subnet id." if !vpc_mode? and config[:associate_public_ip]
-  
+
           error_message = ""
           raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
         end
 
         def validate_ami
           errors = []
-          errors << "You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'." if ami.nil?
+          errors << "You have not provided a valid image (AMI) value." if ami.nil?
           error_message = ""
           raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
         end
@@ -143,7 +151,7 @@ class Chef
             end
           end
         end
-        
+
         def validate_ebs
           unless config[:ebs_size].nil?
             if config[:ebs_size].to_i < ami.block_device_mapping.first["volumeSize"]

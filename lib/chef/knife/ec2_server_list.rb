@@ -52,7 +52,7 @@ class Chef
             {:label => 'State', :key => 'state', :value_callback => method(:format_server_state)},
             {:label => 'IAM Profile', :key => 'iam_instance_profile', :value_callback => method(:iam_name_from_profile)}
           ].flatten.compact
-          
+
           @columns_with_info << {:label => 'AZ', :key => 'availability_zone', :value_callback => method(:azcolor)} if config[:az]
 
           if config[:tags]
@@ -63,7 +63,7 @@ class Chef
               end
               @columns_with_info << {:label => 'Tags:'+tag_name, :key => 'tags', :value_callback => method("get_#{tag_name}_from_tag".to_sym)}
             end
-          end 
+          end
 
           super
         end
@@ -106,7 +106,7 @@ class Chef
                     :cyan
                   end
           ui.color(az, color)
-        end 
+        end
       end
     end
   end

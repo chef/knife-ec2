@@ -14,14 +14,14 @@ describe Chef::Knife::Cloud::Ec2FlavorList do
       resources = [ TestResource.new({:id => "resource-1", :name => "m1.small", :ram => 512, :disk => 0, :bits => 32, :cores => 5}),
                      TestResource.new({:id => "resource-2", :name => "t1.micro", :ram => 7680, :disk => 420, :bits => 64, :cores => 2})
                    ]
-      instance.stub(:query_resource).and_return(resources)
-      instance.stub(:puts)
-      instance.stub(:create_service_instance).and_return(Chef::Knife::Cloud::Service.new)
-      instance.stub(:validate!)
+      allow(instance).to receive(:query_resource).and_return(resources)
+      allow(instance).to receive(:puts)
+      allow(instance).to receive(:create_service_instance).and_return(Chef::Knife::Cloud::Service.new)
+      allow(instance).to receive(:validate!)
     end
 
     it "lists formatted list of resources" do
-      instance.ui.should_receive(:list).with(["ID", "Name", "RAM", "Disk", "Bits", "Cores",
+      allow(instance.ui).to receive(:list).with(["ID", "Name", "RAM", "Disk", "Bits", "Cores",
                                               "resource-1", "m1.small", "512 MB", "0 GB", "32", "5",
                                               "resource-2", "t1.micro", "7680 MB", "420 GB", "64", "2"], :uneven_columns_across, 6)
       instance.run

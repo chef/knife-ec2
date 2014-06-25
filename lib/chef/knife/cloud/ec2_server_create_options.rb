@@ -45,7 +45,7 @@ class Chef
             option :dedicated_instance,
               :long => "--dedicated_instance",
               :description => "Launch as a Dedicated instance (VPC ONLY)"
-              
+
             option :placement_group,
               :long => "--placement-group PLACEMENT_GROUP",
               :description => "The placement group to place a cluster compute instance",
@@ -102,7 +102,7 @@ class Chef
             option :server_connect_attribute,
               :long => "--server-connect-attribute ATTRIBUTE",
               :short => "-a ATTRIBUTE",
-              :description => "The EC2 server attribute to use for SSH connection",
+              :description => "The EC2 server attribute to use for SSH connection. Use this attr for creating VPC instances along with --associate-eip",
               :default => nil
 
             option :associate_public_ip,
@@ -110,6 +110,11 @@ class Chef
               :description => "Associate public ip to VPC instance.",
               :boolean => true,
               :default => false
+
+            option :aws_session_token,
+              :long => "--aws-session-token TOKEN",
+              :description => "Your AWS Session Token, For Use With AWS STS Federation or Session Tokens",
+              :proc => Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
 
           end
         end

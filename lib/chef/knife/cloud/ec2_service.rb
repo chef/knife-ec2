@@ -14,6 +14,7 @@ class Chef
           Chef::Log.debug("aws_access_key_id #{Chef::Config[:knife][:aws_access_key_id]}")
           Chef::Log.debug("aws_secret_access_key #{Chef::Config[:knife][:aws_secret_access_key]}")
           Chef::Log.debug("aws_credential_file #{Chef::Config[:knife][:aws_credential_file]}")
+          Chef::Log.debug("aws_session_token #{Chef::Config[:knife][:aws_session_token]}")
           Chef::Log.debug("region #{Chef::Config[:knife][:region].to_s}")
 
           super(options.merge({
@@ -21,17 +22,18 @@ class Chef
                                 :provider => 'AWS',
                                 :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
                                 :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
+                                :aws_session_token => Chef::Config[:knife][:aws_session_token],
                                 :region => Chef::Config[:knife][:region]
                 }}))
         end
 
         # add alternate user defined api_endpoint value.
-        def add_api_endpoint 
+        def add_api_endpoint
         end
 
         def get_server_name(server)
           server.tags['Name'] if server.tags['Name']
-        end 
+        end
       end
     end
   end
