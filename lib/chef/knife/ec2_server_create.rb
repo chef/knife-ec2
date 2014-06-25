@@ -556,6 +556,11 @@ class Chef
           ui.error("--provisioned-iops option is only supported for volume type of 'io1'")
           exit 1
         end
+
+        if config[:ebs_volume_type] == 'io1' and config[:ebs_provisioned_iops].nil?
+          ui.error("--provisioned-iops option is required when using volume type of 'io1'")
+          exit 1
+        end        
       end
 
       def tags
@@ -648,8 +653,8 @@ class Chef
                'Ebs.VolumeSize' => ebs_size,
                'Ebs.DeleteOnTermination' => delete_term,
                'Ebs.VolumeType' => ebs_type,
-               'Ebs.Iops' => iops_rate
              }]
+          server_def[:block_device_mapping].first['Ebs.Iops'] = iops_rate unless iops_rate.empty?
         end
 
         (config[:ephemeral] || []).each_with_index do |device_name, i|
