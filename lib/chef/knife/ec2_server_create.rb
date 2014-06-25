@@ -271,7 +271,7 @@ class Chef
 
       option :ebs_provisioned_iops,
         :long => "--provisioned-iops IOPS",
-        :description => "IOPS rate",
+        :description => "IOPS rate, only used when ebs volume type is 'io1'",
         :proc => Proc.new { |key| Chef::Config[:knife][:provisioned_iops] = key },
         :default => nil
 
@@ -550,6 +550,11 @@ class Chef
             ui.error("Elastic IP requested is not available.")
             exit 1
           end
+        end
+
+        if config[:ebs_provisioned_iops] and config[:ebs_volume_type] != 'io1'
+          ui.error("--provisioned-iops option is only supported for volume type of 'io1'")
+          exit 1
         end
       end
 
