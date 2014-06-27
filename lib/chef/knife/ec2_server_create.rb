@@ -265,7 +265,7 @@ class Chef
 
       option :ebs_volume_type,
         :long => "--ebs-volume-type TYPE",
-        :description => "Standard or Provisioned (io1) IOPS",
+        :description => "Standard or Provisioned (io1) IOPS or General Purpose (gp2)",
         :proc => Proc.new { |key| Chef::Config[:knife][:ebs_volume_type] = key },
         :default => "standard"
 
@@ -560,7 +560,13 @@ class Chef
         if config[:ebs_volume_type] == 'io1' and config[:ebs_provisioned_iops].nil?
           ui.error("--provisioned-iops option is required when using volume type of 'io1'")
           exit 1
-        end        
+        end
+
+        if config[:ebs_volume_type] and ! %w(gp2 io1 standard).include?(config[:ebs_volume_type])
+          ui.error("--ebs-volume-type must be 'standard' or 'io1' or 'gp2'")
+          msg opt_parser
+          exit 1
+        end
       end
 
       def tags
@@ -628,13 +634,6 @@ class Chef
                         else
                           ami_map["deleteOnTermination"]
                         end
-          ebs_type = if config[:ebs_volume_type] == "standard" || config[:ebs_volume_type] == "io1"
-                       config[:ebs_volume_type]
-                     else
-                       puts "--ebs-volume-type must be standard or io1"
-                       msg opt_parser
-                       exit 1
-                     end
           iops_rate = begin
                         if config[:ebs_provisioned_iops]
                           Integer(config[:ebs_provisioned_iops]).to_s
@@ -652,7 +651,7 @@ class Chef
                'DeviceName' => ami_map["deviceName"],
                'Ebs.VolumeSize' => ebs_size,
                'Ebs.DeleteOnTermination' => delete_term,
-               'Ebs.VolumeType' => ebs_type,
+               'Ebs.VolumeType' => config[:ebs_volume_type],
              }]
           server_def[:block_device_mapping].first['Ebs.Iops'] = iops_rate unless iops_rate.empty?
         end
