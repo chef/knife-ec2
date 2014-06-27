@@ -495,6 +495,7 @@ describe Chef::Knife::Ec2ServerCreate do
     before do
       Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
       @knife_ec2_create.ui.stub(:error)
+      @knife_ec2_create.ui.stub(:msg)
     end
 
     describe "when reading aws_credential_file" do 
@@ -552,9 +553,23 @@ describe Chef::Knife::Ec2ServerCreate do
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
 
-    it "disallows ebs provisioned iops option when not using ebs volume type 'io1'" do
+    it "disallows ebs provisioned iops option when not using ebs volume type" do
       @knife_ec2_create.config[:ebs_provisioned_iops] = "123"
       @knife_ec2_create.config[:ebs_volume_type] = nil
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
+
+    it "disallows ebs provisioned iops option when not using ebs volume type 'io1'" do
+      @knife_ec2_create.config[:ebs_provisioned_iops] = "123"
+      @knife_ec2_create.config[:ebs_volume_type] = "standard"
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
+
+    it "disallows ebs volume type if its other than 'io1' or 'gp2' or 'standard'" do
+      @knife_ec2_create.config[:ebs_provisioned_iops] = "123"
+      @knife_ec2_create.config[:ebs_volume_type] = 'invalid'
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
@@ -710,11 +725,11 @@ describe Chef::Knife::Ec2ServerCreate do
         server_def[:block_device_mapping].first['Ebs.VolumeType'].should == 'io1'
       end
 
-      it "disallows ebs volume type if its other than 'io1' and 'standard'" do
-        @knife_ec2_create.config[:ebs_provisioned_iops] = "123"
-        @knife_ec2_create.config[:ebs_volume_type] = 'invalid'
+      it "sets the specified 'gp2' ebs volume type" do
+        @knife_ec2_create.config[:ebs_volume_type] = 'gp2'
+        server_def = @knife_ec2_create.create_server_def
 
-        lambda { @knife_ec2_create.create_server_def }.should raise_error SystemExit
+        server_def[:block_device_mapping].first['Ebs.VolumeType'].should == 'gp2'
       end
 
       it "sets the specified ebs provisioned iops rate" do
