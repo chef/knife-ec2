@@ -263,6 +263,18 @@ class Chef
         :boolean => true,
         :default => false
 
+      option :ebs_volume_type,
+        :long => "--ebs-volume-type TYPE",
+        :description => "Standard or Provisioned (io1) IOPS or General Purpose (gp2)",
+        :proc => Proc.new { |key| Chef::Config[:knife][:ebs_volume_type] = key },
+        :default => "standard"
+
+      option :ebs_provisioned_iops,
+        :long => "--provisioned-iops IOPS",
+        :description => "IOPS rate, only used when ebs volume type is 'io1'",
+        :proc => Proc.new { |key| Chef::Config[:knife][:provisioned_iops] = key },
+        :default => nil
+
       def run
         $stdout.sync = true
 
@@ -391,6 +403,8 @@ class Chef
           msg_pair("Root Volume ID", device_map['volumeId'])
           msg_pair("Root Device Name", device_map['deviceName'])
           msg_pair("Root Device Delete on Terminate", device_map['deleteOnTermination'])
+          msg_pair("Standard or Provisioned IOPS", device_map['volumeType'])
+          msg_pair("IOPS rate", device_map['iops'])
 
           if config[:ebs_size]
             if ami.block_device_mapping.first['volumeSize'].to_i < config[:ebs_size].to_i
@@ -537,6 +551,22 @@ class Chef
             exit 1
           end
         end
+
+        if config[:ebs_provisioned_iops] and config[:ebs_volume_type] != 'io1'
+          ui.error("--provisioned-iops option is only supported for volume type of 'io1'")
+          exit 1
+        end
+
+        if config[:ebs_volume_type] == 'io1' and config[:ebs_provisioned_iops].nil?
+          ui.error("--provisioned-iops option is required when using volume type of 'io1'")
+          exit 1
+        end
+
+        if config[:ebs_volume_type] and ! %w(gp2 io1 standard).include?(config[:ebs_volume_type])
+          ui.error("--ebs-volume-type must be 'standard' or 'io1' or 'gp2'")
+          msg opt_parser
+          exit 1
+        end
       end
 
       def tags
@@ -604,13 +634,26 @@ class Chef
                         else
                           ami_map["deleteOnTermination"]
                         end
+          iops_rate = begin
+                        if config[:ebs_provisioned_iops]
+                          Integer(config[:ebs_provisioned_iops]).to_s
+                        else
+                          ami_map["iops"].to_s
+                        end
+                      rescue ArgumentError
+                        puts "--provisioned-iops must be an integer"
+                        msg opt_parser
+                        exit 1
+                      end
 
           server_def[:block_device_mapping] =
             [{
                'DeviceName' => ami_map["deviceName"],
                'Ebs.VolumeSize' => ebs_size,
-               'Ebs.DeleteOnTermination' => delete_term
+               'Ebs.DeleteOnTermination' => delete_term,
+               'Ebs.VolumeType' => config[:ebs_volume_type],
              }]
+          server_def[:block_device_mapping].first['Ebs.Iops'] = iops_rate unless iops_rate.empty?
         end
 
         (config[:ephemeral] || []).each_with_index do |device_name, i|

@@ -495,6 +495,7 @@ describe Chef::Knife::Ec2ServerCreate do
     before do
       Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
       @knife_ec2_create.ui.stub(:error)
+      @knife_ec2_create.ui.stub(:msg)
     end
 
     describe "when reading aws_credential_file" do 
@@ -548,6 +549,34 @@ describe Chef::Knife::Ec2ServerCreate do
     it "disallows associate public ip option when not using a VPC" do
       @knife_ec2_create.config[:associate_public_ip] = true
       @knife_ec2_create.config[:subnet_id] = nil
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
+
+    it "disallows ebs provisioned iops option when not using ebs volume type" do
+      @knife_ec2_create.config[:ebs_provisioned_iops] = "123"
+      @knife_ec2_create.config[:ebs_volume_type] = nil
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
+
+    it "disallows ebs provisioned iops option when not using ebs volume type 'io1'" do
+      @knife_ec2_create.config[:ebs_provisioned_iops] = "123"
+      @knife_ec2_create.config[:ebs_volume_type] = "standard"
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
+
+    it "disallows ebs volume type if its other than 'io1' or 'gp2' or 'standard'" do
+      @knife_ec2_create.config[:ebs_provisioned_iops] = "123"
+      @knife_ec2_create.config[:ebs_volume_type] = 'invalid'
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
+
+    it "disallows 'io1' ebs volume type when not using ebs provisioned iops" do
+      @knife_ec2_create.config[:ebs_provisioned_iops] = nil
+      @knife_ec2_create.config[:ebs_volume_type] = 'io1'
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
@@ -672,6 +701,57 @@ describe Chef::Knife::Ec2ServerCreate do
 
       server_def[:subnet_id].should == 'subnet-1a2b3c4d'
       server_def[:associate_public_ip].should == true
+    end
+
+    context "when using ebs volume type and ebs provisioned iops rate options" do
+      before do
+        @knife_ec2_create.stub_chain(:ami, :root_device_type).and_return("ebs")
+        @knife_ec2_create.stub_chain(:ami, :block_device_mapping).and_return([{"iops" => 123}])
+        @knife_ec2_create.stub(:msg)
+        @knife_ec2_create.stub(:puts)
+      end
+
+      it "sets the specified 'standard' ebs volume type" do
+        @knife_ec2_create.config[:ebs_volume_type] = 'standard'
+        server_def = @knife_ec2_create.create_server_def
+
+        server_def[:block_device_mapping].first['Ebs.VolumeType'].should == 'standard'
+      end
+
+      it "sets the specified 'io1' ebs volume type" do
+        @knife_ec2_create.config[:ebs_volume_type] = 'io1'
+        server_def = @knife_ec2_create.create_server_def
+
+        server_def[:block_device_mapping].first['Ebs.VolumeType'].should == 'io1'
+      end
+
+      it "sets the specified 'gp2' ebs volume type" do
+        @knife_ec2_create.config[:ebs_volume_type] = 'gp2'
+        server_def = @knife_ec2_create.create_server_def
+
+        server_def[:block_device_mapping].first['Ebs.VolumeType'].should == 'gp2'
+      end
+
+      it "sets the specified ebs provisioned iops rate" do
+        @knife_ec2_create.config[:ebs_provisioned_iops] = '1234'
+        @knife_ec2_create.config[:ebs_volume_type] = 'io1'
+        server_def = @knife_ec2_create.create_server_def
+
+        server_def[:block_device_mapping].first['Ebs.Iops'].should == '1234'
+      end
+
+      it "disallows non integer ebs provisioned iops rate" do
+        @knife_ec2_create.config[:ebs_provisioned_iops] = "123abcd"
+
+        lambda { @knife_ec2_create.create_server_def }.should raise_error SystemExit
+      end
+
+      it "sets the iops rate from ami" do
+        @knife_ec2_create.config[:ebs_volume_type] = 'io1'
+        server_def = @knife_ec2_create.create_server_def
+
+        server_def[:block_device_mapping].first['Ebs.Iops'].should == '123'
+      end
     end
   end
 
