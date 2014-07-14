@@ -60,18 +60,34 @@ class Chef
             :long => "--region REGION",
             :description => "Your AWS region",
             :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
+
+          option :use_iam_profile,
+            :long => "--use-iam-profile",
+            :description => "Use IAM profile assigned to current machine",
+            :boolean => true,
+            :default => false,
+            :proc => Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key }
         end
       end
 
       def connection
         @connection ||= begin
-          connection = Fog::Compute.new(
-            :provider => 'AWS',
-            :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
-            :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-            :aws_session_token => locate_config_value(:aws_session_token),
-            :region => locate_config_value(:region)
-          )
+          if Chef::Config[:knife][:use_iam_profile]
+            connection = Fog::Compute.new(
+              :provider => 'AWS',
+              :use_iam_profile => Chef::Config[:knife][:use_iam_profile],
+              :region => locate_config_value(:region)
+            )
+          else
+            connection = Fog::Compute.new(
+              :provider => 'AWS',
+              :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
+              :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
+              :use_iam_profile => Chef::Config[:knife][:use_iam_profile],
+              :aws_session_token => locate_config_value(:aws_session_token),
+              :region => locate_config_value(:region)
+            )
+          end
         end
       end
 
@@ -94,27 +110,29 @@ class Chef
       def validate!(keys=[:aws_access_key_id, :aws_secret_access_key])
         errors = []
 
-        unless Chef::Config[:knife][:aws_credential_file].nil?
-          unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
-            errors << "Either provide a credentials file or the access key and secret keys but not both."
+        unless Chef::Config[:knife][:use_iam_profile]
+          unless Chef::Config[:knife][:aws_credential_file].nil?
+            unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
+              errors << "Either provide a credentials file or the access key and secret keys but not both."
+            end
+            # File format:
+            # AWSAccessKeyId=somethingsomethingdarkside
+            # AWSSecretKey=somethingsomethingcomplete
+            entries = Hash[*File.read(Chef::Config[:knife][:aws_credential_file]).split(/[=\n]/).map(&:chomp)]
+            Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId']
+            Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey']
           end
-          # File format:
-          # AWSAccessKeyId=somethingsomethingdarkside
-          # AWSSecretKey=somethingsomethingcomplete
-          entries = Hash[*File.read(Chef::Config[:knife][:aws_credential_file]).split(/[=\n]/).map(&:chomp)]
-          Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId']
-          Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey']
-        end
 
-        keys.each do |k|
-          pretty_key = k.to_s.gsub(/_/, ' ').gsub(/\w+/){ |w| (w =~ /(ssh)|(aws)/i) ? w.upcase  : w.capitalize }
-          if Chef::Config[:knife][k].nil?
-            errors << "You did not provide a valid '#{pretty_key}' value."
+          keys.each do |k|
+            pretty_key = k.to_s.gsub(/_/, ' ').gsub(/\w+/){ |w| (w =~ /(ssh)|(aws)/i) ? w.upcase  : w.capitalize }
+            if Chef::Config[:knife][k].nil?
+              errors << "You did not provide a valid '#{pretty_key}' value."
+            end
           end
-        end
 
-        if errors.each{|e| ui.error(e)}.any?
-          exit 1
+          if errors.each{|e| ui.error(e)}.any?
+            exit 1
+          end
         end
       end
 
