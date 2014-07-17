@@ -593,13 +593,13 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "when creating the connection" do
-    describe "using use_iam_profile attribute" do
+    describe "when use_iam_profile is true" do
       before do
         Chef::Config[:knife].delete(:aws_access_key_id)
         Chef::Config[:knife].delete(:aws_secret_access_key)
       end
 
-      it "uses iam role of local machine when --use-iam-profile is true" do
+      it "creates a connection without access keys" do
         @knife_ec2_create.config[:use_iam_profile] = true
         Fog::Compute::AWS.should_receive(:new).with(hash_including(:use_iam_profile => true)).and_return(@ec2_connection)
         @knife_ec2_create.connection
