@@ -592,6 +592,21 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
+  describe "when creating the connection" do
+    describe "using use_iam_profile attribute" do
+      before do
+        Chef::Config[:knife].delete(:aws_access_key_id)
+        Chef::Config[:knife].delete(:aws_secret_access_key)
+      end
+
+      it "uses iam role of local machine when --use-iam-profile is true" do
+        @knife_ec2_create.config[:use_iam_profile] = true
+        Fog::Compute::AWS.should_receive(:new).with(hash_including(:use_iam_profile => true)).and_return(@ec2_connection)
+        @knife_ec2_create.connection
+      end
+    end
+  end
+
   describe "when creating the server definition" do
     before do
       Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
@@ -672,6 +687,12 @@ describe Chef::Knife::Ec2ServerCreate do
       server_def = @knife_ec2_create.create_server_def
 
       server_def[:iam_instance_profile_name].should == nil
+    end
+
+    it "doesn't use IAM profile by default" do
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:use_iam_profile].should == nil
     end
     
     it 'Set Tenancy Dedicated when both VPC mode and Flag is True' do
