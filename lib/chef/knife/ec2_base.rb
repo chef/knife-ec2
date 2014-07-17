@@ -71,10 +71,10 @@ class Chef
           :region => locate_config_value(:region)
         }
         if Chef::Config[:knife][:use_iam_profile]
-          connection_hash[:use_iam_profile] = Chef::Config[:knife][:use_iam_profile]
+          connection_hash[:use_iam_profile] = locate_config_value(:use_iam_profile)
         else
-          connection_hash[:aws_access_key_id] = Chef::Config[:knife][:aws_access_key_id]
-          connection_hash[:aws_secret_access_key] = Chef::Config[:knife][:aws_secret_access_key]
+          connection_hash[:aws_access_key_id] = locate_config_value([:knife][:aws_access_key_id])
+          connection_hash[:aws_secret_access_key] = locate_config_value(:aws_secret_access_key)
         end
         @connection ||= begin
           connection = Fog::Compute.new(connection_hash)
@@ -100,7 +100,7 @@ class Chef
       def validate!(keys=[:aws_access_key_id, :aws_secret_access_key])
         errors = []
 
-        unless Chef::Config[:knife][:use_iam_profile]
+        unless locate_config_value(:use_iam_profile)
           unless Chef::Config[:knife][:aws_credential_file].nil?
             unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
               errors << "Either provide a credentials file or the access key and secret keys but not both."
