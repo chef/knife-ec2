@@ -129,6 +129,12 @@ class Chef
 
           errors << "--associate-public-ip option only applies to VPC instances, and you have not specified a subnet id." if !vpc_mode? and config[:associate_public_ip]
 
+          errors << "--provisioned-iops option is only supported for volume type of 'io1'" if locate_config_value(:ebs_provisioned_iops) and locate_config_value(:ebs_volume_type) != 'io1'
+
+          errors << "--provisioned-iops option is required when using volume type of 'io1'" if locate_config_value(:ebs_volume_type) == 'io1' and locate_config_value(:ebs_provisioned_iops).nil?
+
+          errors << "--ebs-volume-type must be 'standard' or 'io1' or 'gp2'"  if locate_config_value(:ebs_volume_type) and ! %w(gp2 io1 standard).include?(locate_config_value(:ebs_volume_type))
+
           error_message = ""
           raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
         end
@@ -260,12 +266,27 @@ class Chef
                        end
             delete_term = config[:ebs_no_delete_on_term] ? "false" : ami_map["deleteOnTermination"]
 
+            iops_rate = begin
+                        if config[:ebs_provisioned_iops]
+                          Integer(config[:ebs_provisioned_iops]).to_s
+                        else
+                          ami_map["iops"].to_s
+                        end
+                      rescue ArgumentError
+                        error_message = "--provisioned-iops must be an integer"
+                        msg opt_parser
+                        ui.errors(error_message)
+                        raise CloudExceptions::ValidationError, error_message
+                      end
+
             @create_options[:server_def][:block_device_mapping] =
               [{
                  'DeviceName' => ami_map["deviceName"],
                  'Ebs.VolumeSize' => ebs_size,
-                 'Ebs.DeleteOnTermination' => delete_term
+                 'Ebs.DeleteOnTermination' => delete_term,
+                 'Ebs.VolumeType' => config[:ebs_volume_type]
                }]
+            @create_options[:server_def][:block_device_mapping].first['Ebs.Iops'] = iops_rate unless iops_rate.empty?
           end
           @create_options[:server_def][:ebs_optimized] = config[:ebs_optimized] ? "true" : "false"
         end
@@ -370,9 +391,12 @@ class Chef
 
           if server.root_device_type == "ebs"
             device_map = server.block_device_mapping.first
+            volume = server.volumes.first
             @columns_with_info << {:label => "Root Volume ID", :value => device_map['volumeId']}
             @columns_with_info << {:label => "Root Device Name", :value => device_map['deviceName']}
             @columns_with_info << {:label => "Root Device Delete on Terminate", :value => device_map['deleteOnTermination'].to_s}
+            @columns_with_info << {:label => "Standard or Provisioned IOPS", :value => volume.type}
+            @columns_with_info << {:label => "IOPS rate", :value => volume.iops.to_s}
           end
 
           @columns_with_info << {:label => "EBS is Optimized", :key => 'ebs_optimized'} if config[:ebs_optimized]

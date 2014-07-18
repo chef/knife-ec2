@@ -111,11 +111,17 @@ class Chef
               :boolean => true,
               :default => false
 
-            option :aws_session_token,
-              :long => "--aws-session-token TOKEN",
-              :description => "Your AWS Session Token, For Use With AWS STS Federation or Session Tokens",
-              :proc => Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
+            option :ebs_volume_type,
+              :long => "--ebs-volume-type TYPE",
+              :description => "Standard or Provisioned (io1) IOPS or General Purpose (gp2)",
+              :proc => Proc.new { |key| Chef::Config[:knife][:ebs_volume_type] = key },
+              :default => "standard"
 
+            option :ebs_provisioned_iops,
+              :long => "--provisioned-iops IOPS",
+              :description => "IOPS rate, only used when ebs volume type is 'io1'",
+              :proc => Proc.new { |key| Chef::Config[:knife][:provisioned_iops] = key },
+              :default => nil
           end
         end
       end

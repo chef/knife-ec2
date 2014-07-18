@@ -79,6 +79,8 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife].delete(:identity_file)
       Chef::Config[:knife].delete(:image_os_type)
       Chef::Config[:knife].delete(:ec2_ssh_key_id)
+      Chef::Config[:knife].delete(:ebs_provisioned_iops)
+      Chef::Config[:knife].delete(:ebs_volume_type)
     end
 
     it "run sucessfully on all params exist" do
@@ -89,6 +91,34 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife].delete(:ec2_ssh_key_id)
       expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " You must provide SSH Key..")
     end
+
+    it "disallows ebs provisioned iops option when not using ebs volume type" do
+      Chef::Config[:knife][:ebs_provisioned_iops] = "123"
+      Chef::Config[:knife][:ebs_volume_type] = nil
+
+      expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --provisioned-iops option is only supported for volume type of 'io1'.")
+    end
+
+    it "disallows ebs provisioned iops option when not using ebs volume type 'io1'" do
+      Chef::Config[:knife][:ebs_provisioned_iops] = "123"
+      Chef::Config[:knife][:ebs_volume_type] =  "standard"
+
+      expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --provisioned-iops option is only supported for volume type of 'io1'.")
+    end
+
+    it "disallows ebs volume type if its other than 'io1' or 'gp2' or 'standard'" do
+      Chef::Config[:knife][:ebs_provisioned_iops] = "123"
+      Chef::Config[:knife][:ebs_volume_type] =  'invalid'
+
+      expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --provisioned-iops option is only supported for volume type of 'io1'. --ebs-volume-type must be 'standard' or 'io1' or 'gp2'.")
+    end
+
+    it "disallows 'io1' ebs volume type when not using ebs provisioned iops" do
+      Chef::Config[:knife][:ebs_provisioned_iops] = nil
+      Chef::Config[:knife][:ebs_volume_type] = 'io1'
+
+      expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --provisioned-iops option is required when using volume type of 'io1'.")
+    end    
   end
 
   describe "#before_exec_command" do
@@ -212,6 +242,44 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @instance.before_exec_command
       expect(@instance.create_options[:server_def][:tenancy]).to be nil
     end
+
+    context "when using ebs volume type and ebs provisioned iops rate options" do
+      before do
+        allow(@instance).to receive_message_chain(:ami, :root_device_type).and_return("ebs")
+        allow(@instance).to receive_message_chain(:ami, :block_device_mapping).and_return([{"iops" => 123}])
+      end
+
+      it "sets the specified 'standard' ebs volume type" do
+        @instance.config[:ebs_volume_type] = 'standard'
+        @instance.before_exec_command
+        expect(@instance.create_options[:server_def][:block_device_mapping].first['Ebs.VolumeType']).to be == 'standard'
+      end
+
+      it "sets the specified 'io1' ebs volume type" do
+        @instance.config[:ebs_volume_type] = 'io1'
+        @instance.before_exec_command
+        expect(@instance.create_options[:server_def][:block_device_mapping].first['Ebs.VolumeType']).to be == 'io1'
+      end
+
+      it "sets the specified 'gp2' ebs volume type" do
+        @instance.config[:ebs_volume_type] = 'gp2'
+        @instance.before_exec_command
+        expect(@instance.create_options[:server_def][:block_device_mapping].first['Ebs.VolumeType']).to be =='gp2'
+      end
+
+      it "sets the specified ebs provisioned iops rate" do
+        @instance.config[:ebs_provisioned_iops] = '1234'
+        @instance.config[:ebs_volume_type] = 'io1'
+        @instance.before_exec_command
+        expect(@instance.create_options[:server_def][:block_device_mapping].first['Ebs.Iops']).to be =='1234'
+      end
+      
+      it "sets the iops rate from ami" do
+        @instance.config[:ebs_volume_type] = 'io1'
+        @instance.before_exec_command
+        expect(@instance.create_options[:server_def][:block_device_mapping].first['Ebs.Iops']).to be == '123'
+      end
+    end
   end
 
   describe "#after_exec_command" do
@@ -301,9 +369,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @instance.before_bootstrap
       expect(@instance.config[:bootstrap_ip_address]).to be == "192.168.1.1"
     end
-
   end
-
 
   describe "#validate_ebs" do
     before(:each) do

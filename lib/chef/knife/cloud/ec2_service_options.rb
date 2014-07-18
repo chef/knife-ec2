@@ -36,6 +36,10 @@ class Chef
               :description => "Your AWS region",
               :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
 
+            option :aws_session_token,
+              :long => "--aws-session-token TOKEN",
+              :description => "Your AWS Session Token, For Use With AWS STS Federation or Session Tokens",
+              :proc => Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
           end
         end
       end
