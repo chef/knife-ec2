@@ -275,6 +275,11 @@ class Chef
         :proc => Proc.new { |key| Chef::Config[:knife][:provisioned_iops] = key },
         :default => nil
 
+      option :auth_timeout,
+        :long => "--windows-auth-timeout MINUTES",
+        :description => "The maximum time in minutes to wait to for authentication over the transport to the node to succeed. The default value is 25 minutes.",
+        :default => 25
+
       def run
         $stdout.sync = true
 
@@ -320,7 +325,7 @@ class Chef
         msg_pair("Tags", printed_tags)
         msg_pair("SSH Key", @server.key_name)
 
-        print "\n#{ui.color("Waiting for instance", :magenta)}"
+        print "\n#{ui.color("Waiting for EC2 to create the instance", :magenta)}"
 
         # wait for instance to come up before acting against it
         @server.wait_for { print "."; ready? }
@@ -363,13 +368,13 @@ class Chef
           config[:distro] = "windows-chef-client-msi" if (config[:distro].nil? || config[:distro] == "chef-full")
           if protocol == 'winrm'
             load_winrm_deps
-            print "\n#{ui.color("Waiting for winrm", :magenta)}"
+            print "\n#{ui.color("Waiting for winrm access to become available", :magenta)}"
             print(".") until tcp_test_winrm(ssh_connect_host, locate_config_value(:winrm_port)) {
               sleep 10
               puts("done")
             }
           else
-            print "\n#{ui.color("Waiting for sshd", :magenta)}"
+            print "\n#{ui.color("Waiting for sshd access to become available", :magenta)}"
             #If FreeSSHd, winsshd etc are available
             print(".") until tcp_test_ssh(ssh_connect_host, config[:ssh_port]) {
               sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
@@ -379,7 +384,7 @@ class Chef
           end
           bootstrap_for_windows_node(@server, ssh_connect_host).run
         else
-          print "\n#{ui.color("Waiting for sshd", :magenta)}"
+          print "\n#{ui.color("Waiting for sshd access to become available", :magenta)}"
           wait_for_sshd(ssh_connect_host)
           ssh_override_winrm
           bootstrap_for_linux_node(@server, ssh_connect_host).run
@@ -475,6 +480,7 @@ class Chef
           bootstrap.config[:kerberos_service] = locate_config_value(:kerberos_service)
           bootstrap.config[:ca_trust_file] = locate_config_value(:ca_trust_file)
           bootstrap.config[:winrm_port] = locate_config_value(:winrm_port)
+          bootstrap.config[:auth_timeout] = locate_config_value(:auth_timeout)
         elsif locate_config_value(:bootstrap_protocol) == 'ssh'
           bootstrap = Chef::Knife::BootstrapWindowsSsh.new
           bootstrap.config[:ssh_user] = locate_config_value(:ssh_user)
