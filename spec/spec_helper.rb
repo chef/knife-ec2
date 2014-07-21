@@ -21,6 +21,7 @@ require 'chef/knife/bootstrap_windows_ssh'
 require 'resource_spec_helper'
 require 'test/knife-utils/test_bed'
 require "securerandom"
+require 'server_command_common_spec_helper'
 
 def find_instance_id(instance_name, file)
   file.lines.each do |line|
@@ -78,6 +79,51 @@ end
 
 def create_node_name(name)
   @name_node  = (name == "linux") ? "ec2-integration-test-linux-#{SecureRandom.hex(4)}" :  "ec2-integration-test-win-#{SecureRandom.hex(4)}"
+end
+
+
+def get_fog_connection
+  auth_params = { :provider => 'AWS', :aws_access_key_id => "#{ENV['AWS_ACCESS_KEY_ID']}",
+                     :aws_secret_access_key => "#{ENV['AWS_SECRET_ACCESS_KEY']}" }
+    
+  begin
+    fog_connection = Fog::Compute.new(auth_params)  
+  rescue Exception => e
+    puts "Connection failure, please check your authentication config. #{e.message}"
+    exit 1
+  end
+  fog_connection
+end
+
+def check_and_delete_preserved_ebs_volume(cmd_output)
+  ebs_volume_id = ""
+
+  # get ebs_volume_id from command output
+  cmd_output.lines.each do |line|
+    if line.include?("Root Volume ID")
+      ebs_volume_id = "#{line}".split(" ")[3].strip
+    end
+  end
+
+  # Delete instance
+  run(delete_instance_cmd(cmd_output))
+  
+  # create fog Connection to check preseved ebs volume
+  fog_connection = get_fog_connection
+
+  # Check for ebs volume
+  fog_connection.volumes.get(ebs_volume_id).should_not be_nil
+
+  tries = 6
+  # Cleanup preseved ebs volume
+  begin
+    fog_connection.volumes.get(ebs_volume_id).destroy  
+  rescue Exception => e
+    # wait for detach ebs volume
+    puts "Preseved ebs volume: '#{ebs_volume_id}' not deleted. Please use AWS Console to delete it.Error: #{e.message}" if (tries -= 1) <= 0
+    sleep 30
+    retry
+  end
 end
 
 def init_ec2_test
