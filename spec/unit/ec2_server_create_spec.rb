@@ -304,6 +304,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
                                                         :resource_id => "instance_id")
       allow(@instance.server).to receive(:root_device_type).and_return("ebs")
       allow(@instance.server).to receive_message_chain(:block_device_mapping, :first).and_return("block_device_mapping")
+      allow(@instance.server).to receive_message_chain(:volumes, :first).and_return(TestResource.new({:type => "gp2", :iops => "100"}))
       allow(@instance.service).to receive(:server_summary)
       expect(@instance).to receive(:bootstrap)
       @instance.after_exec_command

@@ -58,6 +58,7 @@ describe Chef::Knife::Cloud::Ec2ServerList do
         instance.config[:chef_node_attribute] = "invalid_attribute"
         expect(@node).to receive(:attribute?).with("invalid_attribute").and_return(false)
         expect(instance.ui).to receive(:error).with("The Node does not have a invalid_attribute attribute.")
+        allow(instance.ui).to receive(:fatal)
         expect { instance.run }.to raise_error
       end
 

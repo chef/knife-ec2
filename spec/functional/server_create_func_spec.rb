@@ -79,7 +79,8 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       allow(@knife_ec2_create).to receive(:ui).and_return(double)
       allow(@knife_ec2_create.ui).to receive(:color)
       expect(@knife_ec2_create.ui).to receive(:info)
-      allow(@knife_ec2_create.service).to receive_message_chain(:connection,:addresses, :detect).and_return(double)
+      allow(@knife_ec2_create.service).to receive(:connection).and_return(double)
+      allow(@knife_ec2_create.service.connection).to receive_message_chain(:addresses, :detect).and_return(double)
     end
 
     context "for Linux" do
