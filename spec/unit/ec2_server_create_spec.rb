@@ -25,7 +25,8 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
 
   context "Windows instance" do
     before do
-      create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg|
+      create_instance.ui.stub(:error)
+      create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg| 
         true
       end
     end
@@ -34,7 +35,8 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
 
   context "Linux instance" do
     before do
-      create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg|
+      create_instance.ui.stub(:error)
+      create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg| 
         false
       end
     end
@@ -279,6 +281,39 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
         @instance.before_exec_command
         expect(@instance.create_options[:server_def][:block_device_mapping].first['Ebs.Iops']).to be == '123'
       end
+    end
+  end
+
+  describe "#execute_command" do
+    before(:each) do
+      @instance = Chef::Knife::Cloud::Ec2ServerCreate.new
+      @instance.stub(:service).and_return(double)
+    end
+
+    it "create server sucessfully." do
+      @instance.service.should_receive(:create_server)
+      @instance.service.should_receive(:server_summary)
+      @instance.execute_command
+    end
+
+    it "raise error on invalid flavor used with ebs optimized." do
+      fog_err = "Unsupported => EBS-optimized instances are not supported for your requested configuration. Please check the documentation for supported configurations"
+      @instance.service.stub(:create_server).and_raise(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, fog_err)
+      @instance.service.stub(:delete_server_dependencies)
+      error_msg = "Please check if default flavor is supported for EBS-optimized instances."
+      @instance.ui.should_receive(:error).with(error_msg)
+      @instance.ui.stub(:fatal)
+      expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, fog_err)
+    end
+
+    it "raise error on invalid flavor used with placement group." do
+      fog_err = "InvalidParameterCombination => Placement groups may not be used with instances of type"
+      @instance.service.stub(:create_server).and_raise(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, fog_err)
+      @instance.service.stub(:delete_server_dependencies)
+      error_msg = "Please check if default flavor is supported for Placement groups."
+      @instance.ui.should_receive(:error).with(error_msg)
+      @instance.ui.stub(:fatal)
+      expect { @instance.execute_command }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ServerCreateError, fog_err)
     end
   end
 
