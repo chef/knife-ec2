@@ -58,8 +58,8 @@ describe 'knife ec2 integration test' , :if => is_config_present do
   include RSpec::KnifeTestUtils
 
   before(:all) do
-    run('gem build knife-ec2.gemspec').exitstatus.should == 0
-    run("gem install #{get_gem_file_name}").exitstatus.should == 0
+    expect(run('gem build knife-ec2.gemspec').exitstatus).to be(0)
+    expect(run("gem install #{get_gem_file_name}").exitstatus).to be(0)
     init_ec2_test
   end
 
@@ -81,31 +81,31 @@ describe 'knife ec2 integration test' , :if => is_config_present do
   describe 'display server list' do
     context 'when standard options specified' do
       let(:command) { "knife ec2 server list" + append_ec2_creds }
-      
+
       run_cmd_check_status_and_output("succeed", "Instance ID")
     end
-  
+
     context 'when --availability-zone option specified' do
       let(:command) { "knife ec2 server list" + append_ec2_creds + " --availability-zone"}
-      
+
       run_cmd_check_status_and_output("succeed", "Instance ID")
     end
 
     context 'when --no-name option specified' do
       cmd_out = ""
-      
+
       let(:command) { "knife ec2 server list" + append_ec2_creds + " --no-name"}
-      
+
       after { cmd_out = cmd_output }
-      
+
       run_cmd_check_status_and_output("succeed", "Instance ID")
-      
+
       it { cmd_out.should_not include("Name") }
     end
 
     context 'when -t option specified' do
       let(:command) { "knife ec2 server list" + append_ec2_creds + " -t name"}
-      
+
       run_cmd_check_status_and_output("succeed", "Instance ID")
     end
   end
@@ -145,6 +145,69 @@ describe 'knife ec2 integration test' , :if => is_config_present do
       append_ec2_creds + get_linux_create_options + get_ssh_credentials }
 
       run_cmd_check_status_and_output("fail", "FATAL: The security group 'invalid-invalid-1212' does not exist")
+    end
+
+    context 'when standard options and ebs-volume-type standard specified' do
+      server_create_common_bfr_aftr
+
+      let(:command) { "knife ec2 server create -N #{@name_node} --ebs-volume-type standard " +
+      append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+      run_cmd_check_status_and_output("succeed", "#{@name_node}")
+    end
+
+    context 'when standard options and ebs-volume-type gp2 specified' do
+      server_create_common_bfr_aftr
+
+      let(:command) { "knife ec2 server create -N #{@name_node} --ebs-volume-type gp2 " +
+      append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+      run_cmd_check_status_and_output("succeed", "#{@name_node}")
+    end
+
+    context 'when standard options and ebs-volume-type io1 specified with provisioned-iops' do
+      server_create_common_bfr_aftr
+
+      let(:command) { "knife ec2 server create -N #{@name_node} --ebs-volume-type io1  --provisioned-iops 123" +
+      append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+      run_cmd_check_status_and_output("succeed", "#{@name_node}")
+    end
+
+    context 'when standard options and ebs-volume-type io1 specified without provisioned-iops' do
+      server_create_common_bfr_aftr
+
+      let(:command) { "knife ec2 server create -N #{@name_node} --ebs-volume-type io1 " +
+      append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+      run_cmd_check_status_and_output("fail", "ERROR: --provisioned-iops option is required when using volume type of 'io1'")
+    end
+
+    context 'when standard options and ebs-volume-type standard specified with provisioned-iops' do
+      server_create_common_bfr_aftr
+
+      let(:command) { "knife ec2 server create -N #{@name_node} --ebs-volume-type standard  --provisioned-iops 123" +
+      append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+      run_cmd_check_status_and_output("fail", "ERROR: --provisioned-iops option is only supported for volume type of 'io1'")
+    end
+
+    context 'when standard options and ebs-volume-type gp2 specified with provisioned-iops' do
+      server_create_common_bfr_aftr
+
+      let(:command) { "knife ec2 server create -N #{@name_node} --ebs-volume-type gp2  --provisioned-iops 123" +
+      append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+      run_cmd_check_status_and_output("fail", "ERROR: --provisioned-iops option is only supported for volume type of 'io1'")
+    end
+
+    context 'when standard options and provisioned-iops specified without ebs-volume-type io1' do
+      server_create_common_bfr_aftr
+
+      let(:command) { "knife ec2 server create -N #{@name_node}  --provisioned-iops 123" +
+      append_ec2_creds + get_linux_create_options + get_ssh_credentials }
+
+      run_cmd_check_status_and_output("fail", "ERROR: --provisioned-iops option is only supported for volume type of 'io1'")
     end
 
     context 'when standard options and placement group specified with valid flavor' do
