@@ -30,10 +30,10 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
     end
 
     @ec2_service = Chef::Knife::Cloud::Ec2Service.new
-    @ec2_service.stub(:msg_pair)
-    @ec2_service.stub(:print)
-    @knife_ec2_create.stub(:create_service_instance).and_return(@ec2_service)
-    @knife_ec2_create.stub(:puts)
+    allow(@ec2_service).to receive(:msg_pair)
+    allow(@ec2_service).to receive(:print)
+    allow(@knife_ec2_create).to receive(:create_service_instance).and_return(@ec2_service)
+    allow(@knife_ec2_create).to receive(:puts)
     @new_ec2_server = double()
 
     @ec2_server_attribs = { :tags => {'Name' =>  'Mock Server'},
@@ -54,72 +54,75 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
                           }
 
     @ec2_server_attribs.each_pair do |attrib, value|
-      @new_ec2_server.stub(attrib).and_return(value)
+      allow(@new_ec2_server).to receive(attrib).and_return(value)
     end
   end
 
   describe "run" do
     before(:each) do
-      @knife_ec2_create.stub(:validate_params!)
-      @new_ec2_server.stub(:wait_for)
-      @knife_ec2_create.stub(:ami).and_return(double)
-      @knife_ec2_create.ami.stub(:root_device_type)
-      @knife_ec2_create.stub(:create_tags)
-      @knife_ec2_create.stub(:service).and_return(double)
-      @knife_ec2_create.service.should_receive(:ui=)
-      @knife_ec2_create.service.should_receive(:is_image_windows?)
+      allow(@knife_ec2_create).to receive(:validate_params!)
+      allow(@new_ec2_server).to receive(:wait_for)
+      allow(@knife_ec2_create).to receive(:ami).and_return(double)
+      allow(@knife_ec2_create.ami).to receive(:root_device_type)
+      allow(@knife_ec2_create).to receive(:create_tags)
+      allow(@knife_ec2_create).to receive(:service).and_return(double)
+      expect(@knife_ec2_create.service).to receive(:ui=)
+      expect(@knife_ec2_create.service).to receive(:is_image_windows?)
       @device_mapping = double
-      @device_mapping.stub(:[]).with("volumeSize").and_return(0)
-      @knife_ec2_create.ami.stub_chain(:block_device_mapping, :first).and_return(@device_mapping)
-      @knife_ec2_create.service.should_receive(:create_server_dependencies)
-      @knife_ec2_create.service.should_receive(:create_server).and_return(@new_ec2_server)
-      @knife_ec2_create.service.stub(:server_summary)
-      @knife_ec2_create.service.should_receive(:get_server_name)
-      @knife_ec2_create.service.should_receive(:connection)
-      @knife_ec2_create.stub(:ui).and_return(double)
-      @knife_ec2_create.ui.stub(:color)
-      @knife_ec2_create.ui.should_receive(:info)           
-      @knife_ec2_create.service.stub_chain(:connection, :addresses, :detect).and_return(double)
+      allow(@device_mapping).to receive(:[]).with("volumeSize").and_return(0)
+      allow(@knife_ec2_create.ami).to receive_message_chain(:block_device_mapping, :first).and_return(@device_mapping)
+      expect(@knife_ec2_create.service).to receive(:create_server_dependencies)
+      expect(@knife_ec2_create.service).to receive(:create_server).and_return(@new_ec2_server)
+      allow(@knife_ec2_create.service).to receive(:server_summary)
+      expect(@knife_ec2_create.service).to receive(:get_server_name)
+      expect(@knife_ec2_create.service).to receive(:connection)
+      allow(@knife_ec2_create).to receive(:ui).and_return(double)
+      allow(@knife_ec2_create.ui).to receive(:color)
+      expect(@knife_ec2_create.ui).to receive(:info)
+      allow(@knife_ec2_create.service).to receive(:connection).and_return(double)
+      allow(@knife_ec2_create.service.connection).to receive_message_chain(:addresses, :detect).and_return(double)
     end
 
     context "for Linux" do
       before do
-        @config = {:bootstrap_ip_address => "75.101.253.10", :image_os_type => 'linux'}
+        @config = {:bootstrap_ip_address => "75.101.253.10", :image_os_type => 'linux', :server_connect_attribute => :public_ip_address}
         @knife_ec2_create.config[:distro] = 'chef-full'
+        @knife_ec2_create.config[:server_connect_attribute] = :public_ip_address
         @bootstrapper = Chef::Knife::Cloud::Bootstrapper.new(@config)
         @ssh_bootstrap_protocol = Chef::Knife::Cloud::SshBootstrapProtocol.new(@config)
         @unix_distribution = Chef::Knife::Cloud::UnixDistribution.new(@config)
-        @ssh_bootstrap_protocol.stub(:send_bootstrap_command)
-        @knife_ec2_create.ami.should_receive(:platform).and_return("linux")
+        allow(@ssh_bootstrap_protocol).to receive(:send_bootstrap_command)
+        expect(@knife_ec2_create.ami).to receive(:platform).and_return("linux")
       end
 
       it "Creates an Ec2 instance and bootstraps it" do
-        Chef::Knife::Cloud::Bootstrapper.should_receive(:new).with(@config).and_return(@bootstrapper)
-        @bootstrapper.stub(:bootstrap).and_call_original
-        @bootstrapper.should_receive(:create_bootstrap_protocol).and_return(@ssh_bootstrap_protocol)
-        @bootstrapper.should_receive(:create_bootstrap_distribution).and_return(@unix_distribution)
+        expect(Chef::Knife::Cloud::Bootstrapper).to receive(:new).with(@config).and_return(@bootstrapper)
+        allow(@bootstrapper).to receive(:bootstrap).and_call_original
+        expect(@bootstrapper).to receive(:create_bootstrap_protocol).and_return(@ssh_bootstrap_protocol)
+        expect(@bootstrapper).to receive(:create_bootstrap_distribution).and_return(@unix_distribution)
         @knife_ec2_create.run
       end
     end
 
     context "for Windows" do
       before do
-        @config = { :image_os_type => 'windows', :bootstrap_ip_address => "75.101.253.10", :bootstrap_protocol => 'winrm'}
+        @config = { :image_os_type => 'windows', :bootstrap_ip_address => "75.101.253.10", :bootstrap_protocol => 'winrm', :server_connect_attribute => :public_ip_address}
         @knife_ec2_create.config[:image_os_type] = 'windows'
+        @knife_ec2_create.config[:server_connect_attribute] = :public_ip_address
         @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
         @knife_ec2_create.config[:distro] = 'windows-chef-client-msi'
         @bootstrapper = Chef::Knife::Cloud::Bootstrapper.new(@config)
         @winrm_bootstrap_protocol = Chef::Knife::Cloud::WinrmBootstrapProtocol.new(@config)
         @windows_distribution = Chef::Knife::Cloud::WindowsDistribution.new(@config)
-        @knife_ec2_create.ami.should_receive(:platform).and_return("windows")
+        expect(@knife_ec2_create.ami).to receive(:platform).and_return("windows")
       end
-      
+
       it "Creates an Ec2 instance for Windows and bootstraps it" do
-        Chef::Knife::Cloud::Bootstrapper.should_receive(:new).with(@config).and_return(@bootstrapper)
-        @bootstrapper.stub(:bootstrap).and_call_original
-        @bootstrapper.should_receive(:create_bootstrap_protocol).and_return(@winrm_bootstrap_protocol)
-        @bootstrapper.should_receive(:create_bootstrap_distribution).and_return(@windows_distribution)
-        @winrm_bootstrap_protocol.stub(:send_bootstrap_command)
+        expect(Chef::Knife::Cloud::Bootstrapper).to receive(:new).with(@config).and_return(@bootstrapper)
+        allow(@bootstrapper).to receive(:bootstrap).and_call_original
+        expect(@bootstrapper).to receive(:create_bootstrap_protocol).and_return(@winrm_bootstrap_protocol)
+        expect(@bootstrapper).to receive(:create_bootstrap_distribution).and_return(@windows_distribution)
+        allow(@winrm_bootstrap_protocol).to receive(:send_bootstrap_command)
         @knife_ec2_create.run
       end
     end

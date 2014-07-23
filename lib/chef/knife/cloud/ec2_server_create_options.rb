@@ -45,7 +45,7 @@ class Chef
             option :dedicated_instance,
               :long => "--dedicated_instance",
               :description => "Launch as a Dedicated instance (VPC ONLY)"
-              
+
             option :placement_group,
               :long => "--placement-group PLACEMENT_GROUP",
               :description => "The placement group to place a cluster compute instance",
@@ -102,7 +102,7 @@ class Chef
             option :server_connect_attribute,
               :long => "--server-connect-attribute ATTRIBUTE",
               :short => "-a ATTRIBUTE",
-              :description => "The EC2 server attribute to use for SSH connection",
+              :description => "The EC2 server attribute to use for SSH connection. Use this attr for creating VPC instances along with --associate-eip",
               :default => nil
 
             option :associate_public_ip,
@@ -111,6 +111,17 @@ class Chef
               :boolean => true,
               :default => false
 
+            option :ebs_volume_type,
+              :long => "--ebs-volume-type TYPE",
+              :description => "Standard or Provisioned (io1) IOPS or General Purpose (gp2)",
+              :proc => Proc.new { |key| Chef::Config[:knife][:ebs_volume_type] = key },
+              :default => "standard"
+
+            option :ebs_provisioned_iops,
+              :long => "--provisioned-iops IOPS",
+              :description => "IOPS rate, only used when ebs volume type is 'io1'",
+              :proc => Proc.new { |key| Chef::Config[:knife][:provisioned_iops] = key },
+              :default => nil
           end
         end
       end

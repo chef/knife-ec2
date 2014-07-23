@@ -54,7 +54,31 @@ class Chef
             super
         end
 
-        # Setup the floating ip and add tags after server creation. Addtionally display VM summary.
+        # Override to parse error messages
+        def execute_command
+          begin
+            super
+          rescue CloudExceptions::ServerCreateError => e
+            ebs_optimized_fog_msg = "ebs-optimized instances are not supported for your requested configuration"
+            placement_grp_fog_msg = "placement groups may not be used with instances of type"
+            err_msg = e.message.downcase
+
+            flavor = locate_config_value(:flavor)
+            error_message = "Please check if " + (flavor.nil? ? "default flavor is supported for " : "flavor #{flavor} is supported for ")
+
+            if err_msg.include?(ebs_optimized_fog_msg)
+              error_message += "EBS-optimized instances."
+              ui.error(error_message)
+            elsif err_msg.include?(placement_grp_fog_msg)
+              error_message += "Placement groups."
+              ui.error(error_message)
+            end
+
+            raise e
+          end
+        end
+
+        # Setup the floating ip after server creation.
         def after_exec_command
           # In case server is not 'ready?', so retry a couple times if needed.
           tries = 6
@@ -86,8 +110,16 @@ class Chef
 
         def before_bootstrap
           super
+          bootstrap_ip_address ||= if config[:server_connect_attribute]
+                                      server.send(config[:server_connect_attribute])
+                                  else
+                                    if vpc_mode? && !config[:associate_public_ip]
+                                      server.private_ip_address
+                                    else
+                                      server.dns_name
+                                    end
+                                  end
           # Which IP address to bootstrap
-          bootstrap_ip_address = server.public_ip_address if server.public_ip_address
           Chef::Log.debug("Bootstrap IP Address: #{bootstrap_ip_address}")
           if bootstrap_ip_address.nil?
             error_message = "No IP address available for bootstrapping."
@@ -95,7 +127,7 @@ class Chef
             raise CloudExceptions::BootstrapError, error_message
           end
           config[:bootstrap_ip_address] = bootstrap_ip_address
-    
+
           # Modify global configuration state to ensure hint gets set by
           # knife-bootstrap.
           Chef::Config[:knife][:hints] ||= {}
@@ -108,9 +140,9 @@ class Chef
           validate_tags
 
           errors = []
-          
+
           errors << "You must provide SSH Key." if locate_config_value(:bootstrap_protocol) == 'ssh' && !locate_config_value(:identity_file).nil? && locate_config_value(:ec2_ssh_key_id).nil?
-            
+
           errors << "You must provide --image-os-type option [windows/linux]" if ! (%w(windows linux).include?(locate_config_value(:image_os_type)))
 
           errors << "You are using a VPC, security groups specified with '--ec2-groups' are not allowed, specify one or more security group ids with '--security-group-ids' instead." if vpc_mode? and !!config[:ec2_security_groups]
@@ -120,14 +152,20 @@ class Chef
           errors << "You can only specify a Dedicated Instance if you are using VPC." if config[:dedicated_instance] and !vpc_mode?
 
           errors << "--associate-public-ip option only applies to VPC instances, and you have not specified a subnet id." if !vpc_mode? and config[:associate_public_ip]
-  
+
+          errors << "--provisioned-iops option is only supported for volume type of 'io1'" if locate_config_value(:ebs_provisioned_iops) and locate_config_value(:ebs_volume_type) != 'io1'
+
+          errors << "--provisioned-iops option is required when using volume type of 'io1'" if locate_config_value(:ebs_volume_type) == 'io1' and locate_config_value(:ebs_provisioned_iops).nil?
+
+          errors << "--ebs-volume-type must be 'standard' or 'io1' or 'gp2'"  if locate_config_value(:ebs_volume_type) and ! %w(gp2 io1 standard).include?(locate_config_value(:ebs_volume_type))
+
           error_message = ""
           raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
         end
 
         def validate_ami
           errors = []
-          errors << "You have not provided a valid image (AMI) value.  Please note the short option for this value recently changed from '-i' to '-I'." if ami.nil?
+          errors << "You have not provided a valid image (AMI) value." if ami.nil?
           error_message = ""
           raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
         end
@@ -143,7 +181,7 @@ class Chef
             end
           end
         end
-        
+
         def validate_ebs
           unless config[:ebs_size].nil?
             if config[:ebs_size].to_i < ami.block_device_mapping.first["volumeSize"]
@@ -252,12 +290,27 @@ class Chef
                        end
             delete_term = config[:ebs_no_delete_on_term] ? "false" : ami_map["deleteOnTermination"]
 
+            iops_rate = begin
+                        if config[:ebs_provisioned_iops]
+                          Integer(config[:ebs_provisioned_iops]).to_s
+                        else
+                          ami_map["iops"].to_s
+                        end
+                      rescue ArgumentError
+                        error_message = "--provisioned-iops must be an integer"
+                        msg opt_parser
+                        ui.errors(error_message)
+                        raise CloudExceptions::ValidationError, error_message
+                      end
+
             @create_options[:server_def][:block_device_mapping] =
               [{
                  'DeviceName' => ami_map["deviceName"],
                  'Ebs.VolumeSize' => ebs_size,
-                 'Ebs.DeleteOnTermination' => delete_term
+                 'Ebs.DeleteOnTermination' => delete_term,
+                 'Ebs.VolumeType' => config[:ebs_volume_type]
                }]
+            @create_options[:server_def][:block_device_mapping].first['Ebs.Iops'] = iops_rate unless iops_rate.empty?
           end
           @create_options[:server_def][:ebs_optimized] = config[:ebs_optimized] ? "true" : "false"
         end
@@ -362,9 +415,12 @@ class Chef
 
           if server.root_device_type == "ebs"
             device_map = server.block_device_mapping.first
+            volume = server.volumes.first
             @columns_with_info << {:label => "Root Volume ID", :value => device_map['volumeId']}
             @columns_with_info << {:label => "Root Device Name", :value => device_map['deviceName']}
             @columns_with_info << {:label => "Root Device Delete on Terminate", :value => device_map['deleteOnTermination'].to_s}
+            @columns_with_info << {:label => "Standard or Provisioned IOPS", :value => volume.type}
+            @columns_with_info << {:label => "IOPS rate", :value => volume.iops.to_s}
           end
 
           @columns_with_info << {:label => "EBS is Optimized", :key => 'ebs_optimized'} if config[:ebs_optimized]
