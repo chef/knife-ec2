@@ -100,7 +100,7 @@ describe 'knife ec2 integration test' , :if => is_config_present do
 
       run_cmd_check_status_and_output("succeed", "Instance ID")
 
-      it { cmd_out.should_not include("Name") }
+      it { expect(cmd_out).to_not include("Name") }
     end
 
     context 'when -t option specified' do
