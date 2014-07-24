@@ -20,38 +20,38 @@ class Chef
         banner "knife ec2 server create (options)"
 
         def before_exec_command
-            set_image_os_type
-            # setup the create options
-            @create_options = {
-              :server_def => {
-                #servers require a name, knife-cloud generates the chef_node_name
-                :tags => {'Name' => config[:chef_node_name]},
-                :image_id => locate_config_value(:image),
-                :flavor_id => locate_config_value(:flavor),
-                :groups => locate_config_value(:ec2_security_groups),
-                :security_group_ids => locate_config_value(:security_group_ids),
-                :key_name => locate_config_value(:ec2_ssh_key_id),
-                :availability_zone => locate_config_value(:availability_zone),
-                :placement_group => locate_config_value(:placement_group),
-                :iam_instance_profile_name => locate_config_value(:iam_instance_profile)
-              },
-              :server_create_timeout => locate_config_value(:server_create_timeout)
-            }
+          super
+          set_image_os_type
+          # setup the create options
+          @create_options = {
+            :server_def => {
+              #servers require a name, knife-cloud generates the chef_node_name
+              :tags => {'Name' => config[:chef_node_name]},
+              :image_id => locate_config_value(:image),
+              :flavor_id => locate_config_value(:flavor),
+              :groups => locate_config_value(:ec2_security_groups),
+              :security_group_ids => locate_config_value(:security_group_ids),
+              :key_name => locate_config_value(:ec2_ssh_key_id),
+              :availability_zone => locate_config_value(:availability_zone),
+              :placement_group => locate_config_value(:placement_group),
+              :iam_instance_profile_name => locate_config_value(:iam_instance_profile)
+            },
+            :server_create_timeout => locate_config_value(:server_create_timeout)
+          }
 
-            load_vpc_create_options if vpc_mode?
+          load_vpc_create_options if vpc_mode?
 
-            # Load user data scripts in @create_options[:server_def][:user_data]
-            load_user_data
+          # Load user data scripts in @create_options[:server_def][:user_data]
+          load_user_data
 
-            # Load options related to EBS
-            load_ebs_create_options
+          # Load options related to EBS
+          load_ebs_create_options
 
-            (config[:ephemeral] || []).each_with_index do |device_name, i|
-              @create_options[:server_def][:block_device_mapping] = (@create_options[:server_def][:block_device_mapping] || []) << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
-            end
+          (config[:ephemeral] || []).each_with_index do |device_name, i|
+            @create_options[:server_def][:block_device_mapping] = (@create_options[:server_def][:block_device_mapping] || []) << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
+          end
 
-            Chef::Log.debug("Create server params - server_def = #{@create_options[:server_def]}")
-            super
+          Chef::Log.debug("Create server params - server_def = #{@create_options[:server_def]}")
         end
 
         # Override to parse error messages
