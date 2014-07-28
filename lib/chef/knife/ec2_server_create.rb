@@ -295,6 +295,37 @@ class Chef
         :boolean => true,
         :default => false
 
+      # Options used to configure winrm ssl on VM
+      option :pfx_cert,
+        :long => "--server-cert PFX_FILE",
+        :description => "Certificate to be installed on VM for winrm ssl setup. (.pfx format)",
+        :proc => Proc.new { |path| Chef::Config[:knife][:pfx_cert] = path },
+        :default => nil
+
+      option :certificate_passwd,
+        :long => "--cert-passwd CERT_PASSWD",
+        :description => "Password for certificate specified with --server-cert",
+        :proc => Proc.new { |p| Chef::Config[:knife][:certificate_passwd] = p },
+        :default => ""
+
+      option :cert_hostname_pattern,
+        :long => "--cert-hostname-pattern PATTERN",
+        :description => "Hostname/pattern used for certificate subject and winrm ssl listener. (default: *)",
+        :proc => Proc.new { |pattern| Chef::Config[:knife][:template_file] = pattern },
+        :default => "*"
+
+      option :preserve_winrm_http,
+        :long => "--preserve-winrm-http",
+        :description => "Preserve winrm HTTP listener. Useful when image has preconfigured http transport (port 5985) which needs to be preserved. Default is false.",
+        :boolean => true,
+        :default => false
+
+      option :create_winrm_user,
+        :long => "--create-winrm-user",
+        :description => "Creates the user specified with --winrm-user flag. Default is false.",
+        :boolean => true,
+        :default => false
+
     def tcp_test_winrm(ip_addr, port)
       tcp_socket = TCPSocket.new(ip_addr, port)
       yield

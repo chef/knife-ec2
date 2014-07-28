@@ -581,7 +581,6 @@ describe Chef::Knife::Ec2ServerCreate do
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
 
-
     it "disallows well known user names when --create-winrm-user option is specified" do
       @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
       @knife_ec2_create.config[:winrm_user] = "Administrator"
@@ -773,7 +772,7 @@ describe Chef::Knife::Ec2ServerCreate do
       end
     end
 
-        context "when image is windows" do
+    context "when image is windows" do
       before(:each) do
         @knife_ec2_create.stub(:is_image_windows?).and_return(true)
       end
@@ -887,7 +886,6 @@ describe Chef::Knife::Ec2ServerCreate do
           server_def[:user_data].should include("testpassword_winrm")
           server_def[:user_data].should include("write-host \"test user data script\"")
           server_def[:user_data].should include("$newuser.SetPassword(\"testpassword_winrm\")")
-
           # check for only two powershell tag (i.e one opening and one closing)
           server_def[:user_data].scan("powershell>").length.should eq(2)
         end
