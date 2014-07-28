@@ -662,6 +662,7 @@ class Chef
           ui.error("--ebs-volume-type must be 'standard' or 'io1' or 'gp2'")
           msg opt_parser
           exit 1
+        end
 
         if locate_config_value(:bootstrap_protocol) == "winrm" and locate_config_value(:create_winrm_user)
           toks = locate_config_value(:winrm_user).split("\\")
