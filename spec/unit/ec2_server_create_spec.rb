@@ -489,6 +489,16 @@ describe Chef::Knife::Ec2ServerCreate do
     it "configures sets the bootstrap's run_list" do
       @bootstrap.config[:run_list].should == ['role[base]']
     end
+
+    it "configures auth_timeout for bootstrap to default to 25 minutes" do
+      expect(@knife_ec2_create.options[:auth_timeout][:default]).to eq(25)
+    end
+
+    it "configures auth_timeout for bootstrap according to plugin auth_timeout config" do
+      @knife_ec2_create.config[:auth_timeout] = 5
+      bootstrap = @knife_ec2_create.bootstrap_for_windows_node(@new_ec2_server, @new_ec2_server.dns_name)
+      expect(bootstrap.config[:auth_timeout]).to eq(5)
+    end
  end
 
   describe "when validating the command-line parameters" do
