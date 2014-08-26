@@ -19,9 +19,9 @@ Gem::Specification.new do |s|
   s.executables = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
   s.require_paths = ["lib"]
 
-  s.add_dependency "fog", ">= 1.10.0"
-  s.add_dependency "chef", ">= 0.10.10"
-  s.add_dependency "knife-windows"
+  s.add_dependency "fog", ">= 1.23.0"
+  s.add_dependency "knife-cloud"
+  s.add_development_dependency "chef", ">= 0.10.10"
 
   %w(rspec-core rspec-expectations rspec-mocks rspec_junit_formatter).each { |gem| s.add_development_dependency gem }
 end
