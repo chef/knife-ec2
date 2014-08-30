@@ -1,0 +1,27 @@
+    # Generates the run log on VM at location: $env:temp\knife-ec2-user-data.log
+
+    echo "Starting knife winrm user-data script..." >> $env:temp\knife-ec2-user-data.log
+
+    # Get the instance ready for Chef bootstrapper, commands courtesy Julian Dunn
+    echo "Configuring winrm..." >> $env:temp\knife-ec2-user-data.log
+    winrm quickconfig -q
+    winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="300"}'
+    winrm set winrm/config '@{MaxTimeoutms="1800000"}'
+    
+    echo "winrm e winrm/config/listener" >> $env:temp\knife-ec2-user-data.log
+    winrm e winrm/config/listener >> $env:temp\knife-ec2-user-data.log
+    
+    # open port 5985 in firewall
+    # Create an instance of the firewall rule object
+    $fwrule = New-Object -ComObject HNetCfg.FwRule
+
+    # Set the firewall rule properties
+    $fwrule.Name = "knife-winrm"
+    $fwrule.Protocol = 6
+    $fwrule.LocalPorts = 5985
+    $fwrule.Description = "Open winrm HTTP port"
+    $fwrule.Enabled = $true
+
+    # Create an instance of the firewall policy object
+    $fwpolicy = New-Object -ComObject HNetCfg.FwPolicy2
+    $fwpolicy.Rules.Add($fwrule)
