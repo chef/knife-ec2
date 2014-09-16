@@ -30,6 +30,7 @@ class Chef
       deps do
         require 'tempfile'
         require 'fog'
+        require 'uri'
         require 'readline'
         require 'chef/json_compat'
         require 'chef/knife/bootstrap'
@@ -288,6 +289,11 @@ class Chef
         :description => "The maximum time in minutes to wait to for authentication over the transport to the node to succeed. The default value is 25 minutes.",
         :default => 25
 
+      option :validation_key_url,
+        :long => "--validation-key",
+        :description => "Path to the validation key",
+        :proc => proc { |m| Chef::Config[:validation_key_url] = m }
+
       def run
         $stdout.sync = true
 
@@ -298,7 +304,17 @@ class Chef
         # For VPC EIP assignment we need the allocation ID so fetch full EIP details
         elastic_ip = connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
 
+        Chef::Config[:validation_key] = validation_key_path if
+          Chef::Config[:knife][:validation_key_url]
+
         @server = connection.servers.create(create_server_def)
+
+        begin
+          fail Errno::ENOENT, 'Validation key is gone!' unless File.exist? Chef::Config[:validation_key]
+        rescue => e
+          puts e.backtrace
+          raise e
+        end
 
         hashed_tags={}
         tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
@@ -339,6 +355,13 @@ class Chef
         @server.wait_for { print "."; ready? }
 
         puts("\n")
+
+        begin
+          fail Errno::ENOENT, 'Validation key is gone!' unless File.exist? Chef::Config[:validation_key]
+        rescue => e
+          puts e.backtrace
+          raise e
+        end
 
         # occasionally 'ready?' isn't, so retry a couple times if needed.
         tries = 6
@@ -449,6 +472,32 @@ class Chef
         msg_pair("JSON Attributes",config[:json_attributes]) unless !config[:json_attributes] || config[:json_attributes].empty?
       end
 
+      def validation_key_path
+        if URI(Chef::Config[:knife][:validation_key_url]).scheme == 'file'
+          URI(Chef::Config[:knife][:validation_key_url]).path
+        else
+          download_validation_key(validation_key_tmpfile)
+        end
+      end
+
+      def validation_key_tmpfile
+        @validation_key_tmpfile ||= Tempfile.new('validation_key')
+      end
+
+      def download_validation_key(tempfile)
+        Chef::Log.debug 'Downloading validation key ' \
+          "<#{Chef::Config[:knife][:validation_key_url]}> to file " \
+          "<#{tempfile.path}>"
+
+        case URI(Chef::Config[:knife][:validation_key_url]).scheme
+        when 's3'
+          s3_validation_key = Chef::Knife::S3Source.new
+          s3_validation_key.url = Chef::Config[:knife][:validation_key_url]
+          File.open(tempfile.path, 'w') { |f| f.write(s3_validation_key.body) }
+        end
+        tempfile.path
+      end
+
       def s3_secret
         return false unless locate_config_value(:s3_secret)
         secret = Chef::Knife::S3Source.new
@@ -469,6 +518,11 @@ class Chef
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
         bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:secret_file] = locate_config_value(:secret_file)
+        if Chef::Config[:knife][:validation_key_url]
+          Chef::Log.debug("Sending #{locate_config_value(:validation_key)} to bootstrap")
+          bootstrap.config[:validation_key] =
+            locate_config_value(:validation_key)
+        end
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
