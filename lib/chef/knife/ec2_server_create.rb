@@ -18,6 +18,7 @@
 #
 
 require 'chef/knife/ec2_base'
+require 'chef/knife/s3_source'
 require 'chef/knife/winrm_base'
 
 class Chef
@@ -27,6 +28,7 @@ class Chef
       include Knife::Ec2Base
       include Knife::WinrmBase
       deps do
+        require 'tempfile'
         require 'fog'
         require 'readline'
         require 'chef/json_compat'
@@ -193,6 +195,12 @@ class Chef
         :long => "--secret-file SECRET_FILE",
         :description => "A file containing the secret key to use to encrypt data bag item values",
         :proc => lambda { |sf| Chef::Config[:knife][:secret_file] = sf }
+
+      option :s3_secret,
+        :long => '--s3-secret S3_SECRET_URL',
+        :description => 'S3 URL (e.g. s3://bucket/file) for the ' \
+          'encrypted_data_bag_secret_file',
+        :proc => lambda { |url| Chef::Config[:knife][:s3_secret] = url }
 
       option :json_attributes,
         :short => "-j JSON",
@@ -441,6 +449,14 @@ class Chef
         msg_pair("JSON Attributes",config[:json_attributes]) unless !config[:json_attributes] || config[:json_attributes].empty?
       end
 
+      def s3_secret
+        return false unless locate_config_value(:s3_secret)
+        secret = Chef::Knife::S3Source.new
+        secret.url = locate_config_value(:s3_secret)
+        fail 'No S3 Secret data found' if secret.body.empty?
+        secret.body
+      end
+
       def bootstrap_common_params(bootstrap)
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
@@ -451,7 +467,7 @@ class Chef
         bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
         bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
-        bootstrap.config[:secret] = locate_config_value(:secret)
+        bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:secret_file] = locate_config_value(:secret_file)
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap

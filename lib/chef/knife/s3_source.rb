@@ -5,19 +5,19 @@ class Chef
     class S3Source
       attr_accessor :url
 
-      def content
-        bucket = fog.directories.get(bucket)
-        bucket.files.get(path)
+      def body
+        bucket_obj = fog.directories.get(bucket)
+        bucket_obj.files.get(path).body
       end
 
       private
 
       def bucket
-        URI(s3_url).host
+        URI(@url).host
       end
 
       def path
-        URI(s3_url).path.sub(/^\//, '')
+        URI(@url).path.sub(/^\//, '')
       end
 
       def fog
