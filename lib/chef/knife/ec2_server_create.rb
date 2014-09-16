@@ -309,13 +309,6 @@ class Chef
 
         @server = connection.servers.create(create_server_def)
 
-        begin
-          fail Errno::ENOENT, 'Validation key is gone!' unless File.exist? Chef::Config[:validation_key]
-        rescue => e
-          puts e.backtrace
-          raise e
-        end
-
         hashed_tags={}
         tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
 
@@ -355,13 +348,6 @@ class Chef
         @server.wait_for { print "."; ready? }
 
         puts("\n")
-
-        begin
-          fail Errno::ENOENT, 'Validation key is gone!' unless File.exist? Chef::Config[:validation_key]
-        rescue => e
-          puts e.backtrace
-          raise e
-        end
 
         # occasionally 'ready?' isn't, so retry a couple times if needed.
         tries = 6
