@@ -30,7 +30,10 @@ class Chef
       end
 
       def fog
-        @fog ||= Fog::Storage::AWS.new
+        @fog ||= Fog::Storage::AWS.new(
+          aws_access_key_id: Chef::Config[:knife][:aws_access_key_id],
+          aws_secret_access_key: Chef::Config[:knife][:aws_secret_access_key]
+        )
       end
     end
   end
