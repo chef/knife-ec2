@@ -40,8 +40,6 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][key] = value
     end
 
-    Fog.mock!
-
     @ec2_connection = double(Fog::Compute::AWS)
     @ec2_connection.stub_chain(:tags).and_return double('create', :create => true)
     @ec2_connection.stub_chain(:images, :get).and_return double('ami', :root_device_type => 'not_ebs', :platform => 'linux')
