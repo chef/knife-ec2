@@ -304,9 +304,6 @@ class Chef
         # For VPC EIP assignment we need the allocation ID so fetch full EIP details
         elastic_ip = connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
 
-        Chef::Config[:validation_key] = validation_key_path if
-          Chef::Config[:knife][:validation_key_url]
-
         @server = connection.servers.create(create_server_def)
 
         hashed_tags={}
@@ -376,6 +373,11 @@ class Chef
           msg_pair("Private DNS Name", @server.private_dns_name)
         end
         msg_pair("Private IP Address", @server.private_ip_address)
+
+        if Chef::Config[:knife][:validation_key_url]
+          download_validation_key(validation_key_path)
+          Chef::Config[:validation_key] = validation_key_path
+        end
 
         #Check if Server is Windows or Linux
         if is_image_windows?
@@ -459,10 +461,12 @@ class Chef
       end
 
       def validation_key_path
-        if URI(Chef::Config[:knife][:validation_key_url]).scheme == 'file'
-          URI(Chef::Config[:knife][:validation_key_url]).path
-        else
-          download_validation_key(validation_key_tmpfile)
+        @validation_key_path ||= begin
+          if URI(Chef::Config[:knife][:validation_key_url]).scheme == 'file'
+            URI(Chef::Config[:knife][:validation_key_url]).path
+          else
+            validation_key_tmpfile.path
+          end
         end
       end
 
@@ -473,23 +477,25 @@ class Chef
       def download_validation_key(tempfile)
         Chef::Log.debug 'Downloading validation key ' \
           "<#{Chef::Config[:knife][:validation_key_url]}> to file " \
-          "<#{tempfile.path}>"
+          "<#{tempfile}>"
 
         case URI(Chef::Config[:knife][:validation_key_url]).scheme
         when 's3'
-          s3_validation_key = Chef::Knife::S3Source.new
-          s3_validation_key.url = Chef::Config[:knife][:validation_key_url]
-          File.open(tempfile.path, 'w') { |f| f.write(s3_validation_key.body) }
+          File.open(tempfile, 'w') { |f| f.write(s3_validation_key) }
         end
-        tempfile.path
+      end
+
+      def s3_validation_key
+        @s3_validation_key ||= begin
+          Chef::Knife::S3Source.fetch(Chef::Config[:knife][:validation_key_url])
+        end
       end
 
       def s3_secret
-        return false unless locate_config_value(:s3_secret)
-        secret = Chef::Knife::S3Source.new
-        secret.url = locate_config_value(:s3_secret)
-        fail 'No S3 Secret data found' if secret.body.empty?
-        secret.body
+        @s3_secret ||= begin
+          return false unless locate_config_value(:s3_secret)
+          Chef::Knife::S3Source.fetch(locate_config_value(:s3_secret))
+        end
       end
 
       def bootstrap_common_params(bootstrap)
@@ -504,11 +510,6 @@ class Chef
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
         bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:secret_file] = locate_config_value(:secret_file)
-        if Chef::Config[:knife][:validation_key_url]
-          Chef::Log.debug("Sending #{locate_config_value(:validation_key)} to bootstrap")
-          bootstrap.config[:validation_key] =
-            locate_config_value(:validation_key)
-        end
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
