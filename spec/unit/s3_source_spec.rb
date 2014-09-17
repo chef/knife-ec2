@@ -8,13 +8,25 @@ describe Chef::Knife::S3Source do
     @test_file_content = "TEST CONTENT\n"
 
     Fog.mock!
+
+    {
+      aws_access_key_id: 'aws_access_key_id',
+      aws_secret_access_key: 'aws_secret_access_key'
+    }.each do |key, value|
+      Chef::Config[:knife][key] = value
+    end
+
+    fog = Fog::Storage::AWS.new(
+      aws_access_key_id: 'aws_access_key_id',
+      aws_secret_access_key: 'aws_secret_access_key'
+    )
+    test_dir_obj = fog.directories.create('key' => @bucket_name)
+    test_file_obj = test_dir_obj.files.create('key' => @test_file_path)
+    test_file_obj.body = @test_file_content
+    test_file_obj.save
+
     @s3_connection = double(Fog::Storage::AWS)
     @s3_source = Chef::Knife::S3Source.new
-    @fog = Fog::Storage::AWS.new
-    @test_dir_obj = @fog.directories.create('key' => @bucket_name)
-    @test_file_obj = @test_dir_obj.files.create('key' => @test_file_path)
-    @test_file_obj.body = @test_file_content
-    @test_file_obj.save
 
     @s3_source.url = "s3://#{@bucket_name}/#{@test_file_path}"
   end
