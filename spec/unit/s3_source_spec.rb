@@ -16,8 +16,6 @@ describe Chef::Knife::S3Source do
     @test_file_obj.body = @test_file_content
     @test_file_obj.save
 
-    # @test_bucket_name = 'test-bucket'
-    # @s3_source.stub_chain(:bucket_obj, :files, :get).with(@test_bucket_path).and_return()
     @s3_source.url = "s3://#{@bucket_name}/#{@test_file_path}"
   end
 
