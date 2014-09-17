@@ -40,6 +40,8 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][key] = value
     end
 
+    Fog.mock!
+
     @ec2_connection = double(Fog::Compute::AWS)
     @ec2_connection.stub_chain(:tags).and_return double('create', :create => true)
     @ec2_connection.stub_chain(:images, :get).and_return double('ami', :root_device_type => 'not_ebs', :platform => 'linux')
@@ -70,6 +72,15 @@ describe Chef::Knife::Ec2ServerCreate do
     @ec2_server_attribs.each_pair do |attrib, value|
       @new_ec2_server.stub(attrib).and_return(value)
     end
+
+    @s3_connection = double(Fog::Storage::AWS)
+
+    @bootstrap = Chef::Knife::Bootstrap.new
+    Chef::Knife::Bootstrap.stub(:new).and_return(@bootstrap)
+
+    @validation_key_url = 's3://bucket/foo/bar'
+    @validation_key_file = '/tmp/a_good_temp_file'
+    @validation_key_body = "TEST VALIDATION KEY\n"
   end
 
   describe "run" do
@@ -84,9 +95,6 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.stub(:puts)
       @knife_ec2_create.stub(:print)
       @knife_ec2_create.config[:image] = '12345'
-
-      @bootstrap = Chef::Knife::Bootstrap.new
-      Chef::Knife::Bootstrap.stub(:new).and_return(@bootstrap)
       @bootstrap.should_receive(:run)
     end
 
@@ -175,6 +183,19 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.should_receive(:create_tags).and_return(true)
       @knife_ec2_create.should_receive(:sleep).and_return(true)
       @knife_ec2_create.ui.should_receive(:warn).with(/retrying/)
+      @knife_ec2_create.run
+    end
+
+    it 'actually writes to the validation key tempfile' do
+      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      Chef::Config[:knife][:validation_key_url] =
+        @validation_key_url
+      @knife_ec2_create.config[:validation_key_url] =
+        @validation_key_url
+
+      @knife_ec2_create.stub_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
+      Chef::Knife::S3Source.stub(:fetch).with(@validation_key_url).and_return(@validation_key_body)
+      File.should_receive(:open).with(@validation_key_file, 'w')
       @knife_ec2_create.run
     end
   end
@@ -338,6 +359,19 @@ describe Chef::Knife::Ec2ServerCreate do
       it "prefers using a provided value instead of the knife confiuration" do
         subject.config[:secret_file] = "cli-provided-secret-file"
         expect(bootstrap.config[:secret_file]).to eql("cli-provided-secret-file")
+      end
+    end
+
+    context 'S3-based secret' do
+      before(:each) do
+        Chef::Config[:knife][:s3_secret] =
+          's3://test.bucket/folder/encrypted_data_bag_secret'
+        @secret_content = "TEST DATA BAG SECRET\n"
+        @knife_ec2_create.stub(:s3_secret).and_return(@secret_content)
+      end
+
+      it 'sets the secret to the expected test string' do
+        expect(bootstrap.config[:secret]).to eql(@secret_content)
       end
     end
   end
@@ -548,6 +582,20 @@ describe Chef::Knife::Ec2ServerCreate do
         Chef::Config[:knife][:aws_access_key_id].should == @access_key_id
         Chef::Config[:knife][:aws_secret_access_key].should == @secret_key
       end      
+    end
+
+    it 'understands that file:// validation key URIs are just paths' do
+      Chef::Config[:knife][:validation_key_url] = 'file:///foo/bar'
+      @knife_ec2_create.validation_key_path.should eq('/foo/bar')
+    end
+
+    it 'returns a path to a tmp file when presented with a URI for the ' \
+      'validation key' do
+      Chef::Config[:knife][:validation_key_url] = @validation_key_url
+
+      @knife_ec2_create.stub_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
+
+      @knife_ec2_create.validation_key_path.should eq(@validation_key_file)
     end
 
     it "disallows security group names when using a VPC" do
