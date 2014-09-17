@@ -46,8 +46,6 @@ If your `knife.rb` file will be checked into a SCM system (ie readable by others
 ```ruby
 knife[:aws_access_key_id] = ENV['AWS_ACCESS_KEY_ID']
 knife[:aws_secret_access_key] = ENV['AWS_SECRET_ACCESS_KEY']
-# Optional if you're using Amazon's STS
-knife[:aws_session_token] = ENV['AWS_SESSION_TOKEN']
 ```
 
 You also have the option of passing your AWS API Key/Secret into the individual knife subcommands using the `-A` (or `--aws-access-key-id`) `-K` (or `--aws-secret-access-key`) command options
@@ -76,7 +74,6 @@ Additionally the following options may be set in your `knife.rb`:
 - image
 - availability_zone
 - aws_ssh_key_id
-- aws_session_token
 - region
 - distro
 - template_file

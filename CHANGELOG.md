@@ -6,7 +6,6 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 
 ## Unreleased changes
 
-* [KNIFE-464](https://tickets.opscode.com/browse/KNIFE-464) Support EC2 STS, i.e. AWS Federation tokens for authentication
 * [KNIFE-464](https://tickets.opscode.com/browse/KNIFE-466) Knife ec2 should use gateway from net::ssh config if available
 * [KNIFE-422](https://tickets.opscode.com/browse/KNIFE-422) Knife ec2 server create doesn't respect identity file of gateway server from ssh\_config
 
