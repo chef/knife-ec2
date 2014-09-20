@@ -5,11 +5,16 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/opscode/knife-ec2/commits).
 
 ## Unreleased changes
+None.
 
+## Latest release: 0.10.0.rc.0
+* Update `knife-windows` gem dependency to `knife-windows 0.8.rc.0` for improved Windows authentication integration
+* Update `fog` gem dependency to `fog 1.23.0`
+* Provisioned IOPS support via the `--provisioned-iops` and `--ebs-volume-type` options
 * [KNIFE-464](https://tickets.opscode.com/browse/KNIFE-466) Knife ec2 should use gateway from net::ssh config if available
 * [KNIFE-422](https://tickets.opscode.com/browse/KNIFE-422) Knife ec2 server create doesn't respect identity file of gateway server from ssh\_config
 
-## Last release: 0.8.0 (2014-03-10)
+## Release: 0.8.0 (2014-03-10)
 
 * [KNIFE-458](https://tickets.opscode.com/browse/KNIFE-458) Docs: Increase detail about necessary
   options for VPC instance creation
