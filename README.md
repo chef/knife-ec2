@@ -104,13 +104,6 @@ Deletes an existing server in the currently configured AWS account. **By default
 #### `knife ec2 server list`
 Outputs a list of all servers in the currently configured AWS account. **Note, this shows all instances associated with the account, some of which may not be currently managed by the Chef server.**
 
-#### `knife ec2 instance data`
-Generates instance metadata in meant to be used with Opscode's custom AMIs. This will read your knife configuration `~/.chef/knife.rb` for the validation certificate and Chef server URL to use and output in JSON format. The subcommand also accepts a list of roles/recipes that will be in the node's initial run list.
-
-**Note**: Using Opscode's custom AMIs reflect an older way of launching instances in EC2 for Chef and should be considered DEPRECATED. Leveraging this plugins's `knife ec2 server create` subcommands with a base AMIs directly from your Linux distribution (ie Ubuntu AMIs from Canonical) is much preferred and more flexible. Although this subcommand will remain, the Opscode custom AMIs are currently out of date.
-
-In-depth usage instructions can be found on the [Chef Wiki](http://wiki.opscode.com/display/chef/EC2+Bootstrap+Fast+Start+Guide).
-
 License and Authors
 -------------------
 - Author:: Adam Jacob (<adam@getchef.com>)
