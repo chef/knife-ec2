@@ -290,7 +290,7 @@ class Chef
         :default => 25
 
       option :validation_key_url,
-        :long => "--validation-key",
+        :long => "--validation-key-url URL",
         :description => "Path to the validation key",
         :proc => proc { |m| Chef::Config[:validation_key_url] = m }
 
