@@ -66,18 +66,18 @@ class Chef
       end
 
       def connection
-        connection_hash = {
+        connection_settings = {
           :provider => 'AWS',
           :region => locate_config_value(:region)
         }
-        if Chef::Config[:knife][:use_iam_profile]
-          connection_hash[:use_iam_profile] = locate_config_value(:use_iam_profile)
+        if locate_config_value(:use_iam_profile)
+          connection_settings[:use_iam_profile] = true
         else
-          connection_hash[:aws_access_key_id] = locate_config_value([:knife][:aws_access_key_id])
-          connection_hash[:aws_secret_access_key] = locate_config_value(:aws_secret_access_key)
+          connection_settings[:aws_access_key_id] = locate_config_value(:aws_access_key_id)
+          connection_settings[:aws_secret_access_key] = locate_config_value(:aws_secret_access_key)
         end
         @connection ||= begin
-          connection = Fog::Compute.new(connection_hash)
+          connection = Fog::Compute.new(connection_settings)
         end
       end
 
