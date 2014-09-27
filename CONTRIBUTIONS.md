@@ -6,5 +6,6 @@ Example Contribution:
 -->
 # knife-ec2 0.10.0:
 
+* **johnbarney**: Added ability to use IAM role credentials
 * **mdellanoce**: Added ability to use SSH config (KNIFE-466)
 * **victorlin**: Added ability to pass identify file for SSH Gateway on the command line (KNIFE-422)

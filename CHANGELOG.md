@@ -5,7 +5,7 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/opscode/knife-ec2/commits).
 
 ## Unreleased changes
-None.
+* Use IAM role for credentials
 
 ## Latest release: 0.10.0.rc.0
 * Update `knife-windows` gem dependency to `knife-windows 0.8.rc.0` for improved Windows authentication integration
