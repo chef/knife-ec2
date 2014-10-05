@@ -18,6 +18,7 @@
 #
 
 require 'chef/knife/ec2_base'
+require 'chef/knife/ec2_volume_base'
 require 'chef/knife/winrm_base'
 
 class Chef
@@ -25,6 +26,7 @@ class Chef
     class Ec2ServerCreate < Knife
 
       include Knife::Ec2Base
+      include Knife::Ec2VolumeBase
       include Knife::WinrmBase
       deps do
         require 'fog'
@@ -173,6 +175,10 @@ class Chef
         :long => "--ebs-optimized",
         :description => "Enabled optimized EBS I/O"
 
+      option :use_additional_ebs,
+        :long => "--use-additional-ebs BOOLEAN",
+        :description => "Use Additonal EBS volumes BOOLEAN"
+
       option :ebs_no_delete_on_term,
         :long => "--ebs-no-delete-on-term",
         :description => "Do not delete EBS volume on instance termination"
@@ -291,6 +297,7 @@ class Chef
         elastic_ip = connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
 
         @server = connection.servers.create(create_server_def)
+        @volumes = create_volumes!
 
         hashed_tags={}
         tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
@@ -330,6 +337,7 @@ class Chef
         # wait for instance to come up before acting against it
         @server.wait_for { print "."; ready? }
 
+
         puts("\n")
 
         # occasionally 'ready?' isn't, so retry a couple times if needed.
@@ -343,6 +351,8 @@ class Chef
           sleep 5
           retry
         end
+
+        attach_volumes(@server.id, @volumes) if config[:use_additional_ebs]
 
         if vpc_mode?
           msg_pair("Subnet ID", @server.subnet_id)
@@ -463,6 +473,14 @@ class Chef
       def fetch_server_fqdn(ip_addr)
         require 'resolv'
         Resolv.getname(ip_addr)
+      end
+
+      def attach_volumes(server, volumes)
+        device_array = ('f'..'z').to_a
+
+        volumes.each_with_index do |volume, index|
+          connection.attach_volume(server, volume, "/dev/sd#{device_array[index]}" )
+        end
       end
 
       def bootstrap_for_windows_node(server, fqdn)
@@ -745,7 +763,7 @@ class Chef
         gw_user ||= ssh_gateway_config[:user]
 
         # Always use the gateway keys from the SSH Config
-        gateway_keys = ssh_gateway_config[:keys]        
+        gateway_keys = ssh_gateway_config[:keys]
 
         # Use the keys specificed on the command line if available (overrides SSH Config)
         if config[:ssh_gateway_identity]

@@ -4,6 +4,7 @@ require 'chef/knife/winrm_base'
 require 'chef/knife/ec2_server_create'
 require 'chef/knife/ec2_server_delete'
 require 'chef/knife/ec2_server_list'
+require 'chef/knife/ec2_volume_create'
 
 # Clear config between each example
 # to avoid dependencies between examples
