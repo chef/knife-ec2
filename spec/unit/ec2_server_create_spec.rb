@@ -596,6 +596,20 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.validation_key_path.should eq(@validation_key_file)
     end
 
+    it 'understands that file:// validation key URIs are just paths' do
+      Chef::Config[:knife][:validation_key_url] = 'file:///foo/bar'
+      @knife_ec2_create.validation_key_path.should eq('/foo/bar')
+    end
+
+    it 'returns a path to a tmp file when presented with a URI for the ' \
+      'validation key' do
+      Chef::Config[:knife][:validation_key_url] = @validation_key_url
+
+      @knife_ec2_create.stub_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
+
+      @knife_ec2_create.validation_key_path.should eq(@validation_key_file)
+    end
+
     it "disallows security group names when using a VPC" do
       @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
       @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd'
