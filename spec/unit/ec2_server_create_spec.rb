@@ -533,6 +533,21 @@ describe Chef::Knife::Ec2ServerCreate do
         Chef::Config[:knife][:aws_access_key_id].should == @access_key_id
         Chef::Config[:knife][:aws_secret_access_key].should == @secret_key
       end
+      it "reads UNIX Line endings for new format" do
+        File.stub(:read).
+          and_return("aws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
+        @knife_ec2_create.validate!
+        Chef::Config[:knife][:aws_access_key_id].should == @access_key_id
+        Chef::Config[:knife][:aws_secret_access_key].should == @secret_key
+      end
+
+      it "reads DOS Line endings for new format" do
+        File.stub(:read).
+          and_return("aws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
+        @knife_ec2_create.validate!
+        Chef::Config[:knife][:aws_access_key_id].should == @access_key_id
+        Chef::Config[:knife][:aws_secret_access_key].should == @secret_key
+      end      
     end
 
     it "disallows security group names when using a VPC" do
