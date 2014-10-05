@@ -18,6 +18,7 @@
 #
 
 require 'chef/knife/ec2_base'
+require 'chef/knife/s3_source'
 require 'chef/knife/winrm_base'
 
 class Chef
@@ -27,7 +28,9 @@ class Chef
       include Knife::Ec2Base
       include Knife::WinrmBase
       deps do
+        require 'tempfile'
         require 'fog'
+        require 'uri'
         require 'readline'
         require 'chef/json_compat'
         require 'chef/knife/bootstrap'
@@ -194,6 +197,12 @@ class Chef
         :description => "A file containing the secret key to use to encrypt data bag item values",
         :proc => lambda { |sf| Chef::Config[:knife][:secret_file] = sf }
 
+      option :s3_secret,
+        :long => '--s3-secret S3_SECRET_URL',
+        :description => 'S3 URL (e.g. s3://bucket/file) for the ' \
+          'encrypted_data_bag_secret_file',
+        :proc => lambda { |url| Chef::Config[:knife][:s3_secret] = url }
+
       option :json_attributes,
         :short => "-j JSON",
         :long => "--json-attributes JSON",
@@ -280,6 +289,11 @@ class Chef
         :description => "The maximum time in minutes to wait to for authentication over the transport to the node to succeed. The default value is 25 minutes.",
         :default => 25
 
+      option :validation_key_url,
+        :long => "--validation-key-url URL",
+        :description => "Path to the validation key",
+        :proc => proc { |m| Chef::Config[:validation_key_url] = m }
+
       def run
         $stdout.sync = true
 
@@ -359,6 +373,11 @@ class Chef
           msg_pair("Private DNS Name", @server.private_dns_name)
         end
         msg_pair("Private IP Address", @server.private_ip_address)
+
+        if Chef::Config[:knife][:validation_key_url]
+          download_validation_key(validation_key_path)
+          Chef::Config[:validation_key] = validation_key_path
+        end
 
         #Check if Server is Windows or Linux
         if is_image_windows?
@@ -441,6 +460,44 @@ class Chef
         msg_pair("JSON Attributes",config[:json_attributes]) unless !config[:json_attributes] || config[:json_attributes].empty?
       end
 
+      def validation_key_path
+        @validation_key_path ||= begin
+          if URI(Chef::Config[:knife][:validation_key_url]).scheme == 'file'
+            URI(Chef::Config[:knife][:validation_key_url]).path
+          else
+            validation_key_tmpfile.path
+          end
+        end
+      end
+
+      def validation_key_tmpfile
+        @validation_key_tmpfile ||= Tempfile.new('validation_key')
+      end
+
+      def download_validation_key(tempfile)
+        Chef::Log.debug 'Downloading validation key ' \
+          "<#{Chef::Config[:knife][:validation_key_url]}> to file " \
+          "<#{tempfile}>"
+
+        case URI(Chef::Config[:knife][:validation_key_url]).scheme
+        when 's3'
+          File.open(tempfile, 'w') { |f| f.write(s3_validation_key) }
+        end
+      end
+
+      def s3_validation_key
+        @s3_validation_key ||= begin
+          Chef::Knife::S3Source.fetch(Chef::Config[:knife][:validation_key_url])
+        end
+      end
+
+      def s3_secret
+        @s3_secret ||= begin
+          return false unless locate_config_value(:s3_secret)
+          Chef::Knife::S3Source.fetch(locate_config_value(:s3_secret))
+        end
+      end
+
       def bootstrap_common_params(bootstrap)
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
@@ -451,7 +508,7 @@ class Chef
         bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
         bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
-        bootstrap.config[:secret] = locate_config_value(:secret)
+        bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:secret_file] = locate_config_value(:secret_file)
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
