@@ -17,10 +17,25 @@ This command line option and associated plugin configuration `:ebs_volume_type` 
 
 ### Option `--provisioned-iops`
 This command line option and the associated `:ebs_provisioned_iops` plugin
-confugration enables the EC2 instance to be configured with the specified
+configuration enables the EC2 instance to be configured with the specified
 provisioned IOPS rate given as an argument to this option. It is only valid if
 the EBS volume type is `io1` as specified by the `--ebs-volume-type` option
 for this plugin.
+
+## Use of secret parameters from S3 for `server create` command
+
+The options below allow some secrets used with the `knife ec2 server create`
+command to be specified as URL's. Examples are also given in the README.md.
+
+### Option `--s3-secret`
+This option allows the specification of an AWS S3 storage bucket that contains
+a data bag secret file -- this option can be used in place of the
+`secret_file` option. It takes an S3 URL as an argument (e.g.
+`s3://bucket/file`) -- that file should contain encrypted data bag secret file
+
+### Option `--validation-key-url`
+This option allows the validation key to be specified as a URL. It takes a URL
+as an argument.
 
 ## SSH Gateway from SSH Config
 Any available SSH Gateway settings in your SSH configuration file are now used
@@ -28,7 +43,7 @@ by default. This includes using any SSH keys specified for the target host.
 This allows simpler command-line usage of the knife plugin with less of a need
 for complex command line invocations.
 
-## Pass seperate SSH Gateway key
+## Pass separate SSH Gateway key
 You can pass an SSH key to be used for authenticating to the SSH Gateway with
 the --ssh-gateway-identity option.
 

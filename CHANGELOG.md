@@ -7,7 +7,9 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 ## Unreleased changes
 * Use IAM role for credentials
 
-## Latest release: 0.10.0.rc.0
+## Latest release: 0.10.0.rc.1
+* [Issue:#237](https://github.com/opscode/knife-ec2/issues/237) Provide a way to the validation key and data bag secret from S3
+* [Issue:#243](https://github.com/opscode/knife-ec2/issues/243) Support new AWS CLI configuration file format
 * Update `knife-windows` gem dependency to `knife-windows 0.8.rc.0` for improved Windows authentication integration
 * Update `fog` gem dependency to `fog 1.23.0`
 * Provisioned IOPS support via the `--provisioned-iops` and `--ebs-volume-type` options
