@@ -17,10 +17,10 @@ Gem::Specification.new do |s|
   s.executables  = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
 
   s.add_dependency 'fog',           '~> 1.23.0'
-  s.add_dependency 'knife-windows', '0.8.0.rc.2'
+  s.add_dependency 'knife-windows', '>= 0.8.0'
 
   s.add_development_dependency 'mixlib-config', '~> 2.0'
-  s.add_development_dependency 'chef',          '>= 0.10.10'
+  s.add_development_dependency 'chef',          '>= 11.16.2'
   s.add_development_dependency 'rspec',         '~> 2.14'
   s.add_development_dependency 'rake',          '~> 10.1'
   s.add_development_dependency 'sdoc',          '~> 0.3'

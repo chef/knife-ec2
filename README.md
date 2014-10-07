@@ -80,7 +80,7 @@ Additionally the following options may be set in your `knife.rb`:
 
 Using Cloud-Based Secret Data
 -----------------------------
-knife-ec2 now includes the ability to retrieve the encrypted data bag secret and validation keys directly from a cloud-based assets store (currently on S3 is supported).  To enable this functionality, you must first upload keys to S3 and give them appropriate permissions.  The following is a suggested set of IAM permissions required to make this work:
+knife-ec2 now includes the ability to retrieve the encrypted data bag secret and validation keys directly from a cloud-based assets store (currently on S3 is supported). To enable this functionality, you must first upload keys to S3 and give them appropriate permissions. The following is a suggested set of IAM permissions required to make this work:
 
 ```json
 {
@@ -101,12 +101,12 @@ knife-ec2 now includes the ability to retrieve the encrypted data bag secret and
 
 ### Use the following configuration options in `knife.rb` to set the source URLs:
 ```ruby
-knife[:validation_key_url] = 's3://provisioning.bucket.com/chef/evertrue-validator.pem'
+knife[:validation_key_url] = 's3://provisioning.bucket.com/chef/my-validator.pem'
 knife[:s3_secret] = 's3://provisioning.bucket.com/chef/encrypted_data_bag_secret'
 ```
 
 ### Alternatively, URLs can be passed directly on the command line:
-- Validation Key: `--validation-key-url s3://provisioning.bucket.com/chef/evertrue-validator.pem`
+- Validation Key: `--validation-key-url s3://provisioning.bucket.com/chef/my-validator.pem`
 - Encrypted Data Bag Secret: `--s3-secret s3://provisioning.bucket.com/chef/encrypted_data_bag_secret`
 
 Subcommands
