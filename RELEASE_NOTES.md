@@ -6,7 +6,7 @@ Example Note:
 ## Example Heading
 Details about the thing that changed that needs to get included in the Release Notes in markdown.
 -->
-# knife-ec2 0.10.rc.0 release notes:
+# knife-ec2 0.10.rc.1 release notes:
 This release of `knife-ec2` adds improvements around ssh configuration and EC2
 IOPS provisioning. There is also a dependency update for the `fog` and `knife-windows` gems
 to improve support for additional EC2 capabilities and Windows authentication
@@ -26,6 +26,9 @@ contribute features and bug fixes to `knife-ec2` at https://github.com/opscode/k
 
 ## Features added in knife-ec2 0.10.0
 
+* Ability to specify validation key and data bag secrets via an S3 bucket
+* Support for new AWS client configuration
+* Added ability to use IAM role credentials
 * Provisioned IOPS support
 * SSH workstation configuration integration (from Michael Dellanoce and Victor Lin)
 

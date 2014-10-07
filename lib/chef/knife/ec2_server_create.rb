@@ -199,8 +199,7 @@ class Chef
 
       option :s3_secret,
         :long => '--s3-secret S3_SECRET_URL',
-        :description => 'S3 URL (e.g. s3://bucket/file) for the ' \
-          'encrypted_data_bag_secret_file',
+        :description => 'S3 URL (e.g. s3://bucket/file) for the encrypted_data_bag_secret_file',
         :proc => lambda { |url| Chef::Config[:knife][:s3_secret] = url }
 
       option :json_attributes,
