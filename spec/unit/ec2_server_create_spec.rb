@@ -895,7 +895,8 @@ describe Chef::Knife::Ec2ServerCreate do
       @new_ec2_server.stub(
         :dns_name => 'public_name',
         :private_ip_address => 'private_ip',
-        :custom => 'custom'
+        :custom => 'custom',
+        :public_ip_address => '111.111.111.111'
       )
       @knife_ec2_create.stub(:server => @new_ec2_server)
     end
@@ -903,6 +904,13 @@ describe Chef::Knife::Ec2ServerCreate do
     describe "by default" do
       it 'should use public dns name' do
         @knife_ec2_create.ssh_connect_host.should == 'public_name'
+      end
+    end
+
+    describe "when dns name not exist" do
+      it 'should use public_ip_address ' do
+        @new_ec2_server.stub(:dns_name).and_return(nil)
+        @knife_ec2_create.ssh_connect_host.should == '111.111.111.111'
       end
     end
 
