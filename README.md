@@ -61,6 +61,13 @@ you already have a file with these keys somewhere in this format:
     AWSAccessKeyId=Your AWS Access Key ID
     AWSSecretKey=Your AWS Secret Access Key
         
+
+The new config file format used by Amazon's command line tools is also supported:
+
+    [default]
+    aws_access_key_id = Your AWS Access Key ID
+    aws_secret_access_key = Your AWS Secret Access Key
+
 In this case, you can point the <tt>aws_credential_file</tt> option to
 this file in your <tt>knife.rb</tt> file, like so:
 
