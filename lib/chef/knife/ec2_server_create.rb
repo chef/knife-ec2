@@ -302,7 +302,6 @@ class Chef
         :description => "Path to the validation key",
         :proc => proc { |m| Chef::Config[:validation_key_url] = m }
 
-<<<<<<< 1e51c310536176c1d0a5de899cb7ec6f35d3efce
       option :ebs_encrypted,
         :long => "--ebs-encrypted",
         :description => "Enables EBS volume encryption",
