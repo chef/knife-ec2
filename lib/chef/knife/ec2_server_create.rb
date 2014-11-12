@@ -302,6 +302,7 @@ class Chef
         :description => "Path to the validation key",
         :proc => proc { |m| Chef::Config[:validation_key_url] = m }
 
+<<<<<<< 1e51c310536176c1d0a5de899cb7ec6f35d3efce
       option :ebs_encrypted,
         :long => "--ebs-encrypted",
         :description => "Enables EBS volume encryption",
@@ -399,6 +400,12 @@ class Chef
         :description => "Do not create ssl listener, if this option is not specified ssl listener will be created by default.",
         :boolean => true
 
+      option :network_interfaces,
+        :short => '-n',
+        :long => '--attach-network-interface ENI1,ENI2',
+        :description => 'Attach additional network interfaces during bootstrap',
+        :proc => proc { |nics| nics.split(',') }
+
       def run
         $stdout.sync = true
 
@@ -485,6 +492,8 @@ class Chef
           sleep 5
           retry
         end
+
+        attach_nics if config[:network_interfaces]
 
         if vpc_mode?
           msg_pair("Subnet ID", @server.subnet_id)
@@ -746,6 +755,8 @@ class Chef
         end
 
         super([:image, :ssh_key_name, :aws_access_key_id, :aws_secret_access_key])
+
+        validate_nics! if locate_config_value(:network_interfaces)
 
         if ami.nil?
           ui.error("You have not provided a valid image (AMI) value.")
@@ -1135,6 +1146,49 @@ EOH
       def associate_eip(elastic_ip)
         connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
         @server.wait_for(locate_config_value(:aws_connection_timeout)) { public_ip_address == elastic_ip.public_ip }
+      end
+
+      def validate_nics!
+        valid_nic_ids = connection.network_interfaces.all(
+          vpc_mode? ? { 'vpc-id' => vpc_id } : {}
+        ).map(&:network_interface_id)
+        invalid_nic_ids =
+          locate_config_value(:network_interfaces) - valid_nic_ids
+        return true if invalid_nic_ids.empty?
+        ui.error 'The following network interfaces are invalid: ' \
+          "#{invalid_nic_ids.join(', ')}"
+        exit 1
+      end
+
+      def vpc_id
+        @vpc_id ||= begin
+          connection.subnets.get(locate_config_value(:subnet_id)).vpc_id
+        end
+      end
+
+      def wait_for_nic_attachment
+        attached_nics_count = 0
+        until attached_nics_count ==
+              locate_config_value(:network_interfaces).count
+          attachment_nics =
+            locate_config_value(:network_interfaces).map do |nic_id|
+              connection.network_interfaces.get(nic_id).attachment['status']
+            end
+          attached_nics_count = attachment_nics.grep('attached').count
+        end
+      end
+
+      def attach_nics
+        attachments = []
+        config[:network_interfaces].each_with_index do |nic_id, index|
+          attachments << connection.attach_network_interface(nic_id,
+                                                             server.id,
+                                                             index + 1).body
+        end
+        wait_for_nic_attachment
+        # rubocop:disable Style/RedundantReturn
+        return attachments
+        # rubocop:enable Style/RedundantReturn
       end
 
       def ssh_override_winrm
