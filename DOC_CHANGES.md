@@ -22,8 +22,13 @@ provisioned IOPS rate given as an argument to this option. It is only valid if
 the EBS volume type is `io1` as specified by the `--ebs-volume-type` option
 for this plugin.
 
-## Use of secret parameters from S3 for `server create` command
+## Option `--use-iam-profile` for server create command
+This option allows the `knife-ec2 server create` command executing on an EC2 instance to use
+IAM role credentials available to the instance as the AWS credentials for
+creating new instances. Specify the IAM profile that the instance should use
+as an argument to this option.
 
+## Use of secret parameters from S3 for `server create` command
 The options below allow some secrets used with the `knife ec2 server create`
 command to be specified as URL's. Examples are also given in the README.md.
 

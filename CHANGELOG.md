@@ -5,9 +5,10 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/opscode/knife-ec2/commits).
 
 ## Unreleased changes
-* Use IAM role for credentials
+None.
 
 ## Latest release: 0.10.0.rc.1
+* [Issue:#221](https://github.com/opscode/knife-ec2/issues/221) Use IAM role for credentials
 * [Issue:#237](https://github.com/opscode/knife-ec2/issues/237) Provide a way to the validation key and data bag secret from S3
 * [Issue:#243](https://github.com/opscode/knife-ec2/issues/243) Support new AWS CLI configuration file format
 * Update `knife-windows` gem dependency to `knife-windows 0.8.rc.0` for improved Windows authentication integration
