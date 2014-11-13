@@ -7,7 +7,7 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 ## Unreleased changes
 None.
 
-## Latest release: 0.10.0.rc.1
+## Latest release: 0.10.0
 * [Issue:#221](https://github.com/opscode/knife-ec2/issues/221) Use IAM role for credentials
 * [Issue:#237](https://github.com/opscode/knife-ec2/issues/237) Provide a way to the validation key and data bag secret from S3
 * [Issue:#243](https://github.com/opscode/knife-ec2/issues/243) Support new AWS CLI configuration file format
