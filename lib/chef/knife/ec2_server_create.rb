@@ -801,7 +801,7 @@ class Chef
         gw_user ||= ssh_gateway_config[:user]
 
         # Always use the gateway keys from the SSH Config
-        gateway_keys = ssh_gateway_config[:keys]        
+        gateway_keys = ssh_gateway_config[:keys]
 
         # Use the keys specificed on the command line if available (overrides SSH Config)
         if config[:ssh_gateway_identity]
@@ -968,7 +968,6 @@ class Chef
 
       def load_winrm_deps
         require 'winrm'
-        require 'em-winrm'
         require 'chef/knife/winrm'
         require 'chef/knife/bootstrap_windows_winrm'
         require 'chef/knife/bootstrap_windows_ssh'
