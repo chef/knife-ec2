@@ -330,7 +330,10 @@ class Chef
         msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (@server.groups.nil? and @server.security_group_ids)
 
         printed_security_group_ids = "default"
-        printed_security_group_ids = @server.security_group_ids.join(", ") if @server.security_group_ids
+        if @server.security_group_ids
+          printed_security_group_ids = @server.security_group_ids.class == String ? @server.security_group_ids : @server.security_group_ids.join(", ")
+        end
+
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or @server.security_group_ids
 
         msg_pair("IAM Profile", locate_config_value(:iam_instance_profile))
@@ -801,7 +804,7 @@ class Chef
         gw_user ||= ssh_gateway_config[:user]
 
         # Always use the gateway keys from the SSH Config
-        gateway_keys = ssh_gateway_config[:keys]        
+        gateway_keys = ssh_gateway_config[:keys]
 
         # Use the keys specificed on the command line if available (overrides SSH Config)
         if config[:ssh_gateway_identity]
