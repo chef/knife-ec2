@@ -629,6 +629,16 @@ class Chef
           msg opt_parser
           exit 1
         end
+
+        if(config[:security_groups] && config[:security_groups].class == String)
+          ui.error("security_groups should be provided as array")
+          exit
+        end
+
+        if(config[:security_group_ids] && config[:security_group_ids].class == String)
+          ui.error("security_group_ids should be provided as array")
+          exit
+        end
       end
 
       def tags
