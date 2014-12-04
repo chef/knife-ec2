@@ -629,6 +629,16 @@ class Chef
           msg opt_parser
           exit 1
         end
+
+        if(config[:security_groups] && config[:security_groups].class == String)
+          ui.error("Invalid value type for knife[:security_groups] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_groups] = ['sgroup1']")
+          exit 1
+        end
+
+        if(config[:security_group_ids] && config[:security_group_ids].class == String)
+          ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
+          exit 1
+        end
       end
 
       def tags
