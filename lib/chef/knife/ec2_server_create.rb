@@ -253,6 +253,12 @@ class Chef
         :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
         :default => nil
 
+      option :default_vpc,
+        :long => "--[no-]default-vpc",
+        :description => "Use Default VPC Mode",
+        :boolean => true,
+        :default => false
+
       option :hint,
         :long => "--hint HINT_NAME[=HINT_FILE]",
         :description => "Specify Ohai Hint to be set on the bootstrap target.  Use multiple --hint options to specify multiple hints.",
@@ -850,7 +856,7 @@ class Chef
       end
 
       def eip_scope
-        if vpc_mode?
+        if vpc_mode? or locate_config_value(:default_vpc)
           "vpc"
         else
           "standard"
