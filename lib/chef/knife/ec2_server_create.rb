@@ -187,7 +187,6 @@ class Chef
         :proc => lambda { |o| o.split(/[\s,]+/) }
 
       option :secret,
-        :short => "-s SECRET",
         :long => "--secret ",
         :description => "The secret key to use to encrypt data bag item values",
         :proc => lambda { |s| Chef::Config[:knife][:secret] = s }
