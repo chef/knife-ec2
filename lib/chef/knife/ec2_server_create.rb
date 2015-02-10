@@ -187,7 +187,6 @@ class Chef
         :proc => lambda { |o| o.split(/[\s,]+/) }
 
       option :secret,
-        :short => "-s SECRET",
         :long => "--secret ",
         :description => "The secret key to use to encrypt data bag item values",
         :proc => lambda { |s| Chef::Config[:knife][:secret] = s }
@@ -209,7 +208,6 @@ class Chef
         :proc => lambda { |o| JSON.parse(o) }
 
       option :subnet_id,
-        :short => "-s SUBNET-ID",
         :long => "--subnet SUBNET-ID",
         :description => "create node in this Virtual Private Cloud Subnet ID (implies VPC mode)",
         :proc => Proc.new { |key| Chef::Config[:knife][:subnet_id] = key }
