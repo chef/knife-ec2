@@ -13,7 +13,7 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 * Update `knife-windows` gem dependency to `knife-windows 0.8.rc.0` for improved Windows authentication integration
 * Update `fog` gem dependency to `fog 1.23.0`
 * Provisioned IOPS support via the `--provisioned-iops` and `--ebs-volume-type` options
-* [KNIFE-464](https://tickets.opscode.com/browse/KNIFE-466) Knife ec2 should use gateway from net::ssh config if available
+* [KNIFE-466](https://tickets.opscode.com/browse/KNIFE-466) Knife ec2 should use gateway from net::ssh config if available
 * [KNIFE-422](https://tickets.opscode.com/browse/KNIFE-422) Knife ec2 server create doesn't respect identity file of gateway server from ssh\_config
 
 ## Release: 0.8.0 (2014-03-10)
