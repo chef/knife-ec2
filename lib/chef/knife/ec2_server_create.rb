@@ -507,6 +507,9 @@ class Chef
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
         bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:secret_file] = locate_config_value(:secret_file)
+        unless locate_config_value(:encrypted_data_bag_secret_file)
+          bootstrap.config[:encrypted_data_bag_secret_file] = s3_secret || locate_config_value(:secret_file)
+        end
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
