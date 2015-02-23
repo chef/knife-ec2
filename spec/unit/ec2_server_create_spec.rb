@@ -360,6 +360,23 @@ describe Chef::Knife::Ec2ServerCreate do
       end
     end
 
+    context "command-line provided secret file" do
+      before(:each) do
+        Chef::Config[:knife][:secret_file] = "sys-knife-secret-file"
+      end
+
+      it "prefers using a provided value instead of the knife confiuration" do
+        subject.config[:secret_file] = "cli-provided-secret-file"
+        bootstrap.config[:encrypted_data_bag_secret_file] = 
+          Chef::Config[:knife][:encrypted_data_bag_secret_file] || bootstrap.config[:secret_file]
+        expect(bootstrap.config[:encrypted_data_bag_secret_file]).to eql("cli-provided-secret-file")
+      end
+
+      after do
+        Chef::Config[:knife][:secret_file] = nil
+      end
+    end
+
     context 'S3-based secret' do
       before(:each) do
         Chef::Config[:knife][:s3_secret] =
