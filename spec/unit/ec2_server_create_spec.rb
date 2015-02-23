@@ -35,12 +35,37 @@ describe Chef::Knife::Ec2ServerCreate do
       :image => 'image',
       :aws_ssh_key_id => 'aws_ssh_key_id',
       :aws_access_key_id => 'aws_access_key_id',
-      :aws_secret_access_key => 'aws_secret_access_key'
+      :aws_secret_access_key => 'aws_secret_access_key',
+      :network_interfaces => ['eni-12345678',
+                              'eni-87654321']
     }.each do |key, value|
       Chef::Config[:knife][key] = value
     end
 
+    @my_vpc = 'vpc-12345678'
+
     @ec2_connection = double(Fog::Compute::AWS)
+
+    @subnet_1_id = 'subnet-1a2b3c4d'
+    @subnet_1 = double('subnets',
+                  tag_set: { 'Name' => 'test-subnet' },
+                  subnet_id: @subnet_1_id,
+                  vpc_id: @my_vpc
+                )
+    @subnet_2_id = 'subnet-abcd1234'
+    @subnet_2 = double('subnets',
+                  tag_set: { 'Name' => 'test-subnet-2' },
+                  subnet_id: @subnet_2_id,
+                  vpc_id: @my_vpc
+                )
+
+    @ec2_connection.stub_chain(:subnets).and_return [@subnet_1, @subnet_2]
+
+    @ec2_connection.stub_chain(:network_interfaces, :all).and_return [
+      double('network_interfaces', network_interface_id: 'eni-12345678'),
+      double('network_interfaces', network_interface_id: 'eni-87654321')
+    ]
+
     @ec2_connection.stub_chain(:tags).and_return double('create', :create => true)
     @ec2_connection.stub_chain(:images, :get).and_return double('ami', :root_device_type => 'not_ebs', :platform => 'linux')
     @ec2_connection.stub_chain(:addresses).and_return [double('addesses', {
@@ -597,9 +622,38 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "disallows security group names when using a VPC" do
-      @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
+      @knife_ec2_create.config[:subnet_id] = @subnet_1_id
       @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd'
       @knife_ec2_create.config[:security_groups] = 'groupname'
+
+      @ec2_connection.stub_chain(:subnets, :get).with(@subnet_1_id)
+        .and_return(@subnet_1)
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
+
+    it 'disallows invalid network interface ids' do
+      @knife_ec2_create.config[:network_interfaces] = ['INVALID_ID']
+
+      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+    end
+
+    it 'disallows network interfaces not in the right VPC' do
+      @knife_ec2_create.config[:subnet_id] = @subnet_1_id
+      @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd'
+      @knife_ec2_create.config[:security_groups] = 'groupname'
+
+      @ec2_connection.stub_chain(:subnets, :get).with(@subnet_1_id)
+        .and_return(@subnet_1)
+
+      @ec2_connection.stub_chain(:network_interfaces, :all).and_return [
+        double('network_interfaces',
+               network_interface_id: 'eni-12345678',
+               vpc_id: 'another_vpc'),
+        double('network_interfaces',
+               network_interface_id: 'eni-87654321',
+               vpc_id: @my_vpc)
+      ]
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
