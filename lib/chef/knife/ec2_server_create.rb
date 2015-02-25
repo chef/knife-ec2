@@ -291,6 +291,12 @@ class Chef
         :description => "Path to the validation key",
         :proc => proc { |m| Chef::Config[:validation_key_url] = m }
 
+      option :ebs_encrypted,
+        :long => "--ebs-encrypted",
+        :description => "Enables EBS volume encryption",
+        :boolean => true,
+        :default => false
+
       def run
         $stdout.sync = true
 
@@ -426,6 +432,18 @@ class Chef
           msg_pair("Root Device Delete on Terminate", device_map['deleteOnTermination'])
           msg_pair("Standard or Provisioned IOPS", device_map['volumeType'])
           msg_pair("IOPS rate", device_map['iops'])
+
+          print "\n#{ui.color("Block devices", :magenta)}\n"
+          print "#{ui.color("===========================", :magenta)}\n"
+          @server.block_device_mapping.each do |device_map|
+            msg_pair("Device Name", device_map['deviceName'])
+            msg_pair("Volume ID", device_map['volumeId'])
+            msg_pair("Delete on Terminate", device_map['deleteOnTermination'].to_s)
+            msg_pair("Standard or Provisioned IOPS", device_map['volumeType'])
+            msg_pair("IOPS rate", device_map['iops'])
+            print "\n"
+          end
+          print "#{ui.color("===========================", :magenta)}\n"
 
           if config[:ebs_size]
             if ami.block_device_mapping.first['volumeSize'].to_i < config[:ebs_size].to_i
@@ -637,6 +655,17 @@ class Chef
           ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
           exit 1
         end
+
+        if (locate_config_value(:ebs_encrypted) and !locate_config_value(:flavor))
+          ui.error("--ebs_encrypted option requires valid flavor to be specified.")
+          exit 1
+        elsif (locate_config_value(:ebs_encrypted) and ! %w(m3.medium  m3.large  m3.xlarge m3.2xlarge c4.large c4.xlarge
+                                           c4.2xlarge c4.4xlarge c4.8xlarge c3.large c3.xlarge c3.2xlarge
+                                           c3.4xlarge c3.8xlarge cr1.8xlarge r3.large r3.xlarge r3.2xlarge
+                                           r3.4xlarge r3.8xlarge i2.xlarge i2.2xlarge i2.4xlarge i2.8xlarge g2.2xlarge).include?(locate_config_value(:flavor)))
+          ui.error("--ebs_encrypted option is not supported for #{locate_config_value(:flavor)} flavor.")
+          exit 1
+        end
       end
 
       def tags
@@ -687,7 +716,12 @@ class Chef
         end
 
         if ami.root_device_type == "ebs"
-          ami_map = ami.block_device_mapping.first
+          if locate_config_value(:ebs_encrypted)
+            ami_map = ami.block_device_mapping[1]
+          else
+            ami_map = ami.block_device_mapping.first
+          end
+
           ebs_size = begin
                        if config[:ebs_size]
                          Integer(config[:ebs_size]).to_s
@@ -724,6 +758,7 @@ class Chef
                'Ebs.VolumeType' => config[:ebs_volume_type],
              }]
           server_def[:block_device_mapping].first['Ebs.Iops'] = iops_rate unless iops_rate.empty?
+          server_def[:block_device_mapping].first['Ebs.Encrypted'] = true if locate_config_value(:ebs_encrypted)
         end
 
         (config[:ephemeral] || []).each_with_index do |device_name, i|
