@@ -88,12 +88,6 @@ class Chef
             msg_pair("Private DNS Name", @server.private_dns_name)
             msg_pair("Private IP Address", @server.private_ip_address)
 
-            puts "\n"
-            confirm("Do you really want to delete this server")
-
-            @server.destroy
-
-            ui.warn("Deleted server #{@server.id}")
 
             if config[:purge]
               if config[:chef_node_name]
@@ -101,11 +95,20 @@ class Chef
               else
                 thing_to_delete = fetch_node_name(instance_id)
               end
+              node_ip_address=Chef::Node.load(thing_to_delete)["ipaddress"].
+              puts "\n"
+              confirm("The server ipaddress and node object ipaddress do not match.It seems this node object does not belongs to this server.Do you want to continue?") unless (node_ip_address == @server.private_ip_address || node_ip_address == @server.public_ip_address)
               destroy_item(Chef::Node, thing_to_delete, "node")
               destroy_item(Chef::ApiClient, thing_to_delete, "client")
             else
               ui.warn("Corresponding node and client for the #{instance_id} server were not deleted and remain registered with the Chef Server")
             end
+            puts "\n"
+            confirm("Do you really want to delete this server")
+
+            @server.destroy
+
+            ui.warn("Deleted server #{@server.id}")
           rescue NoMethodError
             ui.error("Could not locate server '#{instance_id}'.  Please verify it was provisioned in the '#{locate_config_value(:region)}' region.")
           end
