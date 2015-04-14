@@ -317,7 +317,12 @@ class Chef
           msg_pair("Spot Request ID", spot_request.id)
           msg_pair("Spot Request Type", spot_request.request_type)
           msg_pair("Spot Price", spot_request.price)
-          spot_request.wait_for { print "."; state == 'active' }
+          print ui.color("Waiting for Spot Request fulfillment:  ", :cyan)
+          spot_request.wait_for do
+            @spinner ||= %w{| / - \\}
+            print "\b" + @spinner.rotate!.first
+            ready?
+          end
           puts("\n")
           @server = connection.servers.get(spot_request.instance_id)
         else
