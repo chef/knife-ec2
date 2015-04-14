@@ -297,6 +297,11 @@ class Chef
         :boolean => true,
         :default => false
 
+      option :spot_price,
+        :long => "--spot-price PRICE",
+        :description => "The maximum hourly USD price for the instance",
+        :default => nil
+
       def run
         $stdout.sync = true
 
@@ -307,7 +312,17 @@ class Chef
         # For VPC EIP assignment we need the allocation ID so fetch full EIP details
         elastic_ip = connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
 
-        @server = connection.servers.create(create_server_def)
+        if locate_config_value(:spot_price)
+          spot_request = connection.spot_requests.create(create_server_def)
+          msg_pair("Spot Request ID", spot_request.id)
+          msg_pair("Spot Request Type", spot_request.request_type)
+          msg_pair("Spot Price", spot_request.price)
+          spot_request.wait_for { print "."; state == 'active' }
+          puts("\n")
+          @server = connection.servers.get(spot_request.instance_id)
+        else
+          @server = connection.servers.create(create_server_def)
+        end
 
         hashed_tags={}
         tags.map{ |t| key,val=t.split('='); hashed_tags[key]=val} unless tags.nil?
@@ -692,7 +707,8 @@ class Chef
           :security_group_ids => locate_config_value(:security_group_ids),
           :flavor_id => locate_config_value(:flavor),
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
-          :availability_zone => locate_config_value(:availability_zone)
+          :availability_zone => locate_config_value(:availability_zone),
+          :price => locate_config_value(:spot_price)
         }
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
