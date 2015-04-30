@@ -37,6 +37,10 @@ a data bag secret file -- this option can be used in place of the
 This option allows the validation key to be specified as a URL. It takes a URL
 as an argument.
 
+## Option `--aws-session-token`
+The option `--aws-session-token` was added for all knife-ec2 subcommands to
+allow support for federation use cases utilizing EC2 STS tokens.
+
 ## SSH Gateway from SSH Config
 Any available SSH Gateway settings in your SSH configuration file are now used
 by default. This includes using any SSH keys specified for the target host.
@@ -47,5 +51,11 @@ for complex command line invocations.
 You can pass an SSH key to be used for authenticating to the SSH Gateway with
 the --ssh-gateway-identity option.
 
+### options
 
-   
+```
+--aws-session-token
+```
+
+Your AWS Session Token, for use with AWS STS Federation or Session Tokens.
+This option is available for all subcommands.
