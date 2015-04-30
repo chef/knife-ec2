@@ -5,6 +5,7 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/opscode/knife-ec2/commits).
 
 ## Unreleased changes
+* [KNIFE-464](https://tickets.opscode.com/browse/KNIFE-464) Support EC2 STS, i.e. AWS Federation tokens for authentication
 * Use IAM role for credentials
 
 ## Latest release: 0.10.0.rc.1

@@ -51,6 +51,11 @@ class Chef
             :description => "Your AWS API Secret Access Key",
             :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
 
+          option :aws_session_token,
+            :long => "--aws-session-token TOKEN",
+            :description => "Your AWS Session Token, for use with AWS STS Federation or Session Tokens",
+            :proc => Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
+
           option :region,
             :long => "--region REGION",
             :description => "Your AWS region",
@@ -75,6 +80,7 @@ class Chef
         else
           connection_settings[:aws_access_key_id] = locate_config_value(:aws_access_key_id)
           connection_settings[:aws_secret_access_key] = locate_config_value(:aws_secret_access_key)
+          connection_settings[:aws_session_token] = locate_config_value(:aws_session_token)
         end
         @connection ||= begin
           connection = Fog::Compute.new(connection_settings)
