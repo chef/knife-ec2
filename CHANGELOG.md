@@ -13,6 +13,9 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 * [knife-ec2:#265](https://github.com/chef/knife-ec2/pull/265) showing error message for incorrect option input
 * [knife-ec2:#261](https://github.com/chef/knife-ec2/pull/261) Remove 'em-winrm' gem dependency
 
+## Unreleased changes
+* [KNIFE-464](https://tickets.opscode.com/browse/KNIFE-464) Support EC2 STS, i.e. AWS Federation tokens for authentication
+
 ## Release: 0.10.0.rc.1 (2014-10-08)
 * [Issue:#237](https://github.com/opscode/knife-ec2/issues/237) Provide a way to the validation key and data bag secret from S3
 * [Issue:#243](https://github.com/opscode/knife-ec2/issues/243) Support new AWS CLI configuration file format
@@ -23,7 +26,6 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 * [KNIFE-422](https://tickets.opscode.com/browse/KNIFE-422) Knife ec2 server create doesn't respect identity file of gateway server from ssh\_config
 
 ## Release: 0.8.0 (2014-03-10)
-
 * [KNIFE-458](https://tickets.opscode.com/browse/KNIFE-458) Docs: Increase detail about necessary
   options for VPC instance creation
 * [KNIFE-456](https://tickets.opscode.com/browse/KNIFE-456) Documentation for :aws\_credential\_file difficult to read

@@ -713,6 +713,14 @@ describe Chef::Knife::Ec2ServerCreate do
         @knife_ec2_create.connection
       end
     end
+
+    describe "when aws_session_token is present" do
+      it "creates a connection using the session token" do
+        @knife_ec2_create.config[:aws_session_token] = 'session-token'
+        Fog::Compute::AWS.should_receive(:new).with(hash_including(:aws_session_token => 'session-token')).and_return(@ec2_connection)
+        @knife_ec2_create.connection
+      end
+    end
   end
 
   describe "when creating the server definition" do

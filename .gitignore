@@ -34,4 +34,8 @@ Icon?
 *.swo
 
 Gemfile.lock
+Guardfile
 .rspec
+
+.rvmrc
+.rbenv-gemsets
