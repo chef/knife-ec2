@@ -787,6 +787,13 @@ describe Chef::Knife::Ec2ServerCreate do
       server_def[:associate_public_ip].should == true
     end
 
+    it "sets the spot price" do
+      @knife_ec2_create.config[:spot_price] = '1.99'
+      server_def = @knife_ec2_create.create_server_def
+
+      server_def[:price].should == '1.99'
+    end
+
     context "when using ebs volume type and ebs provisioned iops rate options" do
       before do
         @knife_ec2_create.stub_chain(:ami, :root_device_type).and_return("ebs")
@@ -888,6 +895,7 @@ describe Chef::Knife::Ec2ServerCreate do
       Net::SSH::Config.stub(:for).and_return(:user => "darius")
       @knife_ec2_create.get_ssh_gateway_for(hostname).should be_nil
     end
+
   end
 
   describe "ssh_connect_host" do
