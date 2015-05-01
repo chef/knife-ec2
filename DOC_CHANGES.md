@@ -47,5 +47,9 @@ for complex command line invocations.
 You can pass an SSH key to be used for authenticating to the SSH Gateway with
 the --ssh-gateway-identity option.
 
+## Support Spot Instances
+You can now request a spot instance at a specific price.
 
-   
+### Option `--spot-price`
+This option allows the maximum desired spot price to be specified. It takes a
+price in US dollars.

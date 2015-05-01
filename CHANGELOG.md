@@ -6,6 +6,7 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 
 ## Unreleased changes
 * Use IAM role for credentials
+* Support Spot instances
 
 ## Latest release: 0.10.0.rc.1
 * [Issue:#237](https://github.com/opscode/knife-ec2/issues/237) Provide a way to the validation key and data bag secret from S3

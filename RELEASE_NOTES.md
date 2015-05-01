@@ -31,6 +31,7 @@ contribute features and bug fixes to `knife-ec2` at https://github.com/opscode/k
 * Added ability to use IAM role credentials
 * Provisioned IOPS support
 * SSH workstation configuration integration (from Michael Dellanoce and Victor Lin)
+* Support for Spot Instances (from Erik Frey)
 
 ## knife-ec2 on RubyGems and Github
 https://rubygems.org/gems/knife-ec2
