@@ -8,6 +8,7 @@ require 'chef/knife/ec2_server_list'
 # Clear config between each example
 # to avoid dependencies between examples
 RSpec.configure do |c|
+  c.filter_run_excluding :exclude => true
   c.before(:each) do
     Chef::Config.reset
     Chef::Config[:knife] ={}
