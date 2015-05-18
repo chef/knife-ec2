@@ -60,7 +60,7 @@ you already have a file with these keys somewhere in this format:
 
     AWSAccessKeyId=Your AWS Access Key ID
     AWSSecretKey=Your AWS Secret Access Key
-        
+
 
 The new config file format used by Amazon's command line tools is also supported:
 
@@ -71,7 +71,7 @@ The new config file format used by Amazon's command line tools is also supported
 In this case, you can point the <tt>aws_credential_file</tt> option to
 this file in your <tt>knife.rb</tt> file, like so:
 
-```ruby        
+```ruby
 knife[:aws_credential_file] = "/path/to/credentials/file/in/above/format"
 ```
 
@@ -131,7 +131,8 @@ Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap
     knife ec2 server create -I ami-d0f89fb9 --ssh-key your-public-key-id -f m1.medium --ssh-user ubuntu --identity-file ~/.ssh/your-private-key
 
     # A Windows instance via the WinRM protocol -- --ssh-key is still required due to EC2 API operations that need it to grant access to the Windows instance
-    knife ec2 server create -I ami-173d747e -G windows -f m1.medium --user-data ~/your-user-data-file -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id
+    # `--spot-price` option lets you specify the spot pricing
+    knife ec2 server create -I ami-173d747e -G windows -f m1.medium --user-data ~/your-user-data-file -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --spot-price price-in-USD
 
 View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](http://docs.opscode.com/plugin_knife_windows.html).
 
