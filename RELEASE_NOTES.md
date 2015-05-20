@@ -6,7 +6,7 @@ Example Note:
 ## Example Heading
 Details about the thing that changed that needs to get included in the Release Notes in markdown.
 -->
-# knife-ec2 0.10.rc.1 release notes:
+# knife-ec2 0.11.0 release notes:
 This release of `knife-ec2` adds features like spot pricing, EBS volume encryption support and some bug fixes. There is also a dependency update for the `fog` gem and 'em-winrm' dependency is removed.
 
 Special thanks go to contributor **Erik Frey** for addressing
@@ -19,7 +19,7 @@ Issues with `knife-ec2` should be reported in the issue system at
 https://github.com/opscode/knife-ec2/issues. Learn more about how you can
 contribute features and bug fixes to `knife-ec2` at https://github.com/opscode/knife-ec2/blob/master/CONTRIBUTING.md.
 
-## Features added in knife-ec2 0.10.0
+## Features added in knife-ec2 0.11.0
 
 * Support for Spot Instances (from Erik Frey)
 * Support for EBS volume encryption in `knife-ec2 server create` options
@@ -30,7 +30,7 @@ contribute features and bug fixes to `knife-ec2` at https://github.com/opscode/k
 https://rubygems.org/gems/knife-ec2
 https://github.com/opscode/knife-ec2
 
-## Issues fixed in knife-ec2 0.10.0
+## Issues fixed in knife-ec2 0.11.0
 
 * Update `fog` gem dependency to `fog v1.25`
 * Remove 'em-winrm' gem dependency
