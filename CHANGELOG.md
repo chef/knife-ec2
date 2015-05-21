@@ -5,6 +5,7 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/opscode/knife-ec2/commits).
 
 ## Latest release: 0.11.0 (2015-05-21)
+* [knife-ec2:#293](https://github.com/chef/knife-ec2/pull/293) s3_source: Lazy load fog library
 * [knife-ec2:#284](https://github.com/chef/knife-ec2/pull/284) Enable Spot Pricing
 * [knife-ec2:#280](https://github.com/chef/knife-ec2/pull/280) Support for EBS volume encryption in knife-ec2 server create options
 * [knife-ec2:#273](https://github.com/chef/knife-ec2/pull/273) Remove -s option for data bag secret and subnets
