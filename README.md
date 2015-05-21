@@ -6,7 +6,6 @@ Knife EC2
 
 This is the official Chef Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
 
-* Documentation: <http://docs.opscode.com/plugin_knife_ec2.html>
 * Source: <http://github.com/opscode/knife-ec2/tree/master>
 * Tickets/Issues: <http://tickets.opscode.com/browse/KNIFE>
 * IRC: `#chef` and `#chef-hacking` on Freenode

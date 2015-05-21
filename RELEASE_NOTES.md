@@ -9,8 +9,8 @@ Details about the thing that changed that needs to get included in the Release N
 # knife-ec2 0.11.0 release notes:
 This release of `knife-ec2` adds features like spot pricing, EBS volume encryption support and some bug fixes. There is also a dependency update for the `fog` gem and 'em-winrm' dependency is removed.
 
-Special thanks go to contributor **Erik Frey** for addressing
-[knife-ec2:#94](https://github.com/chef/knife-ec2/pull/94). This change implements spot pricing as an argument to `ec2 server create`
+Special thanks go to contributors **Erik Frey** for addressing
+[knife-ec2:#94](https://github.com/chef/knife-ec2/pull/94) and **Igor Shpakov** for lazy loading fog library.
 
 See the [CHANGELOG](https://github.com/opscode/knife-ec2/blob/master/CHANGELOG.md) for a list of all changes in this release, and review
 [DOC_CHANGES.md](https://github.com/opscode/knife-ec2/blob/master/DOC_CHANGES.md) for relevant documentation updates.
@@ -22,9 +22,9 @@ contribute features and bug fixes to `knife-ec2` at https://github.com/opscode/k
 ## Features added in knife-ec2 0.11.0
 
 * Support for Spot Instances (from Erik Frey)
+* Lazy loading of fog library (from Igor Shpakov)
 * Support for EBS volume encryption in `knife-ec2 server create` options
 * Added ability to use IAM role credentials
-* Provisioned IOPS support
 
 ## knife-ec2 on RubyGems and Github
 https://rubygems.org/gems/knife-ec2
