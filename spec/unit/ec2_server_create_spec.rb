@@ -651,6 +651,52 @@ describe Chef::Knife::Ec2ServerCreate do
 
       lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
     end
+
+    context "when ebs_encrypted option specified" do
+      it "not raise any validation error if valid ebs_size specified" do
+        @knife_ec2_create.config[:ebs_size] = "8"
+        @knife_ec2_create.config[:flavor] = "m3.medium"
+        @knife_ec2_create.config[:ebs_encrypted] = true
+        expect(@knife_ec2_create.ui).to_not receive(:error).with(" --ebs-encrypted option requires valid --ebs-size to be specified.")
+        @knife_ec2_create.validate!
+      end
+
+      it "raise error on missing ebs_size" do
+        @knife_ec2_create.config[:ebs_size] = nil
+        @knife_ec2_create.config[:flavor] = "m3.medium"
+        @knife_ec2_create.config[:ebs_encrypted] = true
+        expect(@knife_ec2_create.ui).to receive(:error).with(" --ebs-encrypted option requires valid --ebs-size to be specified.")
+        expect { @knife_ec2_create.validate! }.to raise_error SystemExit
+      end
+
+      it "raise error if invalid ebs_size specified for 'standard' VolumeType" do
+        @knife_ec2_create.config[:ebs_size] = "1055"
+        @knife_ec2_create.config[:ebs_volume_type] = 'standard'
+        @knife_ec2_create.config[:flavor] = "m3.medium"
+        @knife_ec2_create.config[:ebs_encrypted] = true
+        expect(@knife_ec2_create.ui).to receive(:error).with(" --ebs-size should be in between 1-1024 for 'standard' ebs volume type.")
+        expect { @knife_ec2_create.validate! }.to raise_error SystemExit
+      end
+
+      it "raise error on invalid ebs_size specified for 'gp2' VolumeType" do
+        @knife_ec2_create.config[:ebs_size] = "16500"
+        @knife_ec2_create.config[:ebs_volume_type] = 'gp2'
+        @knife_ec2_create.config[:flavor] = "m3.medium"
+        @knife_ec2_create.config[:ebs_encrypted] = true
+        expect(@knife_ec2_create.ui).to receive(:error).with(" --ebs-size should be in between 1-16384 for 'gp2' ebs volume type.")
+        expect { @knife_ec2_create.validate! }.to raise_error SystemExit
+      end
+
+      it "raise error on invalid ebs_size specified for 'io1' VolumeType" do
+        @knife_ec2_create.config[:ebs_size] = "3"
+        @knife_ec2_create.config[:ebs_provisioned_iops] = "200"
+        @knife_ec2_create.config[:ebs_volume_type] = 'io1'
+        @knife_ec2_create.config[:flavor] = "m3.medium"
+        @knife_ec2_create.config[:ebs_encrypted] = true
+        expect(@knife_ec2_create.ui).to receive(:error).with(" --ebs-size should be in between 4-16384 for 'io1' ebs volume type.")
+        expect { @knife_ec2_create.validate! }.to raise_error SystemExit
+      end
+    end
   end
 
   describe "when creating the connection" do
