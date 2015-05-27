@@ -302,6 +302,12 @@ class Chef
         :description => "The maximum hourly USD price for the instance",
         :default => nil
 
+      option :aws_connection_timeout,
+        :long => "--aws-connection-timeout MINUTES",
+        :description => "The maximum time in minutes to wait to for aws connection. Default is 10 min",
+        :proc => proc {|t| t = t.to_i * 60; Chef::Config[:aws_connection_timeout] = t},
+        :default => 600
+
       def run
         $stdout.sync = true
 
@@ -365,7 +371,7 @@ class Chef
         print "\n#{ui.color("Waiting for EC2 to create the instance", :magenta)}"
 
         # wait for instance to come up before acting against it
-        @server.wait_for { print "."; ready? }
+        @server.wait_for(locate_config_value(:aws_connection_timeout)) { print "."; ready? }
 
         puts("\n")
 
@@ -675,16 +681,36 @@ class Chef
           ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
           exit 1
         end
+        if locate_config_value(:ebs_encrypted)
+          error_message = ""
+          errors = []
+          # validation for flavor and ebs_encrypted
+          if !locate_config_value(:flavor)
+            ui.error("--ebs-encrypted option requires valid flavor to be specified.")
+            exit 1
+          elsif (locate_config_value(:ebs_encrypted) and ! %w(m3.medium  m3.large  m3.xlarge m3.2xlarge c4.large c4.xlarge
+                                             c4.2xlarge c4.4xlarge c4.8xlarge c3.large c3.xlarge c3.2xlarge
+                                             c3.4xlarge c3.8xlarge cr1.8xlarge r3.large r3.xlarge r3.2xlarge
+                                             r3.4xlarge r3.8xlarge i2.xlarge i2.2xlarge i2.4xlarge i2.8xlarge g2.2xlarge).include?(locate_config_value(:flavor)))
+            ui.error("--ebs-encrypted option is not supported for #{locate_config_value(:flavor)} flavor.")
+            exit 1
+          end
 
-        if (locate_config_value(:ebs_encrypted) and !locate_config_value(:flavor))
-          ui.error("--ebs_encrypted option requires valid flavor to be specified.")
-          exit 1
-        elsif (locate_config_value(:ebs_encrypted) and ! %w(m3.medium  m3.large  m3.xlarge m3.2xlarge c4.large c4.xlarge
-                                           c4.2xlarge c4.4xlarge c4.8xlarge c3.large c3.xlarge c3.2xlarge
-                                           c3.4xlarge c3.8xlarge cr1.8xlarge r3.large r3.xlarge r3.2xlarge
-                                           r3.4xlarge r3.8xlarge i2.xlarge i2.2xlarge i2.4xlarge i2.8xlarge g2.2xlarge).include?(locate_config_value(:flavor)))
-          ui.error("--ebs_encrypted option is not supported for #{locate_config_value(:flavor)} flavor.")
-          exit 1
+          # validation for ebs_size and ebs_volume_type and ebs_encrypted
+          if !locate_config_value(:ebs_size)
+            errors << "--ebs-encrypted option requires valid --ebs-size to be specified."
+          elsif locate_config_value(:ebs_volume_type) == "gp2" and ! locate_config_value(:ebs_size).to_i.between?(1, 16384)
+            errors << "--ebs-size should be in between 1-16384 for 'gp2' ebs volume type."
+          elsif locate_config_value(:ebs_volume_type) == "io1" and ! locate_config_value(:ebs_size).to_i.between?(4, 16384)
+            errors << "--ebs-size should be in between 4-16384 for 'io1' ebs volume type."
+          elsif locate_config_value(:ebs_volume_type) == "standard" and ! locate_config_value(:ebs_size).to_i.between?(1, 1024)
+            errors << "--ebs-size should be in between 1-1024 for 'standard' ebs volume type."
+          end
+
+          if errors.each{|e| error_message = "#{error_message} #{e}"}.any?
+            ui.error(error_message)
+            exit 1
+          end
         end
       end
 
@@ -912,7 +938,7 @@ class Chef
 
       def associate_eip(elastic_ip)
         connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
-        @server.wait_for { public_ip_address == elastic_ip.public_ip }
+        @server.wait_for(locate_config_value(:aws_connection_timeout)) { public_ip_address == elastic_ip.public_ip }
       end
 
       def ssh_override_winrm
