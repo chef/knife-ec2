@@ -158,15 +158,23 @@ class Chef
       option :distro,
         :short => "-d DISTRO",
         :long => "--distro DISTRO",
-        :description => "Bootstrap a distro using a template; default is 'chef-full'",
-        :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d },
-        :default => "chef-full"
+        :description => "Bootstrap a distro using a template. [DEPRECATED] Use --bootstrap-template option instead.",
+        :proc        => Proc.new { |v|
+          Chef::Log.warn("[DEPRECATED] -d / --distro option is deprecated. Use --bootstrap-template option instead.")
+          v
+        }
 
       option :template_file,
         :long => "--template-file TEMPLATE",
-        :description => "Full path to location of template to use",
-        :proc => Proc.new { |t| Chef::Config[:knife][:template_file] = t },
-        :default => false
+        :description => "Full path to location of template to use. [DEPRECATED] Use -t / --bootstrap-template option instead.",
+        :proc        => Proc.new { |v|
+          Chef::Log.warn("[DEPRECATED] --template-file option is deprecated. Use -t / --bootstrap-template option instead.")
+          v
+        }
+
+      option :bootstrap_template,
+        :long => "--bootstrap-template TEMPLATE",
+        :description => "Bootstrap Chef using a built-in or custom template. Set to the full path of an erb template or use one of the built-in templates."
 
       option :ebs_size,
         :long => "--ebs-size SIZE",
@@ -407,7 +415,7 @@ class Chef
           protocol = locate_config_value(:bootstrap_protocol)
           protocol ||= 'winrm'
           # Set distro to windows-chef-client-msi
-          config[:distro] = "windows-chef-client-msi" if (config[:distro].nil? || config[:distro] == "chef-full")
+          # config[:distro] = 'windows-chef-client-msi' if (config[:distro].nil? || config[:distro] == "chef-full")
           if protocol == 'winrm'
             load_winrm_deps
             print "\n#{ui.color("Waiting for winrm access to become available", :magenta)}"
@@ -495,6 +503,17 @@ class Chef
         msg_pair("JSON Attributes",config[:json_attributes]) unless !config[:json_attributes] || config[:json_attributes].empty?
       end
 
+      def default_bootstrap_template
+        is_image_windows? ? 'windows-chef-client-msi' : 'chef-full'
+      end
+
+      # def bootstrap_template
+      #   # The order here is important. We want to check if we have the new Chef 12 option is set first.
+      #   # Knife cloud plugins unfortunately all set a default option for the :distro so it should be at
+      #   # the end.
+      #   config[:bootstrap_template] || config[:template_file] || config[:distro] || default_bootstrap_template
+      # end
+
       def validation_key_path
         @validation_key_path ||= begin
           if URI(Chef::Config[:knife][:validation_key_url]).scheme == 'file'
@@ -536,8 +555,11 @@ class Chef
       def bootstrap_common_params(bootstrap)
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:distro] = locate_config_value(:distro)
-        bootstrap.config[:template_file] = locate_config_value(:template_file)
+        bootstrap.config[:distro] = locate_config_value(:distro) || default_bootstrap_template
+        bootstrap.config[:template_file] = locate_config_value(:template_file) || default_bootstrap_template
+        bootstrap.config[:bootstrap_template] = locate_config_value(:bootstrap_template)
+        require 'pry'
+        binding.pry
         bootstrap.config[:environment] = locate_config_value(:environment)
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
