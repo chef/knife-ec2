@@ -316,6 +316,21 @@ class Chef
         :proc => proc {|t| t = t.to_i * 60; Chef::Config[:aws_connection_timeout] = t},
         :default => 600
 
+      option :node_ssl_verify_mode,
+        :long        => "--node-ssl-verify-mode [peer|none]",
+        :description => "Whether or not to verify the SSL cert for all HTTPS requests.",
+        :proc        => Proc.new { |v|
+          valid_values = ["none", "peer"]
+          unless valid_values.include?(v)
+            raise "Invalid value '#{v}' for --node-ssl-verify-mode. Valid values are: #{valid_values.join(", ")}"
+          end
+        }
+
+      option :node_verify_api_cert,
+        :long        => "--[no-]node-verify-api-cert",
+        :description => "Verify the SSL cert for HTTPS requests to the Chef server API.",
+        :boolean     => true
+
       def run
         $stdout.sync = true
 
@@ -555,8 +570,8 @@ class Chef
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:distro] = locate_config_value(:distro) || default_bootstrap_template
-        bootstrap.config[:template_file] = locate_config_value(:template_file) || default_bootstrap_template
-        bootstrap.config[:bootstrap_template] = locate_config_value(:bootstrap_template) || default_bootstrap_template
+        # setting bootstrap_template value to template_file for backward compatibility
+        bootstrap.config[:template_file] = locate_config_value(:template_file) || locate_config_value(:bootstrap_template)
         bootstrap.config[:environment] = locate_config_value(:environment)
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}

@@ -99,8 +99,8 @@ describe Chef::Knife::Ec2ServerCreate do
     it "defaults to a distro of 'chef-full' for a linux instance" do
       @new_ec2_server.should_receive(:wait_for).and_return(true)
       @knife_ec2_create.config[:distro] = @knife_ec2_create.options[:distro][:default]
+      expect(@knife_ec2_create).to receive(:default_bootstrap_template).and_return('chef-full')
       @knife_ec2_create.run
-      @bootstrap.config[:distro].should == 'chef-full'
     end
 
     it "creates an EC2 instance and bootstraps it" do
@@ -227,13 +227,14 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "set default distro to windows-chef-client-msi for windows" do
       @knife_ec2_create.config[:winrm_password] = 'winrm-password'
-      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'      
+      @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
       @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
       Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
       @bootstrap_winrm.should_receive(:run)
       @new_ec2_server.should_receive(:wait_for).and_return(true)
+      allow(@knife_ec2_create).to receive(:is_image_windows?).and_return(true)
+      expect(@knife_ec2_create).to receive(:default_bootstrap_template).and_return("windows-chef-client-msi")
       @knife_ec2_create.run
-      @knife_ec2_create.config[:distro].should == "windows-chef-client-msi"
     end
 
     it "bootstraps via the SSH protocol" do
@@ -540,7 +541,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.ui.stub(:msg)
     end
 
-    describe "when reading aws_credential_file" do 
+    describe "when reading aws_credential_file" do
       before do
         Chef::Config[:knife].delete(:aws_access_key_id)
         Chef::Config[:knife].delete(:aws_secret_access_key)
@@ -579,7 +580,7 @@ describe Chef::Knife::Ec2ServerCreate do
         @knife_ec2_create.validate!
         Chef::Config[:knife][:aws_access_key_id].should == @access_key_id
         Chef::Config[:knife][:aws_secret_access_key].should == @secret_key
-      end      
+      end
     end
 
     it 'understands that file:// validation key URIs are just paths' do
@@ -801,29 +802,27 @@ describe Chef::Knife::Ec2ServerCreate do
 
       server_def[:use_iam_profile].should == nil
     end
-    
+
     it 'Set Tenancy Dedicated when both VPC mode and Flag is True' do
       @knife_ec2_create.config[:dedicated_instance] = true
       @knife_ec2_create.stub(:vpc_mode? => true)
-      
       server_def = @knife_ec2_create.create_server_def
       server_def[:tenancy].should == "dedicated"
     end
-    
+
     it 'Tenancy should be default with no vpc mode even is specified' do
       @knife_ec2_create.config[:dedicated_instance] = true
-      
       server_def = @knife_ec2_create.create_server_def
       server_def[:tenancy].should == nil
     end
-    
+
     it 'Tenancy should be default with vpc but not requested' do
       @knife_ec2_create.stub(:vpc_mode? => true)
-      
+
       server_def = @knife_ec2_create.create_server_def
       server_def[:tenancy].should == nil
     end
-    
+
     it "sets associate_public_ip to true if specified and in vpc_mode" do
       @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
       @knife_ec2_create.config[:associate_public_ip] = true
