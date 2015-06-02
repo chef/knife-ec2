@@ -331,6 +331,35 @@ class Chef
         :description => "Verify the SSL cert for HTTPS requests to the Chef server API.",
         :boolean     => true
 
+      option :bootstrap_no_proxy,
+        :long => "--bootstrap-no-proxy [NO_PROXY_URL|NO_PROXY_IP]",
+        :description => "Do not proxy locations for the node being bootstrapped; this option is used internally by Opscode",
+        :proc => Proc.new { |np| Chef::Config[:knife][:bootstrap_no_proxy] = np }
+
+      option :bootstrap_url,
+        :long        => "--bootstrap-url URL",
+        :description => "URL to a custom installation script",
+        :proc        => Proc.new { |u| Chef::Config[:knife][:bootstrap_url] = u }
+
+      option :bootstrap_install_command,
+        :long        => "--bootstrap-install-command COMMANDS",
+        :description => "Custom command to install chef-client",
+        :proc        => Proc.new { |ic| Chef::Config[:knife][:bootstrap_install_command] = ic }
+
+      option :bootstrap_wget_options,
+        :long        => "--bootstrap-wget-options OPTIONS",
+        :description => "Add options to wget when installing chef-client",
+        :proc        => Proc.new { |wo| Chef::Config[:knife][:bootstrap_wget_options] = wo }
+
+      option :bootstrap_curl_options,
+        :long        => "--bootstrap-curl-options OPTIONS",
+        :description => "Add options to curl when install chef-client",
+        :proc        => Proc.new { |co| Chef::Config[:knife][:bootstrap_curl_options] = co }
+
+      option :bootstrap_vault_file,
+        :long        => '--bootstrap-vault-file VAULT_FILE',
+        :description => 'A JSON file with a list of vault(s) and item(s) to be updated'
+
       def run
         $stdout.sync = true
 
@@ -579,6 +608,14 @@ class Chef
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
         bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:secret_file] = locate_config_value(:secret_file)
+        bootstrap.config[:node_ssl_verify_mode] = locate_config_value(:node_ssl_verify_mode)
+        bootstrap.config[:node_verify_api_cert] = locate_config_value(:node_verify_api_cert)
+        bootstrap.config[:bootstrap_no_proxy] = locate_config_value(:bootstrap_no_proxy)
+        bootstrap.config[:bootstrap_url] = locate_config_value(:bootstrap_url)
+        bootstrap.config[:bootstrap_install_command] = locate_config_value(:bootstrap_install_command)
+        bootstrap.config[:bootstrap_wget_options] = locate_config_value(:bootstrap_wget_options)
+        bootstrap.config[:bootstrap_curl_options] = locate_config_value(:bootstrap_curl_options)
+        bootstrap.config[:bootstrap_vault_file] = locate_config_value(:bootstrap_vault_file)
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
