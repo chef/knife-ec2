@@ -360,6 +360,26 @@ class Chef
         :long        => '--bootstrap-vault-file VAULT_FILE',
         :description => 'A JSON file with a list of vault(s) and item(s) to be updated'
 
+      option :bootstrap_vault_json,
+        :long        => '--bootstrap-vault-json VAULT_JSON',
+        :description => 'A JSON string with the vault(s) and item(s) to be updated'
+
+      option :bootstrap_vault_item,
+        :long        => '--bootstrap-vault-item VAULT_ITEM',
+        :description => 'A single vault and item to update as "vault:item"',
+        :proc        => Proc.new { |i|
+          (vault, item) = i.split(/:/)
+          Chef::Config[:knife][:bootstrap_vault_item] ||= {}
+          Chef::Config[:knife][:bootstrap_vault_item][vault] ||= []
+          Chef::Config[:knife][:bootstrap_vault_item][vault].push(item)
+          Chef::Config[:knife][:bootstrap_vault_item]
+        }
+
+      option :use_sudo_password,
+        :long => "--use-sudo-password",
+        :description => "Execute the bootstrap via sudo with password",
+        :boolean => false
+
       def run
         $stdout.sync = true
 
@@ -616,6 +636,9 @@ class Chef
         bootstrap.config[:bootstrap_wget_options] = locate_config_value(:bootstrap_wget_options)
         bootstrap.config[:bootstrap_curl_options] = locate_config_value(:bootstrap_curl_options)
         bootstrap.config[:bootstrap_vault_file] = locate_config_value(:bootstrap_vault_file)
+        bootstrap.config[:bootstrap_vault_json] = locate_config_value(:bootstrap_vault_json)
+        bootstrap.config[:bootstrap_vault_item] = locate_config_value(:bootstrap_vault_item)
+        bootstrap.config[:use_sudo_password] = locate_config_value(:use_sudo_password)
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
@@ -664,6 +687,7 @@ class Chef
         bootstrap = Chef::Knife::Bootstrap.new
         bootstrap.name_args = [ssh_host]
         bootstrap.config[:ssh_user] = config[:ssh_user]
+        bootstrap.config[:ssh_password] = locate_config_value(:ssh_password)
         bootstrap.config[:ssh_port] = config[:ssh_port]
         bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
         bootstrap.config[:identity_file] = config[:identity_file]
