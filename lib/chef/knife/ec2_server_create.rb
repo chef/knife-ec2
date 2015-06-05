@@ -484,8 +484,6 @@ class Chef
         if is_image_windows?
           protocol = locate_config_value(:bootstrap_protocol)
           protocol ||= 'winrm'
-          # Set distro to windows-chef-client-msi
-          # config[:distro] = "windows-chef-client-msi" if (config[:distro].nil? || config[:distro] == "chef-full")
           if protocol == 'winrm'
             load_winrm_deps
             print "\n#{ui.color("Waiting for winrm access to become available", :magenta)}"
