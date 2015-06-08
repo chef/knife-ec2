@@ -79,6 +79,13 @@ this file in your <tt>knife.rb</tt> file, like so:
 knife[:aws_credential_file] = "/path/to/credentials/file/in/above/format"
 ```
 
+If you have multiple profiles in your credentials file you can define which
+profile to use. The `default` profile will be used if not supplied,
+
+```ruby
+knife[:aws_profile] = "personal"
+```
+
 Additionally the following options may be set in your `knife.rb`:
 
 - flavor
