@@ -158,15 +158,23 @@ class Chef
       option :distro,
         :short => "-d DISTRO",
         :long => "--distro DISTRO",
-        :description => "Bootstrap a distro using a template; default is 'chef-full'",
-        :proc => Proc.new { |d| Chef::Config[:knife][:distro] = d },
-        :default => "chef-full"
+        :description => "Bootstrap a distro using a template. [DEPRECATED] Use --bootstrap-template option instead.",
+        :proc        => Proc.new { |v|
+          Chef::Log.warn("[DEPRECATED] -d / --distro option is deprecated. Use --bootstrap-template option instead.")
+          v
+        }
 
       option :template_file,
         :long => "--template-file TEMPLATE",
-        :description => "Full path to location of template to use",
-        :proc => Proc.new { |t| Chef::Config[:knife][:template_file] = t },
-        :default => false
+        :description => "Full path to location of template to use. [DEPRECATED] Use -t / --bootstrap-template option instead.",
+        :proc        => Proc.new { |v|
+          Chef::Log.warn("[DEPRECATED] --template-file option is deprecated. Use -t / --bootstrap-template option instead.")
+          v
+        }
+
+      option :bootstrap_template,
+        :long => "--bootstrap-template TEMPLATE",
+        :description => "Bootstrap Chef using a built-in or custom template. Set to the full path of an erb template or use one of the built-in templates."
 
       option :ebs_size,
         :long => "--ebs-size SIZE",
@@ -308,6 +316,70 @@ class Chef
         :proc => proc {|t| t = t.to_i * 60; Chef::Config[:aws_connection_timeout] = t},
         :default => 600
 
+      option :node_ssl_verify_mode,
+        :long        => "--node-ssl-verify-mode [peer|none]",
+        :description => "Whether or not to verify the SSL cert for all HTTPS requests.",
+        :proc        => Proc.new { |v|
+          valid_values = ["none", "peer"]
+          unless valid_values.include?(v)
+            raise "Invalid value '#{v}' for --node-ssl-verify-mode. Valid values are: #{valid_values.join(", ")}"
+          end
+        }
+
+      option :node_verify_api_cert,
+        :long        => "--[no-]node-verify-api-cert",
+        :description => "Verify the SSL cert for HTTPS requests to the Chef server API.",
+        :boolean     => true
+
+      option :bootstrap_no_proxy,
+        :long => "--bootstrap-no-proxy [NO_PROXY_URL|NO_PROXY_IP]",
+        :description => "Do not proxy locations for the node being bootstrapped; this option is used internally by Opscode",
+        :proc => Proc.new { |np| Chef::Config[:knife][:bootstrap_no_proxy] = np }
+
+      option :bootstrap_url,
+        :long        => "--bootstrap-url URL",
+        :description => "URL to a custom installation script",
+        :proc        => Proc.new { |u| Chef::Config[:knife][:bootstrap_url] = u }
+
+      option :bootstrap_install_command,
+        :long        => "--bootstrap-install-command COMMANDS",
+        :description => "Custom command to install chef-client",
+        :proc        => Proc.new { |ic| Chef::Config[:knife][:bootstrap_install_command] = ic }
+
+      option :bootstrap_wget_options,
+        :long        => "--bootstrap-wget-options OPTIONS",
+        :description => "Add options to wget when installing chef-client",
+        :proc        => Proc.new { |wo| Chef::Config[:knife][:bootstrap_wget_options] = wo }
+
+      option :bootstrap_curl_options,
+        :long        => "--bootstrap-curl-options OPTIONS",
+        :description => "Add options to curl when install chef-client",
+        :proc        => Proc.new { |co| Chef::Config[:knife][:bootstrap_curl_options] = co }
+
+      option :bootstrap_vault_file,
+        :long        => '--bootstrap-vault-file VAULT_FILE',
+        :description => 'A JSON file with a list of vault(s) and item(s) to be updated'
+
+      option :bootstrap_vault_json,
+        :long        => '--bootstrap-vault-json VAULT_JSON',
+        :description => 'A JSON string with the vault(s) and item(s) to be updated'
+
+      option :bootstrap_vault_item,
+        :long        => '--bootstrap-vault-item VAULT_ITEM',
+        :description => 'A single vault and item to update as "vault:item"',
+        :proc        => Proc.new { |i|
+          (vault, item) = i.split(/:/)
+          Chef::Config[:knife][:bootstrap_vault_item] ||= {}
+          Chef::Config[:knife][:bootstrap_vault_item][vault] ||= []
+          Chef::Config[:knife][:bootstrap_vault_item][vault].push(item)
+          Chef::Config[:knife][:bootstrap_vault_item]
+        }
+
+      option :use_sudo_password,
+        :long => "--use-sudo-password",
+        :description => "Execute the bootstrap via sudo with password",
+        :boolean => false
+
       def run
         $stdout.sync = true
 
@@ -412,8 +484,6 @@ class Chef
         if is_image_windows?
           protocol = locate_config_value(:bootstrap_protocol)
           protocol ||= 'winrm'
-          # Set distro to windows-chef-client-msi
-          config[:distro] = "windows-chef-client-msi" if (config[:distro].nil? || config[:distro] == "chef-full")
           if protocol == 'winrm'
             load_winrm_deps
             print "\n#{ui.color("Waiting for winrm access to become available", :magenta)}"
@@ -501,6 +571,10 @@ class Chef
         msg_pair("JSON Attributes",config[:json_attributes]) unless !config[:json_attributes] || config[:json_attributes].empty?
       end
 
+      def default_bootstrap_template
+        is_image_windows? ? 'windows-chef-client-msi' : 'chef-full'
+      end
+
       def validation_key_path
         @validation_key_path ||= begin
           if URI(Chef::Config[:knife][:validation_key_url]).scheme == 'file'
@@ -542,8 +616,9 @@ class Chef
       def bootstrap_common_params(bootstrap)
         bootstrap.config[:run_list] = config[:run_list]
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:distro] = locate_config_value(:distro)
-        bootstrap.config[:template_file] = locate_config_value(:template_file)
+        bootstrap.config[:distro] = locate_config_value(:distro) || default_bootstrap_template
+        # setting bootstrap_template value to template_file for backward compatibility
+        bootstrap.config[:template_file] = locate_config_value(:template_file) || locate_config_value(:bootstrap_template)
         bootstrap.config[:environment] = locate_config_value(:environment)
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
@@ -551,6 +626,17 @@ class Chef
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
         bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:secret_file] = locate_config_value(:secret_file)
+        bootstrap.config[:node_ssl_verify_mode] = locate_config_value(:node_ssl_verify_mode)
+        bootstrap.config[:node_verify_api_cert] = locate_config_value(:node_verify_api_cert)
+        bootstrap.config[:bootstrap_no_proxy] = locate_config_value(:bootstrap_no_proxy)
+        bootstrap.config[:bootstrap_url] = locate_config_value(:bootstrap_url)
+        bootstrap.config[:bootstrap_install_command] = locate_config_value(:bootstrap_install_command)
+        bootstrap.config[:bootstrap_wget_options] = locate_config_value(:bootstrap_wget_options)
+        bootstrap.config[:bootstrap_curl_options] = locate_config_value(:bootstrap_curl_options)
+        bootstrap.config[:bootstrap_vault_file] = locate_config_value(:bootstrap_vault_file)
+        bootstrap.config[:bootstrap_vault_json] = locate_config_value(:bootstrap_vault_json)
+        bootstrap.config[:bootstrap_vault_item] = locate_config_value(:bootstrap_vault_item)
+        bootstrap.config[:use_sudo_password] = locate_config_value(:use_sudo_password)
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
@@ -599,6 +685,7 @@ class Chef
         bootstrap = Chef::Knife::Bootstrap.new
         bootstrap.name_args = [ssh_host]
         bootstrap.config[:ssh_user] = config[:ssh_user]
+        bootstrap.config[:ssh_password] = locate_config_value(:ssh_password)
         bootstrap.config[:ssh_port] = config[:ssh_port]
         bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
         bootstrap.config[:identity_file] = config[:identity_file]
