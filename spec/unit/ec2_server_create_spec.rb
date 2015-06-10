@@ -26,7 +26,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
   context "Windows instance" do
     before do
       allow(create_instance.ui).to receive(:error)
-      create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg| 
+      create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg|
         true
       end
     end
@@ -36,27 +36,11 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
   context "Linux instance" do
     before do
       allow(create_instance.ui).to receive(:error)
-      create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg| 
+      create_instance.service.define_singleton_method(:is_image_windows?)  do |img, *arg|
         false
       end
     end
     it_behaves_like Chef::Knife::Cloud::ServerCreateCommand, create_instance
-  end
-
-  describe "when creating the connection" do
-    before do
-      @ec2_connection = double(Fog::Compute::AWS)
-      Chef::Config[:knife][:aws_session_token] = 'session-token'
-      @instance = Chef::Knife::Cloud::Ec2Service.new
-    end
-
-    it "uses aws_session_token value from the --aws-session-token option" do
-      expect(Fog::Compute::AWS).to receive(:new).with(hash_including(:aws_session_token => 'session-token')).and_return(@ec2_connection)
-      @instance.connection
-    end
-    after do
-      Chef::Config[:knife].delete(:aws_session_token)
-    end
   end
 
   describe "#create_service_instance" do
@@ -120,7 +104,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife][:ebs_volume_type] = 'io1'
 
       expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --provisioned-iops option is required when using volume type of 'io1'.")
-    end    
+    end
   end
 
   describe "#before_exec_command" do
@@ -275,7 +259,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
         @instance.before_exec_command
         expect(@instance.create_options[:server_def][:block_device_mapping].first['Ebs.Iops']).to be =='1234'
       end
-      
+
       it "sets the iops rate from ami" do
         @instance.config[:ebs_volume_type] = 'io1'
         @instance.before_exec_command
