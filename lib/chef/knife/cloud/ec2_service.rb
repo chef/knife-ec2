@@ -14,7 +14,6 @@ class Chef
           Chef::Log.debug("aws_access_key_id #{Chef::Config[:knife][:aws_access_key_id]}")
           Chef::Log.debug("aws_secret_access_key #{Chef::Config[:knife][:aws_secret_access_key]}")
           Chef::Log.debug("aws_credential_file #{Chef::Config[:knife][:aws_credential_file]}")
-          Chef::Log.debug("aws_session_token #{Chef::Config[:knife][:aws_session_token]}")
           Chef::Log.debug("region #{Chef::Config[:knife][:region].to_s}")
 
           super(options.merge({
@@ -22,7 +21,6 @@ class Chef
                                 :provider => 'AWS',
                                 :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
                                 :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
-                                :aws_session_token => Chef::Config[:knife][:aws_session_token],
                                 :region => Chef::Config[:knife][:region]
                 }}))
         end
