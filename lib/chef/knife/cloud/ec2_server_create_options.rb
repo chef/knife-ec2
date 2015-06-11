@@ -122,6 +122,14 @@ class Chef
               :description => "IOPS rate, only used when ebs volume type is 'io1'",
               :proc => Proc.new { |key| Chef::Config[:knife][:provisioned_iops] = key },
               :default => nil
+
+            option :use_iam_profile,
+              :long => "--use-iam-profile",
+              :description => "Use IAM profile assigned to current machine",
+              :boolean => true,
+              :default => false,
+              :proc => Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key }
+
           end
         end
       end

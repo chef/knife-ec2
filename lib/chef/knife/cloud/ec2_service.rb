@@ -23,6 +23,8 @@ class Chef
                                 :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
                                 :region => Chef::Config[:knife][:region]
                 }}))
+
+          super(options.merge({:use_iam_profile => true})) if Chef::Config[:knife][:use_iam_profile]
         end
 
         # add alternate user defined api_endpoint value.
