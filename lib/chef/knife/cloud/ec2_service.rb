@@ -19,12 +19,15 @@ class Chef
           options.merge!({
                               :auth_params => {
                                 :provider => 'AWS',
-                                :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
-                                :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
                                 :region => Chef::Config[:knife][:region]
                 }})
 
-          options[:auth_params][:use_iam_profile] = true if Chef::Config[:knife][:use_iam_profile]
+          if Chef::Config[:knife][:use_iam_profile]
+            options[:auth_params][:use_iam_profile] = true
+          else
+            options[:auth_params][:aws_access_key_id] = Chef::Config[:knife][:aws_access_key_id]
+            options[:auth_params][:aws_secret_access_key] = Chef::Config[:knife][:aws_secret_access_key]
+          end
 
           super(options)
         end
