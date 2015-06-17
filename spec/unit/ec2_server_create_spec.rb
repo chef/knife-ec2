@@ -448,7 +448,23 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @instance.validate!
       expect(Chef::Config[:knife][:aws_access_key_id]).to be == @access_key_id
       expect(Chef::Config[:knife][:aws_secret_access_key]).to be == @secret_key
-      end
+    end
+
+    it "reads UNIX Line endings for new format" do
+      allow(File).to receive(:read).
+        and_return("aws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
+      @instance.validate!
+      expect(Chef::Config[:knife][:aws_access_key_id]).to be == @access_key_id
+      expect(Chef::Config[:knife][:aws_secret_access_key]).to be == @secret_key
+    end
+
+    it "reads DOS Line endings for new format" do
+      allow(File).to receive(:read).
+        and_return("aws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
+      @instance.validate!
+      expect(Chef::Config[:knife][:aws_access_key_id]).to be == @access_key_id
+      expect(Chef::Config[:knife][:aws_secret_access_key]).to be == @secret_key
+    end
   end
 
   describe "when creating the connection" do
