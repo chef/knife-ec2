@@ -17,21 +17,31 @@ class Chef
 
         def validate!
           errors = []
-          unless Chef::Config[:knife][:aws_credential_file].nil?
-            unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
-              errors << "Either provide a credentials file or the access key and secret keys but not both."
-            end
+          unless locate_config_value(:use_iam_profile)
+            unless Chef::Config[:knife][:aws_credential_file].nil?
+              unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
+                errors << "Either provide a credentials file or the access key and secret keys but not both."
+              end
 
-            # File format:
-            # AWSAccessKeyId=somethingsomethingdarkside
-            # AWSSecretKey=somethingsomethingcomplete
-            entries = Hash[*File.read(Chef::Config[:knife][:aws_credential_file]).split(/[=\n]/).map(&:chomp)]
-            Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId']
-            Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey']
-            error_message = ""
-            raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
+              # File format:
+              # AWSAccessKeyId=somethingsomethingdarkside
+              # AWSSecretKey=somethingsomethingcomplete
+              #               OR
+              # aws_access_key_id = somethingsomethingdarkside
+              # aws_secret_access_key = somethingsomethingdarkside
+
+              aws_creds = []
+              File.read(Chef::Config[:knife][:aws_credential_file]).each_line do | line |
+                aws_creds << line.split("=").map(&:strip) if line.include?("=")
+              end
+              entries = Hash[*aws_creds.flatten]
+              Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId'] || entries['aws_access_key_id']
+              Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey'] || entries['aws_secret_access_key']
+              error_message = ""
+              raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
+            end
+            super(:aws_access_key_id, :aws_secret_access_key)
           end
-          super(:aws_access_key_id, :aws_secret_access_key)
         end
 
         def iam_name_from_profile(profile)

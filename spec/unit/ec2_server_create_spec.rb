@@ -448,6 +448,52 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @instance.validate!
       expect(Chef::Config[:knife][:aws_access_key_id]).to be == @access_key_id
       expect(Chef::Config[:knife][:aws_secret_access_key]).to be == @secret_key
+    end
+
+    it "reads UNIX Line endings for new format" do
+      allow(File).to receive(:read).
+        and_return("aws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
+      @instance.validate!
+      expect(Chef::Config[:knife][:aws_access_key_id]).to be == @access_key_id
+      expect(Chef::Config[:knife][:aws_secret_access_key]).to be == @secret_key
+    end
+
+    it "reads DOS Line endings for new format" do
+      allow(File).to receive(:read).
+        and_return("aws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
+      @instance.validate!
+      expect(Chef::Config[:knife][:aws_access_key_id]).to be == @access_key_id
+      expect(Chef::Config[:knife][:aws_secret_access_key]).to be == @secret_key
+    end
+  end
+
+  describe "when creating the connection" do
+    describe "when use_iam_profile is true" do
+      before do
+        Chef::Config[:knife].delete(:aws_access_key_id)
+        Chef::Config[:knife].delete(:aws_secret_access_key)
+
+        @ec2_connection = double(Fog::Compute::AWS)
+        @ec2_connection.stub_chain(:tags).and_return double('create', :create => true)
+        @ec2_connection.stub_chain(:images, :get).and_return double('ami', :root_device_type => 'not_ebs', :platform => 'linux')
+        @ec2_connection.stub_chain(:addresses).and_return [double('addesses', {
+                :domain => 'standard',
+                :public_ip => '111.111.111.111',
+                :server_id => nil,
+                :allocation_id => ''})]
+
+        Chef::Config[:knife][:use_iam_profile] = true
+        @ec2_service = Chef::Knife::Cloud::Ec2Service.new
       end
+
+      it "creates a connection without access keys" do
+        expect(Fog::Compute::AWS).to receive(:new).with(hash_including(:use_iam_profile => true)).and_return(@ec2_connection)
+        @ec2_service.connection
+      end
+
+      after do
+        Chef::Config[:knife].delete(:use_iam_profile)
+      end
+    end
   end
 end

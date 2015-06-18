@@ -35,6 +35,13 @@ class Chef
               :long => "--region REGION",
               :description => "Your AWS region",
               :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
+
+            option :use_iam_profile,
+              :long => "--use-iam-profile",
+              :description => "Use IAM profile assigned to current machine",
+              :boolean => true,
+              :default => false,
+              :proc => Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key }
           end
         end
       end

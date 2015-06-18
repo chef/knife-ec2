@@ -16,13 +16,20 @@ class Chef
           Chef::Log.debug("aws_credential_file #{Chef::Config[:knife][:aws_credential_file]}")
           Chef::Log.debug("region #{Chef::Config[:knife][:region].to_s}")
 
-          super(options.merge({
+          options.merge!({
                               :auth_params => {
                                 :provider => 'AWS',
-                                :aws_access_key_id => Chef::Config[:knife][:aws_access_key_id],
-                                :aws_secret_access_key => Chef::Config[:knife][:aws_secret_access_key],
                                 :region => Chef::Config[:knife][:region]
-                }}))
+                }})
+
+          if Chef::Config[:knife][:use_iam_profile]
+            options[:auth_params][:use_iam_profile] = true
+          else
+            options[:auth_params][:aws_access_key_id] = Chef::Config[:knife][:aws_access_key_id]
+            options[:auth_params][:aws_secret_access_key] = Chef::Config[:knife][:aws_secret_access_key]
+          end
+
+          super(options)
         end
 
         # add alternate user defined api_endpoint value.
