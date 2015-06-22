@@ -40,11 +40,13 @@ describe Chef::Knife::Ec2ServerDelete do
                              :groups => ['group1', 'group2'],
                              :security_group_ids => ['sg-00aa11bb'],
                              :dns_name => 'ec2-75.101.253.10.compute-1.amazonaws.com',
-                             :iam_instance_profile => {}, 
+                             :iam_instance_profile => {},
                              :public_ip_address => '75.101.253.10',
                              :private_dns_name => 'ip-10-251-75-20.ec2.internal',
                              :private_ip_address => '10.251.75.20',
-                             :root_device_type => 'not_ebs' }
+                             :root_device_type => 'not_ebs',
+                             :tags => {'Name' => 'foo'}
+                            }
         @knife_ec2_delete = Chef::Knife::Ec2ServerDelete.new
         @ec2_servers = double()
         @knife_ec2_delete.ui.stub(:confirm)
