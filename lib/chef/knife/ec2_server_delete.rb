@@ -75,7 +75,7 @@ class Chef
             @server = connection.servers.get(instance_id)
 
             msg_pair('Instance ID', @server.id)
-            msg_pair('VM name', @server.tags['Name'])
+            msg_pair('Instance Name', @server.tags['Name'])
             msg_pair('Flavor', @server.flavor_id)
             msg_pair('Image', @server.image_id)
             msg_pair('Region', connection.instance_variable_get(:@region))
