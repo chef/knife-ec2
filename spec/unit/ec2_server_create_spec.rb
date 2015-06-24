@@ -335,10 +335,13 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       @instance = Chef::Knife::Cloud::Ec2ServerCreate.new
       @instance.server = double
       @instance.config[:server_connect_attribute] = :public_ip_address
+      @validation_key_url = "s3://bucket/foo/bar"
+      @validation_key_file = '/tmp/a_good_temp_file'
     end
 
     after do
       @instance.config.delete(:server_connect_attribute)
+      Chef::Config[:knife].delete(:validation_key_url)
     end
 
     it "set bootstrap_ip" do
@@ -357,6 +360,15 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       allow(@instance.server).to receive(:public_ip_address).and_return("127.0.0.1")
       @instance.before_bootstrap
       expect(Chef::Config[:knife][:hints]).to be == {"ec2"=>{}}
+    end
+
+    it "sets validation_key if validation_key_url is present" do
+      Chef::Config[:knife][:validation_key_url] = @validation_key_url
+      allow(@instance.server).to receive(:public_ip_address).and_return("127.0.0.1")
+      allow(@instance).to receive(:validation_key_path).and_return(@validation_key_file)
+      allow(@instance).to receive(:download_validation_key)
+      @instance.before_bootstrap
+      expect(Chef::Config[:validation_key]).to be == @validation_key_file
     end
   end
 
