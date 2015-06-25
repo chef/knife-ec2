@@ -331,6 +331,15 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
   end
 
   describe "#before_bootstrap" do
+    before(:all) do
+      @tempfile = Tempfile.new('validation_key')
+    end
+
+    after(:all) do
+      # Clear the temp directory upon exit
+      FileUtils::remove_dir(@tempfile) if Dir.exists?(@tempfile)
+    end
+
     before(:each) do
       @instance = Chef::Knife::Cloud::Ec2ServerCreate.new
       @instance.server = double
@@ -342,6 +351,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
     after do
       @instance.config.delete(:server_connect_attribute)
       Chef::Config[:knife].delete(:validation_key_url)
+      Chef::Config[:knife].delete(:s3_secret)
     end
 
     it "set bootstrap_ip" do
@@ -369,6 +379,24 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       allow(@instance).to receive(:download_validation_key)
       @instance.before_bootstrap
       expect(Chef::Config[:validation_key]).to be == @validation_key_file
+    end
+
+    it "sets s3-based secret" do
+      Chef::Config[:knife][:s3_secret] = 's3://test.bucket/folder/encrypted_data_bag_secret'
+      @secret_content = "TEST DATA BAG SECRET\n"
+      allow(@instance.server).to receive(:public_ip_address).and_return("127.0.0.1")
+      allow(Chef::Knife::S3Source).to receive(:fetch).and_return(@secret_content)
+      @instance.before_bootstrap
+      expect(@instance.config[:secret]).to be == @secret_content
+    end
+
+    it "downloads validation_key and actually writes to the temp location" do
+      Chef::Config[:knife][:validation_key_url] = @validation_key_url
+      allow(Chef::Log).to receive(:debug)
+      allow(@instance).to receive(:s3_validation_key)
+      allow(File).to receive(:write)
+      expect(File).to receive(:open).with(@tempfile, 'w')
+      @instance.download_validation_key(@tempfile)
     end
   end
 
