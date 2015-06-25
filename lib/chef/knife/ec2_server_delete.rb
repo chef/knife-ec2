@@ -74,22 +74,23 @@ class Chef
           begin
             @server = connection.servers.get(instance_id)
 
-            msg_pair("Instance ID", @server.id)
-            msg_pair("Flavor", @server.flavor_id)
-            msg_pair("Image", @server.image_id)
-            msg_pair("Region", connection.instance_variable_get(:@region))
-            msg_pair("Availability Zone", @server.availability_zone)
-            msg_pair("Security Groups", @server.groups.join(", "))
-            msg_pair("IAM Profile", iam_name_from_profile(@server.iam_instance_profile)) if @server.iam_instance_profile
-            msg_pair("SSH Key", @server.key_name)
-            msg_pair("Root Device Type", @server.root_device_type)
-            msg_pair("Public DNS Name", @server.dns_name)
-            msg_pair("Public IP Address", @server.public_ip_address)
-            msg_pair("Private DNS Name", @server.private_dns_name)
-            msg_pair("Private IP Address", @server.private_ip_address)
+            msg_pair('Instance ID', @server.id)
+            msg_pair('Instance Name', @server.tags['Name'])
+            msg_pair('Flavor', @server.flavor_id)
+            msg_pair('Image', @server.image_id)
+            msg_pair('Region', connection.instance_variable_get(:@region))
+            msg_pair('Availability Zone', @server.availability_zone)
+            msg_pair('Security Groups', @server.groups.join(', '))
+            msg_pair('IAM Profile', iam_name_from_profile(@server.iam_instance_profile)) if @server.iam_instance_profile
+            msg_pair('SSH Key', @server.key_name)
+            msg_pair('Root Device Type', @server.root_device_type)
+            msg_pair('Public DNS Name', @server.dns_name)
+            msg_pair('Public IP Address', @server.public_ip_address)
+            msg_pair('Private DNS Name', @server.private_dns_name)
+            msg_pair('Private IP Address', @server.private_ip_address)
 
-            puts "\n"
-            confirm("Do you really want to delete this server")
+            puts '\n'
+            confirm('Do you really want to delete this server')
 
             @server.destroy
 
