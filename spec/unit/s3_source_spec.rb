@@ -3,8 +3,8 @@ require 'fog'
 
 describe Chef::Knife::S3Source do
   before(:each) do
-    @bucket_name = 'my.bucket'
-    @test_file_path = 'path/to/file.pem'
+    @bucket_name = 'mybucket'
+    @test_file_path = 'path/file.pem'
     @test_file_content = "TEST CONTENT\n"
 
     Fog.mock!
@@ -28,7 +28,7 @@ describe Chef::Knife::S3Source do
     @s3_connection = double(Fog::Storage::AWS)
     @s3_source = Chef::Knife::S3Source.new
 
-    @s3_source.url = "s3://#{@bucket_name}/#{@test_file_path}"
+    @s3_source.url = "s3://s3.amazonaws.com/#{@bucket_name}/#{@test_file_path}"
   end
 
   it 'converts URI to path with leading / removed' do
