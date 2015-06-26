@@ -122,7 +122,7 @@ class Chef
                                     if vpc_mode? && !config[:associate_public_ip]
                                       server.private_ip_address
                                     else
-                                      server.dns_name
+                                      server.dns_name || server.public_ip_address
                                     end
                                   end
           # Which IP address to bootstrap
