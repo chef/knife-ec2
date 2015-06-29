@@ -20,11 +20,11 @@ class Chef
       end
 
       def bucket
-        URI(@url).host
+        URI(@url).path.split("/")[1]
       end
 
       def path
-        URI(@url).path.sub(/^\//, '')
+        URI(@url).path.split(bucket).last.sub(/^\//, '')
       end
 
       def fog
