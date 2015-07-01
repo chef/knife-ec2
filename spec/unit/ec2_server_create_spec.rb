@@ -107,6 +107,8 @@ describe Chef::Knife::Ec2ServerCreate do
     @validation_key_url = 's3://bucket/foo/bar'
     @validation_key_file = '/tmp/a_good_temp_file'
     @validation_key_body = "TEST VALIDATION KEY\n"
+    @vpc_id = "vpc-1a2b3c4d"
+    @vpc_security_group_ids = ["sg-1a2b3c4d"]
   end
 
   describe "Spot Instance creation" do
@@ -262,6 +264,17 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(@new_ec2_server).to receive(:public_ip_address).and_return(@eip)
       expect(@ec2_connection).to receive(:associate_address).with(@ec2_server_attribs[:id], @eip, nil, '')
       expect(@new_ec2_server).to receive(:wait_for).at_least(:twice).and_return(true)
+
+      @knife_ec2_create.run
+      expect(@knife_ec2_create.server).to_not be_nil
+    end
+
+    it "creates an EC2 instance, enables ClassicLink and bootstraps it" do
+      @knife_ec2_create.config[:classic_link_vpc_id] = @vpc_id
+      @knife_ec2_create.config[:classic_link_vpc_security_group_ids] = @vpc_security_group_ids
+
+      expect(@ec2_connection).to receive(:attach_classic_link_vpc).with(@ec2_server_attribs[:id], @vpc_id, @vpc_security_group_ids)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
 
       @knife_ec2_create.run
       expect(@knife_ec2_create.server).to_not be_nil
@@ -623,7 +636,7 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(@bootstrap.config[:forward_agent]).to eq(true)
     end
   end
-  
+
   describe "when configuring the winrm bootstrap process for windows" do
     before do
       allow(@knife_ec2_create).to receive(:fetch_server_fqdn).and_return("SERVERNAME")
@@ -774,7 +787,7 @@ describe Chef::Knife::Ec2ServerCreate do
         @knife_ec2_create.validate!
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
-      end      
+      end
     end
 
     it 'understands that file:// validation key URIs are just paths' do
@@ -838,6 +851,23 @@ describe Chef::Knife::Ec2ServerCreate do
     it "disallows associate public ip option when not using a VPC" do
       @knife_ec2_create.config[:associate_public_ip] = true
       @knife_ec2_create.config[:subnet_id] = nil
+
+      expect { @knife_ec2_create.validate! }.to raise_error SystemExit
+    end
+
+    it "disallows setting only one of the two ClassicLink options" do
+      @knife_ec2_create.config[:classic_link_vpc_id] = @vpc_id
+      @knife_ec2_create.config[:classic_link_vpc_security_group_ids] = nil
+
+      expect { @knife_ec2_create.validate! }.to raise_error SystemExit
+    end
+
+    it "disallows ClassicLink with VPC" do
+      @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
+      @knife_ec2_create.config[:classic_link_vpc_id] = @vpc_id
+      @knife_ec2_create.config[:classic_link_vpc_security_group_ids] = @vpc_security_group_ids
+
+      allow(@knife_ec2_create).to receive(:validate_nics!).and_return(true)
 
       expect { @knife_ec2_create.validate! }.to raise_error SystemExit
     end
@@ -1209,21 +1239,21 @@ describe Chef::Knife::Ec2ServerCreate do
       before do
         allow(@knife_ec2_create).to receive_messages(:vpc_mode? => true)
       end
-      
+
       context "--associate-public-ip is specified" do
         it "uses the dns_name or public_ip_address" do
           @knife_ec2_create.config[:associate_public_ip] = true
           expect(@knife_ec2_create.ssh_connect_host).to eq('public.example.org')
         end
       end
-      
+
       context "--associate-eip is specified" do
         it "uses the dns_name or public_ip_address" do
           @knife_ec2_create.config[:associate_eip] = '111.111.111.111'
           expect(@knife_ec2_create.ssh_connect_host).to eq('public.example.org')
         end
       end
-          
+
       context "with no other ip flags" do
         it 'uses private_ip_address' do
           expect(@knife_ec2_create.ssh_connect_host).to eq('192.168.1.100')
@@ -1675,9 +1705,9 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 </powershell>
         EOH
       end
-        
+
       it "creates user_data only with default ssl configuration" do
-        server_def = @knife_ec2_create.create_server_def 
+        server_def = @knife_ec2_create.create_server_def
 
         expect(server_def[:user_data]).to eq(@server_def_user_data)
       end
@@ -1780,9 +1810,9 @@ netstat > c:\\netstat_data.txt
 </script>
         EOH
       end
-        
+
       it "user_data is created only with user's user_data" do
-        server_def = @knife_ec2_create.create_server_def 
+        server_def = @knife_ec2_create.create_server_def
 
         expect(server_def[:user_data]).to eq(@server_def_user_data)
       end
@@ -1797,13 +1827,13 @@ netstat > c:\\netstat_data.txt
       before do
         @server_def_user_data = nil
       end
-        
+
       it "creates nil or empty user_data" do
-        server_def = @knife_ec2_create.create_server_def 
+        server_def = @knife_ec2_create.create_server_def
 
         expect(server_def[:user_data]).to eq(@server_def_user_data)
       end
-    end    
+    end
 
     after(:each) do
       @knife_ec2_create.config.delete(:ssh_key_name)
