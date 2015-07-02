@@ -27,27 +27,51 @@ describe Chef::Knife::S3Source do
 
     @s3_connection = double(Fog::Storage::AWS)
     @s3_source = Chef::Knife::S3Source.new
-
-    @s3_source.url = "s3://s3.amazonaws.com/#{@bucket_name}/#{@test_file_path}"
   end
 
-  it 'converts URI to path with leading / removed' do
-    @s3_source.instance_eval { path }
-    @s3_source.instance_eval { path }.should eq(@test_file_path)
+  context "for http URL format" do
+    it 'converts URI to path with leading / removed' do
+      @s3_source.url = "http://s3.amazonaws.com/#{@bucket_name}/#{@test_file_path}"
+      @s3_source.instance_eval { path }
+      @s3_source.instance_eval { path }.should eq(@test_file_path)
+    end
+
+    it 'correctly retrieves the bucket name from the URI' do
+      @s3_source.url = "http://s3.amazonaws.com/#{@bucket_name}/#{@test_file_path}"
+      @s3_source.instance_eval { bucket }
+      @s3_source.instance_eval { bucket }.should eq(@bucket_name)
+    end
+
+    it 'gets back the correct bucket contents' do
+      @s3_source.url = "http://s3.amazonaws.com/#{@bucket_name}/#{@test_file_path}"
+      @s3_source.body.should eq(@test_file_content)
+    end
+
+    it 'gets back a bucket object with bucket_obj' do
+      @s3_source.url = "http://s3.amazonaws.com/#{@bucket_name}/#{@test_file_path}"
+      @s3_source.instance_eval { bucket_obj }
+      @s3_source.instance_eval { bucket_obj }.should
+        be_kind_of(Fog::Storage::AWS::Directory)
+    end
   end
 
-  it 'correctly retrieves the bucket name from the URI' do
-    @s3_source.instance_eval { bucket }
-    @s3_source.instance_eval { bucket }.should eq(@bucket_name)
-  end
+  context "for s3 URL format" do
+    it 'correctly retrieves the bucket name from the URI' do
+      @s3_source.url = "s3://#{@bucket_name}/#{@test_file_path}"
+      @s3_source.instance_eval { bucket }
+      @s3_source.instance_eval { bucket }.should eq(@bucket_name)
+    end
 
-  it 'gets back the correct bucket contents' do
-    @s3_source.body.should eq(@test_file_content)
-  end
+    it 'gets back the correct bucket contents' do
+      @s3_source.url = "s3://#{@bucket_name}/#{@test_file_path}"
+      @s3_source.body.should eq(@test_file_content)
+    end
 
-  it 'gets back a bucket object with bucket_obj' do
-    @s3_source.instance_eval { bucket_obj }
-    @s3_source.instance_eval { bucket_obj }.should
-      be_kind_of(Fog::Storage::AWS::Directory)
+    it 'gets back a bucket object with bucket_obj' do
+      @s3_source.url = "s3://#{@bucket_name}/#{@test_file_path}"
+      @s3_source.instance_eval { bucket_obj }
+      @s3_source.instance_eval { bucket_obj }.should
+        be_kind_of(Fog::Storage::AWS::Directory)
+    end
   end
 end
