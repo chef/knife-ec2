@@ -398,6 +398,13 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       expect(File).to receive(:open).with(@tempfile, 'w')
       @instance.download_validation_key(@tempfile)
     end
+
+    it 'should use public_ip_address when dns name not exist' do
+      allow(@instance.server).to receive(:public_ip_address).and_return("127.0.0.1")
+      @instance.stub(:dns_name).and_return(nil)
+      @instance.before_bootstrap
+      expect(@instance.config[:bootstrap_ip_address]).to eq('127.0.0.1')
+    end
   end
 
   describe "bootstrap ip address" do
