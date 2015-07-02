@@ -8,6 +8,7 @@ require 'chef/knife/cloud/ec2_server_create_options'
 require 'chef/knife/cloud/ec2_service'
 require 'chef/knife/cloud/ec2_service_options'
 require 'chef/knife/cloud/exceptions'
+require 'chef/knife/s3_source'
 
 class Chef
   class Knife
@@ -16,6 +17,11 @@ class Chef
         include Ec2Helpers
         include Ec2ServiceOptions
         include Ec2ServerCreateOptions
+
+        deps do
+          require 'tempfile'
+          require 'uri'
+        end
 
         banner "knife ec2 server create (options)"
 
@@ -127,6 +133,13 @@ class Chef
             raise CloudExceptions::BootstrapError, error_message
           end
           config[:bootstrap_ip_address] = bootstrap_ip_address
+
+          if Chef::Config[:knife][:validation_key_url]
+            download_validation_key(validation_key_path)
+            Chef::Config[:validation_key] = validation_key_path
+          end
+
+          config[:secret] = s3_secret || locate_config_value(:secret)
 
           # Modify global configuration state to ensure hint gets set by
           # knife-bootstrap.
@@ -424,6 +437,44 @@ class Chef
           end
 
           @columns_with_info << {:label => "EBS is Optimized", :key => 'ebs_optimized'} if config[:ebs_optimized]
+        end
+
+        def validation_key_path
+          @validation_key_path ||= begin
+            if URI(Chef::Config[:knife][:validation_key_url]).scheme == 'file'
+              URI(Chef::Config[:knife][:validation_key_url]).path
+            else
+              validation_key_tmpfile.path
+            end
+          end
+        end
+
+        def validation_key_tmpfile
+          @validation_key_tmpfile ||= Tempfile.new('validation_key')
+        end
+
+        def download_validation_key(tempfile)
+          Chef::Log.debug 'Downloading validation key ' \
+            "<#{Chef::Config[:knife][:validation_key_url]}> to file " \
+            "<#{tempfile}>"
+
+          case URI(Chef::Config[:knife][:validation_key_url]).scheme
+          when 's3'
+            File.open(tempfile, 'w') { |f| f.write(s3_validation_key) }
+          end
+        end
+
+        def s3_validation_key
+          @s3_validation_key ||= begin
+            Chef::Knife::S3Source.fetch(Chef::Config[:knife][:validation_key_url])
+          end
+        end
+
+        def s3_secret
+          @s3_secret ||= begin
+            return false unless locate_config_value(:s3_secret)
+            Chef::Knife::S3Source.fetch(locate_config_value(:s3_secret))
+          end
         end
       end
     end

@@ -20,6 +20,7 @@ describe Chef::Knife::Cloud::Ec2ServerList do
       allow(instance).to receive(:create_service_instance).and_return(Chef::Knife::Cloud::Ec2Service.new)
       allow(instance).to receive(:validate!)
       instance.config[:name] = true
+      instance.config[:format] = "summary"
     end
 
     it "lists formatted list of resources" do

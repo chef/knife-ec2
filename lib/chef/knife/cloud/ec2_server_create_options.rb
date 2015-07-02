@@ -122,6 +122,17 @@ class Chef
               :description => "IOPS rate, only used when ebs volume type is 'io1'",
               :proc => Proc.new { |key| Chef::Config[:knife][:provisioned_iops] = key },
               :default => nil
+
+            option :s3_secret,
+              :long => '--s3-secret S3_SECRET_URL',
+              :description => 'S3 URL (e.g. s3://bucket/file) for the ' \
+                'encrypted_data_bag_secret_file',
+              :proc => lambda { |url| Chef::Config[:knife][:s3_secret] = url }
+
+            option :validation_key_url,
+              :long => "--validation-key-url URL",
+              :description => "Path to the validation key",
+              :proc => proc { |m| Chef::Config[:validation_key_url] = m }
           end
         end
       end

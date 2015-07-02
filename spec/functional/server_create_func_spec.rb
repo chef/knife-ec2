@@ -85,7 +85,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
 
     context "for Linux" do
       before do
-        @config = {:bootstrap_ip_address => "75.101.253.10", :image_os_type => 'linux', :server_connect_attribute => :public_ip_address}
+        @config = {:bootstrap_ip_address => "75.101.253.10", :image_os_type => 'linux', :server_connect_attribute => :public_ip_address, :secret => nil}
         @knife_ec2_create.config[:distro] = 'chef-full'
         @knife_ec2_create.config[:server_connect_attribute] = :public_ip_address
         @bootstrapper = Chef::Knife::Cloud::Bootstrapper.new(@config)
@@ -106,7 +106,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
 
     context "for Windows" do
       before do
-        @config = { :image_os_type => 'windows', :bootstrap_ip_address => "75.101.253.10", :bootstrap_protocol => 'winrm', :server_connect_attribute => :public_ip_address}
+        @config = { :image_os_type => 'windows', :bootstrap_ip_address => "75.101.253.10", :bootstrap_protocol => 'winrm', :server_connect_attribute => :public_ip_address, :secret => nil}
         @knife_ec2_create.config[:image_os_type] = 'windows'
         @knife_ec2_create.config[:server_connect_attribute] = :public_ip_address
         @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
