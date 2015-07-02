@@ -172,6 +172,10 @@ class Chef
 
           errors << "--ebs-volume-type must be 'standard' or 'io1' or 'gp2'"  if locate_config_value(:ebs_volume_type) and ! %w(gp2 io1 standard).include?(locate_config_value(:ebs_volume_type))
 
+          errors << "Invalid value type for knife[:security_groups] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_groups] = ['sgroup1']" if(locate_config_value(:security_groups) && locate_config_value(:security_groups).class == String)
+
+          errors << "Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']" if(locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class == String)
+
           error_message = ""
           raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
         end
