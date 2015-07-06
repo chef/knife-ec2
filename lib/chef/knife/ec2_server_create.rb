@@ -310,6 +310,11 @@ class Chef
         :description => "The maximum hourly USD price for the instance",
         :default => nil
 
+      option :spot_request_type,
+        :long => "--spot-request-type TYPE",
+        :description => "The Spot Instance request type",
+        :default => "one-time"
+
       option :aws_connection_timeout,
         :long => "--aws-connection-timeout MINUTES",
         :description => "The maximum time in minutes to wait to for aws connection. Default is 10 min",
@@ -395,6 +400,9 @@ class Chef
           msg_pair("Spot Request ID", spot_request.id)
           msg_pair("Spot Request Type", spot_request.request_type)
           msg_pair("Spot Price", spot_request.price)
+          #puts "Spot Req ID :: #{spot_request.id}"
+          #puts "Spot Req Type :: #{spot_request.request_type}"
+          #puts "Spot Price :: #{spot_request.price}"
           print ui.color("Waiting for Spot Request fulfillment:  ", :cyan)
           spot_request.wait_for do
             @spinner ||= %w{| / - \\}
@@ -826,7 +834,8 @@ class Chef
           :flavor_id => locate_config_value(:flavor),
           :key_name => Chef::Config[:knife][:aws_ssh_key_id],
           :availability_zone => locate_config_value(:availability_zone),
-          :price => locate_config_value(:spot_price)
+          :price => locate_config_value(:spot_price),
+          :request_type => locate_config_value(:spot_request_type)
         }
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
