@@ -400,9 +400,20 @@ class Chef
           msg_pair("Spot Request ID", spot_request.id)
           msg_pair("Spot Request Type", spot_request.request_type)
           msg_pair("Spot Price", spot_request.price)
-          #puts "Spot Req ID :: #{spot_request.id}"
-          #puts "Spot Req Type :: #{spot_request.request_type}"
-          #puts "Spot Price :: #{spot_request.price}"
+
+          puts 'Do you want to wait for Spot Instance Request fulfillment? (Y/N) '
+          user_choice = STDIN.gets.chomp
+          if user_choice.casecmp('y') == 0
+            print ui.color("You decided to wait.\n", :cyan)
+          elsif user_choice.casecmp('n') == 0
+            print ui.color("You decided not to wait.\n", :cyan)
+            print ui.color("Hence, putting current execution in background.\n", :cyan)
+            Process.kill("SIGTSTP", Process.pid)
+          else
+            print ui.color("Invalid input\n", :red)
+            exit 1
+          end
+
           print ui.color("Waiting for Spot Request fulfillment:  ", :cyan)
           spot_request.wait_for do
             @spinner ||= %w{| / - \\}
