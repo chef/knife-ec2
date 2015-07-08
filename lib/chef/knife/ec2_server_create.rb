@@ -312,7 +312,7 @@ class Chef
 
       option :spot_request_type,
         :long => "--spot-request-type TYPE",
-        :description => "The Spot Instance request type",
+        :description => "The Spot Instance request type, possible values are [one-time, persistent]",
         :default => "one-time"
 
       option :aws_connection_timeout,
