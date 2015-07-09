@@ -312,7 +312,7 @@ class Chef
 
       option :spot_request_type,
         :long => "--spot-request-type TYPE",
-        :description => "The Spot Instance request type, possible values are [one-time, persistent]",
+        :description => "The Spot Instance request type. Possible values are 'one-time' and 'persistent', default value is 'one-time'",
         :default => "one-time"
 
       option :aws_connection_timeout,
@@ -401,18 +401,11 @@ class Chef
           msg_pair("Spot Request Type", spot_request.request_type)
           msg_pair("Spot Price", spot_request.price)
 
-          puts 'Do you want to wait for Spot Instance Request fulfillment? (Y/N) '
-          user_choice = STDIN.gets.chomp
-          if user_choice.casecmp('y') == 0
-            print ui.color("You decided to wait.\n", :cyan)
-          elsif user_choice.casecmp('n') == 0
-            print ui.color("You decided not to wait.\n", :cyan)
-            print ui.color("Hence, putting current execution in background.\n", :cyan)
-            Process.kill("SIGTSTP", Process.pid)
-          else
-            print ui.color("Invalid input\n", :red)
-            exit 1
-          end
+          wait_msg = "Do you want to wait for Spot Instance Request fulfillment? (Y/N) \n"
+          wait_msg += "Y - Wait for Spot Instance request fulfillment\n"
+          wait_msg += "N - Do not wait for Spot Instance request fulfillment. "
+          wait_msg += ui.color("[WARN :: Request would be alive on AWS ec2 side but execution of Chef Bootstrap on the target instance will get skipped.]\n", :red, :bold)
+          confirm(wait_msg)
 
           print ui.color("Waiting for Spot Request fulfillment:  ", :cyan)
           spot_request.wait_for do
