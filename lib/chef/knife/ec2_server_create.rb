@@ -150,6 +150,11 @@ class Chef
         def validate_params!
           super
 
+          flavors = %w(m3.medium  m3.large  m3.xlarge m3.2xlarge c4.large c4.xlarge
+                     c4.2xlarge c4.4xlarge c4.8xlarge c3.large c3.xlarge c3.2xlarge
+                     c3.4xlarge c3.8xlarge cr1.8xlarge r3.large r3.xlarge r3.2xlarge
+                     r3.4xlarge r3.8xlarge i2.xlarge i2.2xlarge i2.4xlarge i2.8xlarge g2.2xlarge)
+
           validate_tags
 
           errors = []
@@ -176,7 +181,12 @@ class Chef
 
           errors << "Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']" if(locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class == String)
 
-          error_message = ""
+          errors << '--ebs_encrypted option requires valid flavor to be specified.' if locate_config_value(:ebs_encrypted) and !locate_config_value(:flavor)
+
+          errors << "--ebs_encrypted option is not supported for #{locate_config_value(:flavor)} flavor." if locate_config_value(:ebs_encrypted) and ! flavors.include?(locate_config_value(:flavor))
+
+          error_message = ''
+
           raise CloudExceptions::ValidationError, error_message if errors.each{|e| ui.error(e); error_message = "#{error_message} #{e}."}.any?
         end
 
@@ -295,8 +305,13 @@ class Chef
         end
 
         def load_ebs_create_options
-          if ami.root_device_type == "ebs"
-            ami_map = ami.block_device_mapping.first
+          if ami.root_device_type == 'ebs'
+            if locate_config_value(:ebs_encrypted)
+              ami_map = ami.block_device_mapping[1]
+            else
+              ami_map = ami.block_device_mapping.first
+            end
+
             ebs_size = begin
                          config[:ebs_size] ? Integer(config[:ebs_size]).to_s : ami_map["volumeSize"].to_s
                        rescue ArgumentError
@@ -327,7 +342,8 @@ class Chef
                  'Ebs.DeleteOnTermination' => delete_term,
                  'Ebs.VolumeType' => config[:ebs_volume_type]
                }]
-            @create_options[:server_def][:block_device_mapping].first['Ebs.Iops'] = iops_rate unless iops_rate.empty?
+            @create_options[:server_def][:block_device_mapqping].first['Ebs.Iops'] = iops_rate unless iops_rate.empty?
+            @create_options[:server_def][:block_device_mapping].first['Ebs.Encrypted'] = true if locate_config_value(:ebs_encrypted)
           end
           @create_options[:server_def][:ebs_optimized] = config[:ebs_optimized] ? "true" : "false"
         end
@@ -430,7 +446,7 @@ class Chef
             @columns_with_info << {:label => 'Private DNS Name', :key => 'private_dns_name'}
           end
 
-          if server.root_device_type == "ebs"
+          if server.root_device_type == 'ebs'
             device_map = server.block_device_mapping.first
             volume = server.volumes.first
             @columns_with_info << {:label => "Root Volume ID", :value => device_map['volumeId']}
@@ -438,8 +454,14 @@ class Chef
             @columns_with_info << {:label => "Root Device Delete on Terminate", :value => device_map['deleteOnTermination'].to_s}
             @columns_with_info << {:label => "Standard or Provisioned IOPS", :value => volume.type}
             @columns_with_info << {:label => "IOPS rate", :value => volume.iops.to_s}
+            server.block_device_mapping.each do |device_map|
+              @columns_with_info << { label: 'Block Device Name', value: device_map['deviceName'] }
+              @columns_with_info << { label: 'Block Device Volume ID', value: device_map['volumeId'] }
+              @columns_with_info << { label: 'Block Device Delete on Terminate', value: device_map['deleteOnTermination'].to_s }
+              @columns_with_info << { label: 'Block Device Standard or Provisioned IOPS', value: volume.type }
+              @columns_with_info << { label: 'Block Device IOPS rate', value: volume.iops.to_s }
+            end
           end
-
           @columns_with_info << {:label => "EBS is Optimized", :key => 'ebs_optimized'} if config[:ebs_optimized]
         end
 
