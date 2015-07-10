@@ -342,7 +342,7 @@ class Chef
                  'Ebs.DeleteOnTermination' => delete_term,
                  'Ebs.VolumeType' => config[:ebs_volume_type]
                }]
-            @create_options[:server_def][:block_device_mapqping].first['Ebs.Iops'] = iops_rate unless iops_rate.empty?
+            @create_options[:server_def][:block_device_mapping].first['Ebs.Iops'] = iops_rate unless iops_rate.empty?
             @create_options[:server_def][:block_device_mapping].first['Ebs.Encrypted'] = true if locate_config_value(:ebs_encrypted)
           end
           @create_options[:server_def][:ebs_optimized] = config[:ebs_optimized] ? "true" : "false"
