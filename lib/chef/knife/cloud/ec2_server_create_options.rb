@@ -4,8 +4,7 @@ class Chef
   class Knife
     class Cloud
       module Ec2ServerCreateOptions
-
-       def self.included(includer)
+        def self.included(includer)
           includer.class_eval do
             include ServerCreateOptions
 
@@ -133,6 +132,11 @@ class Chef
               :long => "--validation-key-url URL",
               :description => "Path to the validation key",
               :proc => proc { |m| Chef::Config[:validation_key_url] = m }
+
+            option :spot_price,
+              :long => "--spot-price PRICE",
+              :description => "The maximum hourly USD price for the instance",
+              :default => nil
           end
         end
       end
