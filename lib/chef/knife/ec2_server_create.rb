@@ -40,10 +40,14 @@ class Chef
               :key_name => locate_config_value(:ec2_ssh_key_id),
               :availability_zone => locate_config_value(:availability_zone),
               :placement_group => locate_config_value(:placement_group),
-              :iam_instance_profile_name => locate_config_value(:iam_instance_profile)
+              :iam_instance_profile_name => locate_config_value(:iam_instance_profile),
+              :price => locate_config_value(:spot_price)
             },
             :server_create_timeout => locate_config_value(:server_create_timeout)
           }
+
+          require 'pry'
+          binding.pry
 
           load_vpc_create_options if vpc_mode?
 
@@ -62,26 +66,30 @@ class Chef
 
         # Override to parse error messages
         def execute_command
-          begin
+          if locate_config_value(:spot_price)
+            require 'pry'
+            binding.pry
+            service.connection.spot_requests.create(@create_options)
+          else
             super
-          rescue CloudExceptions::ServerCreateError => e
-            ebs_optimized_fog_msg = "ebs-optimized instances are not supported for your requested configuration"
-            placement_grp_fog_msg = "placement groups may not be used with instances of type"
-            err_msg = e.message.downcase
-
-            flavor = locate_config_value(:flavor)
-            error_message = "Please check if " + (flavor.nil? ? "default flavor is supported for " : "flavor #{flavor} is supported for ")
-
-            if err_msg.include?(ebs_optimized_fog_msg)
-              error_message += "EBS-optimized instances."
-              ui.error(error_message)
-            elsif err_msg.include?(placement_grp_fog_msg)
-              error_message += "Placement groups."
-              ui.error(error_message)
-            end
-
-            raise e
           end
+        rescue CloudExceptions::ServerCreateError => e
+          ebs_optimized_fog_msg = 'ebs-optimized instances are not supported for your requested configuration'
+          placement_grp_fog_msg = 'placement groups may not be used with instances of type'
+          err_msg = e.message.downcase
+
+          flavor = locate_config_value(:flavor)
+          error_message = "Please check if " + (flavor.nil? ? "default flavor is supported for " : "flavor #{flavor} is supported for ")
+
+          if err_msg.include?(ebs_optimized_fog_msg)
+            error_message += "EBS-optimized instances."
+            ui.error(error_message)
+          elsif err_msg.include?(placement_grp_fog_msg)
+            error_message += "Placement groups."
+            ui.error(error_message)
+          end
+
+          raise e
         end
 
         # Setup the floating ip after server creation.

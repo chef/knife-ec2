@@ -4,8 +4,7 @@ class Chef
   class Knife
     class Cloud
       module Ec2ServerCreateOptions
-
-       def self.included(includer)
+        def self.included(includer)
           includer.class_eval do
             include ServerCreateOptions
 
@@ -139,6 +138,10 @@ class Chef
               :boolean => true,
               :default => false
 
+            option :spot_price,
+              :long => "--spot-price PRICE",
+              :description => "The maximum hourly USD price for the instance",
+              :default => nil
           end
         end
       end
