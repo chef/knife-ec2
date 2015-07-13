@@ -181,9 +181,9 @@ class Chef
 
           errors << "Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']" if(locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class == String)
 
-          errors << '--ebs_encrypted option requires valid flavor to be specified.' if locate_config_value(:ebs_encrypted) and !locate_config_value(:flavor)
+          errors << '--ebs_encrypted option requires valid flavor to be specified' if locate_config_value(:ebs_encrypted) and !locate_config_value(:flavor)
 
-          errors << "--ebs_encrypted option is not supported for #{locate_config_value(:flavor)} flavor." if locate_config_value(:ebs_encrypted) and ! flavors.include?(locate_config_value(:flavor))
+          errors << "--ebs_encrypted option is not supported for #{locate_config_value(:flavor)} flavor" if locate_config_value(:flavor) && locate_config_value(:ebs_encrypted) && ! flavors.include?(locate_config_value(:flavor))
 
           error_message = ''
 
