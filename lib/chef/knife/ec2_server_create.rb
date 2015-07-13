@@ -824,7 +824,7 @@ class Chef
           :groups => config[:security_groups],
           :security_group_ids => locate_config_value(:security_group_ids),
           :flavor_id => locate_config_value(:flavor),
-          :key_name => Chef::Config[:knife][:aws_ssh_key_id],
+          :key_name => config[:ssh_key_name] || Chef::Config[:knife][:aws_ssh_key_id],
           :availability_zone => locate_config_value(:availability_zone),
           :price => locate_config_value(:spot_price)
         }
