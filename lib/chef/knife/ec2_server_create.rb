@@ -835,11 +835,11 @@ class Chef
         server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
         server_def[:associate_public_ip] = locate_config_value(:associate_public_ip) if vpc_mode? and config[:associate_public_ip]
 
-        if Chef::Config[:knife][:aws_user_data]
+        if locate_config_value(:aws_user_data)
           begin
-            server_def.merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
+            server_def.merge!(:user_data => File.read(locate_config_value(:aws_user_data)))
           rescue
-            ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
           end
         end
 
