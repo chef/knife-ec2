@@ -19,11 +19,10 @@ Gem::Specification.new do |s|
   s.add_dependency 'fog',           '~> 1.25.0'
   s.add_dependency 'knife-windows', '>= 0.8.2'
 
-  s.add_development_dependency 'mixlib-config'
-  s.add_development_dependency 'chef'
-  s.add_development_dependency 'rspec'
-  s.add_development_dependency 'rake'
-  s.add_development_dependency 'sdoc',          '~> 0.3'
+  s.add_development_dependency 'chef',  '~> 12.0', '>= 12.2.1'
+  s.add_development_dependency 'rspec', '~> 3.0'
+  s.add_development_dependency 'rake',  '~> 10.1'
+  s.add_development_dependency 'sdoc',  '~> 0.3'
 
   s.require_paths = ['lib']
 end
