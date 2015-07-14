@@ -40,14 +40,11 @@ class Chef
               :key_name => locate_config_value(:ec2_ssh_key_id),
               :availability_zone => locate_config_value(:availability_zone),
               :placement_group => locate_config_value(:placement_group),
-              :iam_instance_profile_name => locate_config_value(:iam_instance_profile),
-              :price => locate_config_value(:spot_price)
+              :iam_instance_profile_name => locate_config_value(:iam_instance_profile)
             },
+            :price => locate_config_value(:spot_price),
             :server_create_timeout => locate_config_value(:server_create_timeout)
           }
-
-          require 'pry'
-          binding.pry
 
           load_vpc_create_options if vpc_mode?
 
@@ -67,9 +64,8 @@ class Chef
         # Override to parse error messages
         def execute_command
           if locate_config_value(:spot_price)
-            require 'pry'
-            binding.pry
-            service.connection.spot_requests.create(@create_options)
+            spot_request = create_spot_request
+            @server = service.connection.servers.get(spot_request.instance_id)
           else
             super
           end
@@ -246,6 +242,22 @@ class Chef
           end
         end
 
+        def create_spot_request
+          spot_request = service.connection.spot_requests.create(@create_options)
+          columns_with_info = [{:label => "Spot Request ID", :value => spot_request.id},
+                                {:label => "Spot Request Type", :value => spot_request.request_type},
+                                {:label => "Spot Price", :value => spot_request.price.to_s}]
+          service.server_summary(nil, columns_with_info)
+          print ui.color('Waiting for Spot Request fulfillment:  ', :cyan)
+          spot_request.wait_for do
+            spinner ||= %w(| / - \\)
+            print "\b" + spinner.rotate!.first
+            ready?
+          end
+          puts("\n")
+          spot_request
+        end
+
         def post_connection_validations
           validate_ami
           validate_elastic_ip_availability
@@ -414,7 +426,8 @@ class Chef
                                 {:label => 'Root Device Type', :key => 'root_device_type'},
                                 {:label => "Region", :value => service.connection.instance_variable_get(:@region)},
                                 {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")},
-                                {:label => "SSH Key", :key => 'key_name'}
+                                {:label => "SSH Key", :key => 'key_name'},
+                                {:label => 'Spot Instance Request ID', :key => 'spot_instance_request_id'}
                                ]
 
           # If we don't specify a security group or security group id, Fog will
