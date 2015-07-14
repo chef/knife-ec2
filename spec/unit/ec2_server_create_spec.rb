@@ -33,7 +33,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     {
       :image => 'image',
-      :aws_ssh_key_id => 'aws_ssh_key_id',
+      :ssh_key_name => 'ssh_key_name',
       :aws_access_key_id => 'aws_access_key_id',
       :aws_secret_access_key => 'aws_secret_access_key'
     }.each do |key, value|

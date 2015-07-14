@@ -4,6 +4,9 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/opscode/knife-ec2/commits).
 
+## Planned for future release
+* [knife-ec2:#330](https://github.com/chef/knife-ec2/pull/330) Modification for attribute precedence issue
+
 ## Latest release: 0.11.0 (2015-05-21)
 * [knife-ec2:#293](https://github.com/chef/knife-ec2/pull/293) s3_source: Lazy load fog library
 * [knife-ec2:#284](https://github.com/chef/knife-ec2/pull/284) Enable Spot Pricing

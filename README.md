@@ -84,7 +84,7 @@ Additionally the following options may be set in your `knife.rb`:
 - flavor
 - image
 - availability_zone
-- aws_ssh_key_id
+- ssh_key_name
 - aws_session_token
 - region
 - distro
