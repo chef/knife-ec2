@@ -232,8 +232,9 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(Chef::Knife::BootstrapWindowsWinrm).to receive(:new).and_return(@bootstrap_winrm)
       expect(@bootstrap_winrm).to receive(:run)
       expect(@new_ec2_server).to receive(:wait_for).and_return(true)
+      allow(@knife_ec2_create).to receive(:is_image_windows?).and_return(true)
+      expect(@knife_ec2_create).to receive(:default_bootstrap_template).and_return("windows-chef-client-msi")
       @knife_ec2_create.run
-      expect(@knife_ec2_create.config[:distro]).to eq("windows-chef-client-msi")
     end
 
     it "bootstraps via the SSH protocol" do
