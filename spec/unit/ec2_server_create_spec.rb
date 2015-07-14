@@ -842,7 +842,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:spot_price] = '1.99'
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:price].should == '1.99'
+      expect(server_def[:price]).to eq('1.99')
     end
 
     context "when using ebs volume type and ebs provisioned iops rate options" do
