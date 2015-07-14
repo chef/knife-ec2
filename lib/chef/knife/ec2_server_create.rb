@@ -42,6 +42,7 @@ class Chef
               :placement_group => locate_config_value(:placement_group),
               :iam_instance_profile_name => locate_config_value(:iam_instance_profile)
             },
+            :price => locate_config_value(:spot_price),
             :server_create_timeout => locate_config_value(:server_create_timeout)
           }
 
@@ -62,26 +63,29 @@ class Chef
 
         # Override to parse error messages
         def execute_command
-          begin
+          if locate_config_value(:spot_price)
+            spot_request = create_spot_request
+            @server = service.connection.servers.get(spot_request.instance_id)
+          else
             super
-          rescue CloudExceptions::ServerCreateError => e
-            ebs_optimized_fog_msg = "ebs-optimized instances are not supported for your requested configuration"
-            placement_grp_fog_msg = "placement groups may not be used with instances of type"
-            err_msg = e.message.downcase
-
-            flavor = locate_config_value(:flavor)
-            error_message = "Please check if " + (flavor.nil? ? "default flavor is supported for " : "flavor #{flavor} is supported for ")
-
-            if err_msg.include?(ebs_optimized_fog_msg)
-              error_message += "EBS-optimized instances."
-              ui.error(error_message)
-            elsif err_msg.include?(placement_grp_fog_msg)
-              error_message += "Placement groups."
-              ui.error(error_message)
-            end
-
-            raise e
           end
+        rescue CloudExceptions::ServerCreateError => e
+          ebs_optimized_fog_msg = "ebs-optimized instances are not supported for your requested configuration"
+          placement_grp_fog_msg = "placement groups may not be used with instances of type"
+          err_msg = e.message.downcase
+
+          flavor = locate_config_value(:flavor)
+          error_message = "Please check if " + (flavor.nil? ? "default flavor is supported for " : "flavor #{flavor} is supported for ")
+
+          if err_msg.include?(ebs_optimized_fog_msg)
+            error_message += "EBS-optimized instances."
+            ui.error(error_message)
+          elsif err_msg.include?(placement_grp_fog_msg)
+            error_message += "Placement groups."
+            ui.error(error_message)
+          end
+
+          raise e
         end
 
         # Setup the floating ip after server creation.
@@ -246,6 +250,22 @@ class Chef
           hashed_tags.each_pair do |key, val|
             service.connection.tags.create :key => key, :value => val, :resource_id => server.id
           end
+        end
+
+        def create_spot_request
+          spot_request = service.connection.spot_requests.create(@create_options)
+          columns_with_info = [{:label => "Spot Request ID", :value => spot_request.id},
+                                {:label => "Spot Request Type", :value => spot_request.request_type},
+                                {:label => "Spot Price", :value => spot_request.price.to_s}]
+          service.server_summary(nil, columns_with_info)
+          print ui.color('Waiting for Spot Request fulfillment:  ', :cyan)
+          spot_request.wait_for do
+            spinner ||= %w(| / - \\)
+            print "\b" + spinner.rotate!.first
+            ready?
+          end
+          puts("\n")
+          spot_request
         end
 
         def post_connection_validations
@@ -422,7 +442,8 @@ class Chef
                                 {:label => 'Root Device Type', :key => 'root_device_type'},
                                 {:label => "Region", :value => service.connection.instance_variable_get(:@region)},
                                 {:label => "Tags", :value => hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")},
-                                {:label => "SSH Key", :key => 'key_name'}
+                                {:label => "SSH Key", :key => 'key_name'},
+                                {:label => 'Spot Instance Request ID', :key => 'spot_instance_request_id'}
                                ]
 
           # If we don't specify a security group or security group id, Fog will
