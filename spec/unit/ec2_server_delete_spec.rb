@@ -49,91 +49,91 @@ describe Chef::Knife::Ec2ServerDelete do
                             }
         @knife_ec2_delete = Chef::Knife::Ec2ServerDelete.new
         @ec2_servers = double()
-        @knife_ec2_delete.ui.stub(:confirm)
-        @knife_ec2_delete.stub(:msg_pair)
+        allow(@knife_ec2_delete.ui).to receive(:confirm)
+        allow(@knife_ec2_delete).to receive(:msg_pair)
         @ec2_server = double(@ec2_server_attribs)
         @ec2_connection = double(Fog::Compute::AWS)
-        @ec2_connection.stub(:servers).and_return(@ec2_servers)
-        @knife_ec2_delete.ui.stub(:warn)
+        allow(@ec2_connection).to receive(:servers).and_return(@ec2_servers)
+        allow(@knife_ec2_delete.ui).to receive(:warn)
       end
 
     it "should invoke validate!" do
       knife_ec2_delete = Chef::Knife::Ec2ServerDelete.new
-      knife_ec2_delete.should_receive(:validate!)
+      expect(knife_ec2_delete).to receive(:validate!)
       knife_ec2_delete.run
     end
 
     it "should use invoke fog api to delete instance if instance id is passed" do
-      @ec2_servers.should_receive(:get).with('foo').and_return(@ec2_server)
-      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
+      expect(@ec2_servers).to receive(:get).with('foo').and_return(@ec2_server)
+      expect(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
       @knife_ec2_delete.name_args = ['foo']
-      @knife_ec2_delete.should_receive(:validate!)
-      @ec2_server.should_receive(:destroy)
+      expect(@knife_ec2_delete).to receive(:validate!)
+      expect(@ec2_server).to receive(:destroy)
       @knife_ec2_delete.run
     end
 
     it "should use node_name to figure out instance id if not specified explicitly" do
-        @ec2_servers.should_receive(:get).with('foo').and_return(@ec2_server)
-        Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
-        @knife_ec2_delete.should_receive(:validate!)
-        @ec2_server.should_receive(:destroy)
+        expect(@ec2_servers).to receive(:get).with('foo').and_return(@ec2_server)
+        expect(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+        expect(@knife_ec2_delete).to receive(:validate!)
+        expect(@ec2_server).to receive(:destroy)
         @knife_ec2_delete.config[:purge] = false
         @knife_ec2_delete.config[:chef_node_name] = 'baz'
         double_node = double(Chef::Node)
-        double_node.should_receive(:attribute?).with('ec2').and_return(true)
-        double_node.should_receive(:[]).with('ec2').and_return('instance_id'=>'foo')
+        expect(double_node).to receive(:attribute?).with('ec2').and_return(true)
+        expect(double_node).to receive(:[]).with('ec2').and_return('instance_id'=>'foo')
         double_search = double(Chef::Search::Query)
-        double_search.should_receive(:search).with(:node,"name:baz").and_return([[double_node],nil,nil])
-        Chef::Search::Query.should_receive(:new).and_return(double_search)
+        expect(double_search).to receive(:search).with(:node,"name:baz").and_return([[double_node],nil,nil])
+        expect(Chef::Search::Query).to receive(:new).and_return(double_search)
         @knife_ec2_delete.name_args = []
         @knife_ec2_delete.run
     end
 
     describe "when --purge is passed" do
       it "should use the node name if its set" do
-        @ec2_servers.should_receive(:get).with('foo').and_return(@ec2_server)
-        Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
+        expect(@ec2_servers).to receive(:get).with('foo').and_return(@ec2_server)
+        expect(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
         @knife_ec2_delete.name_args = ['foo']
-        @knife_ec2_delete.should_receive(:validate!)
-        @ec2_server.should_receive(:destroy)
+        expect(@knife_ec2_delete).to receive(:validate!)
+        expect(@ec2_server).to receive(:destroy)
         @knife_ec2_delete.config[:purge] = true
         @knife_ec2_delete.config[:chef_node_name] = 'baz'
-        Chef::Node.should_receive(:load).with('baz').and_return(double(:destroy=>true))
-        Chef::ApiClient.should_receive(:load).with('baz').and_return(double(:destroy=>true))
+        expect(Chef::Node).to receive(:load).with('baz').and_return(double(:destroy=>true))
+        expect(Chef::ApiClient).to receive(:load).with('baz').and_return(double(:destroy=>true))
         @knife_ec2_delete.run
       end
 
       it "should search for the node name using the instance id when node name is not specified" do
-        @ec2_servers.should_receive(:get).with('i-foo').and_return(@ec2_server)
-        Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
+        expect(@ec2_servers).to receive(:get).with('i-foo').and_return(@ec2_server)
+        expect(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
         @knife_ec2_delete.name_args = ['i-foo']
-        @knife_ec2_delete.should_receive(:validate!)
-        @ec2_server.should_receive(:destroy)
+        expect(@knife_ec2_delete).to receive(:validate!)
+        expect(@ec2_server).to receive(:destroy)
         @knife_ec2_delete.config[:purge] = true
         @knife_ec2_delete.config[:chef_node_name] = nil
         double_search = double(Chef::Search::Query)
         double_node = double(Chef::Node)
-        double_node.should_receive(:name).and_return("baz")
-        Chef::Node.should_receive(:load).with('baz').and_return(double(:destroy=>true))
-        Chef::ApiClient.should_receive(:load).with('baz').and_return(double(:destroy=>true))
-        double_search.should_receive(:search).with(:node,"ec2_instance_id:i-foo").and_return([[double_node],nil,nil])
-        Chef::Search::Query.should_receive(:new).and_return(double_search)
+        expect(double_node).to receive(:name).and_return("baz")
+        expect(Chef::Node).to receive(:load).with('baz').and_return(double(:destroy=>true))
+        expect(Chef::ApiClient).to receive(:load).with('baz').and_return(double(:destroy=>true))
+        expect(double_search).to receive(:search).with(:node,"ec2_instance_id:i-foo").and_return([[double_node],nil,nil])
+        expect(Chef::Search::Query).to receive(:new).and_return(double_search)
         @knife_ec2_delete.run
       end
 
       it "should use  the instance id if search does not return anything" do
-        @ec2_servers.should_receive(:get).with('i-foo').and_return(@ec2_server)
-        Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
+        expect(@ec2_servers).to receive(:get).with('i-foo').and_return(@ec2_server)
+        expect(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
         @knife_ec2_delete.name_args = ['i-foo']
-        @knife_ec2_delete.should_receive(:validate!)
-        @ec2_server.should_receive(:destroy)
+        expect(@knife_ec2_delete).to receive(:validate!)
+        expect(@ec2_server).to receive(:destroy)
         @knife_ec2_delete.config[:purge] = true
         @knife_ec2_delete.config[:chef_node_name] = nil
-        Chef::Node.should_receive(:load).with('i-foo').and_return(double(:destroy=>true))
-        Chef::ApiClient.should_receive(:load).with('i-foo').and_return(double(:destroy=>true))
+        expect(Chef::Node).to receive(:load).with('i-foo').and_return(double(:destroy=>true))
+        expect(Chef::ApiClient).to receive(:load).with('i-foo').and_return(double(:destroy=>true))
         double_search = double(Chef::Search::Query)
-        double_search.should_receive(:search).with(:node,"ec2_instance_id:i-foo").and_return([[],nil,nil])
-        Chef::Search::Query.should_receive(:new).and_return(double_search)
+        expect(double_search).to receive(:search).with(:node,"ec2_instance_id:i-foo").and_return([[],nil,nil])
+        expect(Chef::Search::Query).to receive(:new).and_return(double_search)
         @knife_ec2_delete.run
       end
     end
