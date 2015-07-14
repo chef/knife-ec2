@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-$:.push File.expand_path('../lib', __FILE__)
+$LOAD_PATH.push File.expand_path('../lib', __FILE__)
 require 'knife-ec2/version'
 
 Gem::Specification.new do |s|
@@ -8,13 +8,13 @@ Gem::Specification.new do |s|
   s.authors      = ['Adam Jacob', 'Seth Chisamore']
   s.email        = ['adam@opscode.com', 'schisamo@opscode.com']
   s.homepage     = 'https://github.com/opscode/knife-ec2'
-  s.summary      = %q{EC2 Support for Chef's Knife Command}
+  s.summary      = "EC2 Support for Chef's Knife Command"
   s.description  = s.summary
   s.license      = 'Apache-2.0'
 
   s.files        = `git ls-files`.split("\n")
   s.test_files   = `git ls-files -- {test,spec,features}/*`.split("\n")
-  s.executables  = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
+  s.executables  = `git ls-files -- bin/*`.split("\n").map { |f| File.basename(f) }
 
   s.add_dependency 'fog',           '~> 1.25.0'
   s.add_dependency 'knife-windows', '>= 0.8.2'
@@ -27,4 +27,3 @@ Gem::Specification.new do |s|
 
   s.require_paths = ['lib']
 end
-
