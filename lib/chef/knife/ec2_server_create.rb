@@ -70,8 +70,8 @@ class Chef
             super
           end
         rescue CloudExceptions::ServerCreateError => e
-          ebs_optimized_fog_msg = 'ebs-optimized instances are not supported for your requested configuration'
-          placement_grp_fog_msg = 'placement groups may not be used with instances of type'
+          ebs_optimized_fog_msg = "ebs-optimized instances are not supported for your requested configuration"
+          placement_grp_fog_msg = "placement groups may not be used with instances of type"
           err_msg = e.message.downcase
 
           flavor = locate_config_value(:flavor)
