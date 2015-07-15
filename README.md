@@ -1,14 +1,22 @@
 Knife EC2
 =========
+
 [![Gem Version](https://badge.fury.io/rb/knife-ec2.png)](http://badge.fury.io/rb/knife-ec2)
-[![Build Status](https://travis-ci.org/opscode/knife-ec2.png?branch=master)](https://travis-ci.org/opscode/knife-ec2)
-[![Dependency Status](https://gemnasium.com/opscode/knife-ec2.png)](https://gemnasium.com/opscode/knife-ec2)
+[![Build Status](https://travis-ci.org/chef/knife-ec2.png?branch=master)](https://travis-ci.org/chef/knife-ec2)
+[![Dependency Status](https://gemnasium.com/chef/knife-ec2.png)](https://gemnasium.com/chef/knife-ec2)
 
-This is the official Opscode Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
-
+This is the official Chef Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
 
 Installation
 ------------
+
+If you're using [ChefDK](http://downloads.chef.io/chef-dk/), simply install the
+Gem:
+
+```bash
+chef gem install knife-ec2
+```
+
 If you're using bundler, simply add Chef and Knife EC2 to your `Gemfile`:
 
 ```ruby
@@ -25,7 +33,6 @@ This plugin is distributed as a Ruby Gem. To install it, run:
     $ gem install knife-ec2
 
 Depending on your system's configuration, you may need to run this command with root privileges.
-
 
 Configuration
 -------------
@@ -89,7 +96,7 @@ Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap
     # A Windows instance via the WinRM protocol -- --ssh-key is still required due to EC2 API operations that need it to grant access to the Windows instance
     knife ec2 server create -I ami-173d747e -G windows -f m1.medium --user-data ~/your-user-data-file -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id
 
-View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](http://docs.opscode.com/plugin_knife_windows.html).
+View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](https://docs.chef.io/plugin_knife_windows.html).
 
 #### `knife ec2 server delete`
 Deletes an existing server in the currently configured AWS account. **By default, this does not delete the associated node and client objects from the Chef server. To do so, add the `--purge` flag**
@@ -98,18 +105,16 @@ Deletes an existing server in the currently configured AWS account. **By default
 Outputs a list of all servers in the currently configured AWS account. **Note, this shows all instances associated with the account, some of which may not be currently managed by the Chef server.**
 
 #### `knife ec2 instance data`
-Generates instance metadata in meant to be used with Opscode's custom AMIs. This will read your knife configuration `~/.chef/knife.rb` for the validation certificate and Chef server URL to use and output in JSON format. The subcommand also accepts a list of roles/recipes that will be in the node's initial run list.
+Generates instance metadata in meant to be used with Chef's custom AMIs. This will read your knife configuration `~/.chef/knife.rb` for the validation certificate and Chef server URL to use and output in JSON format. The subcommand also accepts a list of roles/recipes that will be in the node's initial run list.
 
-**Note**: Using Opscode's custom AMIs reflect an older way of launching instances in EC2 for Chef and should be considered DEPRECATED. Leveraging this plugins's `knife ec2 server create` subcommands with a base AMIs directly from your Linux distribution (ie Ubuntu AMIs from Canonical) is much preferred and more flexible. Although this subcommand will remain, the Opscode custom AMIs are currently out of date.
-
-In-depth usage instructions can be found on the [Chef Wiki](http://wiki.opscode.com/display/chef/EC2+Bootstrap+Fast+Start+Guide).
+**Note**: Using Chef's custom AMIs reflect an older way of launching instances in EC2 for Chef and should be considered DEPRECATED. Leveraging this plugins's `knife ec2 server create` subcommands with a base AMIs directly from your Linux distribution (ie Ubuntu AMIs from Canonical) is much preferred and more flexible. Although this subcommand will remain, the Chef custom AMIs are currently out of date.
 
 License and Authors
 -------------------
-- Author:: Adam Jacob (<adam@opscode.com>)
+- Author:: Adam Jacob (<adam@chef.io>)
 
 ```text
-Copyright 2009-2013 Opscode, Inc.
+Copyright 2009-2015 Chef Software, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
