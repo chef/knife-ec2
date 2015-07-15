@@ -67,6 +67,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife].delete(:ec2_ssh_key_id)
       Chef::Config[:knife].delete(:ebs_provisioned_iops)
       Chef::Config[:knife].delete(:ebs_volume_type)
+      Chef::Config[:knife].delete(:ebs_encrypted)
     end
 
     it "run sucessfully on all params exist" do
@@ -104,6 +105,20 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife][:ebs_volume_type] = 'io1'
 
       expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --provisioned-iops option is required when using volume type of 'io1'.")
+    end
+
+    it 'raise error if flavor option is not specified with ebs_encrypted option' do
+      Chef::Config[:knife][:ebs_encrypted] =  true
+      Chef::Config[:knife][:ebs_volume_type] = nil
+      @instance.config[:flavor] = nil
+      expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --ebs_encrypted option requires valid flavor to be specified.")
+    end
+
+    it 'raise invalid flavor error if its not included in valid flavor list for ebs_encrypted option' do
+      Chef::Config[:knife][:ebs_encrypted] =  true
+      Chef::Config[:knife][:ebs_volume_type] = nil
+      @instance.config[:flavor] = ''
+      expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --ebs_encrypted option is not supported for  flavor.")
     end
   end
 
@@ -229,6 +244,20 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       expect(@instance.create_options[:server_def][:tenancy]).to be nil
     end
 
+    context 'when using ebs_encrypted option' do
+      before do
+        @instance.config[:ebs_encrypted] = true
+        allow(@instance).to receive_message_chain(:ami, :root_device_type).and_return('ebs')
+      end
+
+      it 'sets block device mapping for volume encryption' do
+        allow(@instance).to receive_message_chain(:ami, :block_device_mapping).and_return([{'deviceName' => '/dev/sd1' },
+          {'deviceName' => '/dev/sdb'}])
+        @instance.before_exec_command
+        expect(@instance.create_options[:server_def][:block_device_mapping].first['Ebs.Encrypted']).to eql(true)
+      end
+    end
+
     context "when using ebs volume type and ebs provisioned iops rate options" do
       before do
         allow(@instance).to receive_message_chain(:ami, :root_device_type).and_return("ebs")
@@ -313,17 +342,18 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife].delete(:ec2_floating_ip)
     end
 
-    it "prints server summary." do
+    it 'prints server summary.' do
       allow(@instance.service).to receive(:get_server_name)
-      allow(@instance.server).to receive(:id).and_return("instance_id")
-      allow(@instance.server).to receive_message_chain(:groups, :join).and_return("groups")
-      allow(@instance.server).to receive_message_chain(:security_group_ids, :join).and_return("security_group_ids")
-      allow(@instance).to receive_message_chain(:service, :connection, :tags, :create).with(:key => "Name",
-                                                        :value => "instance_id",
-                                                        :resource_id => "instance_id")
-      allow(@instance.server).to receive(:root_device_type).and_return("ebs")
-      allow(@instance.server).to receive_message_chain(:block_device_mapping, :first).and_return("block_device_mapping")
-      allow(@instance.server).to receive_message_chain(:volumes, :first).and_return(TestResource.new({:type => "gp2", :iops => "100"}))
+      allow(@instance.server).to receive(:id).and_return('instance_id')
+      allow(@instance.server).to receive_message_chain(:groups, :join).and_return('groups')
+      allow(@instance.server).to receive_message_chain(:security_group_ids, :join).and_return('security_group_ids')
+      allow(@instance).to receive_message_chain(:service, :connection, :tags, :create).with(:key => 'Name',
+                                                        :value => 'instance_id',
+                                                        :resource_id => 'instance_id')
+      allow(@instance.server).to receive(:root_device_type).and_return('ebs')
+      allow(@instance.server).to receive_message_chain(:block_device_mapping, :first).and_return('block_device_mapping')
+      allow(@instance.server).to receive_message_chain(:volumes, :first).and_return(TestResource.new({:type => 'gp2', :iops => '100'}))
+      allow(@instance.server).to receive_message_chain(:block_device_mapping, :each).and_return('block_device_mapping')
       allow(@instance.service).to receive(:server_summary)
       expect(@instance).to receive(:bootstrap)
       @instance.after_exec_command

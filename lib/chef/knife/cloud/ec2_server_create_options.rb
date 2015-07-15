@@ -129,9 +129,16 @@ class Chef
               :proc => lambda { |url| Chef::Config[:knife][:s3_secret] = url }
 
             option :validation_key_url,
-              :long => "--validation-key-url URL",
-              :description => "Path to the validation key",
+              :long => '--validation-key-url URL',
+              :description => 'Path to the validation key',
               :proc => proc { |m| Chef::Config[:validation_key_url] = m }
+
+            option :ebs_encrypted,
+              :long => '--ebs-encrypted',
+              :description => 'Enables EBS volume encryption',
+              :boolean => true,
+              :default => false
+
           end
         end
       end
