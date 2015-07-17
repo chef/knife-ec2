@@ -10,8 +10,6 @@ describe 'Check Dependencies', :exclude => Object.constants.include?(:Fog) do
     begin
       Fog::Storage::AWS.new()
     rescue Exception => e
-      require 'pry'
-      binding.pry
       expect(e).to be_a_kind_of(NameError)
     end
   end
