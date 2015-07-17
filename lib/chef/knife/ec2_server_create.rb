@@ -105,7 +105,7 @@ class Chef
         :short => "-S KEY",
         :long => "--ssh-key KEY",
         :description => "The AWS SSH key id",
-        :proc => Proc.new { |key| Chef::Config[:knife][:aws_ssh_key_id] = key }
+        :proc => Proc.new { |key| Chef::Config[:knife][:ssh_key_name] = key }
 
       option :ssh_user,
         :short => "-x USERNAME",
@@ -707,7 +707,13 @@ class Chef
       end
 
       def validate!
-        super([:image, :aws_ssh_key_id, :aws_access_key_id, :aws_secret_access_key])
+        if Chef::Config[:knife].keys.include? :aws_ssh_key_id
+          Chef::Config[:knife][:ssh_key_name] = Chef::Config[:knife][:aws_ssh_key_id] if !Chef::Config[:knife][:ssh_key_name]
+          Chef::Config[:knife].delete(:aws_ssh_key_id)
+          ui.warn("Use of aws_ssh_key_id option in knife.rb config is deprecated, use ssh_key_name option instead.")
+        end
+
+        super([:image, :ssh_key_name, :aws_access_key_id, :aws_secret_access_key])
 
         if ami.nil?
           ui.error("You have not provided a valid image (AMI) value.")
@@ -799,6 +805,7 @@ class Chef
             exit 1
           end
         end
+
       end
 
       def tags
@@ -824,7 +831,7 @@ class Chef
           :groups => config[:security_groups],
           :security_group_ids => locate_config_value(:security_group_ids),
           :flavor_id => locate_config_value(:flavor),
-          :key_name => Chef::Config[:knife][:aws_ssh_key_id],
+          :key_name => locate_config_value(:ssh_key_name),
           :availability_zone => locate_config_value(:availability_zone),
           :price => locate_config_value(:spot_price)
         }
@@ -835,11 +842,11 @@ class Chef
         server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
         server_def[:associate_public_ip] = locate_config_value(:associate_public_ip) if vpc_mode? and config[:associate_public_ip]
 
-        if Chef::Config[:knife][:aws_user_data]
+        if locate_config_value(:aws_user_data)
           begin
-            server_def.merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
+            server_def.merge!(:user_data => File.read(locate_config_value(:aws_user_data)))
           rescue
-            ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+            ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
           end
         end
 

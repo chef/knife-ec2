@@ -33,7 +33,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     {
       :image => 'image',
-      :aws_ssh_key_id => 'aws_ssh_key_id',
+      :ssh_key_name => 'ssh_key_name',
       :aws_access_key_id => 'aws_access_key_id',
       :aws_secret_access_key => 'aws_secret_access_key'
     }.each do |key, value|
@@ -372,6 +372,59 @@ describe Chef::Knife::Ec2ServerCreate do
       it 'sets the secret to the expected test string' do
         expect(bootstrap.config[:secret]).to eql(@secret_content)
       end
+    end
+  end
+
+  context "when deprecated aws_ssh_key_id option is used in knife config and no ssh-key is supplied on the CLI" do
+    before do
+      Chef::Config[:knife][:aws_ssh_key_id] = "mykey"
+      Chef::Config[:knife].delete(:ssh_key_name)
+      @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
+      allow(@knife_ec2_create).to receive(:ami).and_return(false)
+    end
+      
+    it "gives warning message and creates the attribute with the required name" do
+      expect(@knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb config is deprecated, use ssh_key_name option instead.")
+      @knife_ec2_create.validate!
+      expect(Chef::Config[:knife][:ssh_key_name]).to eq(@aws_key)
+    end
+  end
+
+  context "when deprecated aws_ssh_key_id option is used in knife config but ssh-key is also supplied on the CLI" do
+    before do
+      Chef::Config[:knife][:aws_ssh_key_id] = "mykey"
+      @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
+      allow(@knife_ec2_create).to receive(:ami).and_return(false)
+    end
+      
+    it "gives warning message and gives preference to CLI value over knife config's value" do
+      expect(@knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb config is deprecated, use ssh_key_name option instead.")
+      @knife_ec2_create.validate!
+      expect(Chef::Config[:knife][:ssh_key_name]).to_not eq(@aws_key)
+    end
+  end
+
+  context "when ssh_key_name option is used in knife config instead of deprecated aws_ssh_key_id option" do
+    before do
+      Chef::Config[:knife][:ssh_key_name] = "mykey"
+      allow(@knife_ec2_create).to receive(:ami).and_return(false)
+    end
+     
+    it "does nothing" do
+      @knife_ec2_create.validate!
+    end
+  end
+
+  context "when ssh_key_name option is used in knife config also it is passed on the CLI" do
+    before do
+      Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
+      Chef::Config[:knife][:ssh_key_name] = "mykey"
+      @knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
+    end
+      
+    it "ssh-key passed over CLI gets preference over knife config value" do
+      server_def = @knife_ec2_create.create_server_def
+      expect(server_def[:key_name]).to eq(@knife_ec2_create.config[:ssh_key_name])
     end
   end
 
