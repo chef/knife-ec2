@@ -185,9 +185,17 @@ class Chef
 
           errors << "Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']" if(locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class == String)
 
-          errors << '--ebs_encrypted option requires valid flavor to be specified' if locate_config_value(:ebs_encrypted) and !locate_config_value(:flavor)
+          if locate_config_value (:ebs_encrypted)
+            errors << '--ebs_encrypted option requires valid flavor to be specified' if locate_config_value(:ebs_encrypted) and !locate_config_value(:flavor)
 
-          errors << "--ebs_encrypted option is not supported for #{locate_config_value(:flavor)} flavor" if locate_config_value(:flavor) && locate_config_value(:ebs_encrypted) && ! flavors.include?(locate_config_value(:flavor))
+            errors << "--ebs_encrypted option is not supported for #{locate_config_value(:flavor)} flavor" if locate_config_value(:flavor) && locate_config_value(:ebs_encrypted) && ! flavors.include?(locate_config_value(:flavor))
+
+            errors << '--ebs-encrypted option requires valid --ebs-size to be specified.' if !locate_config_value(:ebs_size)
+
+            errors << '--ebs-size should be in between 1-16384 for \'gp2\' ebs volume type.' if (locate_config_value(:ebs_size) && ! locate_config_value(:ebs_size).to_i.between?(1, 16384)) && locate_config_value(:ebs_volume_type) == 'gp2'
+
+            errors << '--ebs-size should be in between 1-1024 for \'standard\' ebs volume type.' if locate_config_value(:ebs_volume_type) == 'standard' && ! locate_config_value(:ebs_size).to_i.between?(1, 1024)
+          end
 
           error_message = ''
 
@@ -282,8 +290,8 @@ class Chef
             elastic_ip = service.connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
 
             if elastic_ip
-             service.connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
-              server.wait_for { public_ip_address == elastic_ip.public_ip }
+              service.connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
+              server.wait_for(locate_config_value(:server_create_timeout)) { public_ip_address == elastic_ip.public_ip }
             end
           end
         end
