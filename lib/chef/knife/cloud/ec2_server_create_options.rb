@@ -139,6 +139,11 @@ class Chef
               :boolean => true,
               :default => false
 
+            option :spot_price,
+              :long => "--spot-price PRICE",
+              :description => "The maximum hourly USD price for the instance",
+              :default => nil
+
           end
         end
       end
