@@ -3,6 +3,7 @@
 .bundle
 .rvmrc
 Gemfile.lock
+Guardfile
 .autotest
 coverage
 .DS_Store

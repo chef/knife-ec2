@@ -9,7 +9,7 @@ class Chef
     class Cloud
       module Ec2ServiceOptions
 
-       def self.included(includer)
+        def self.included(includer)
           includer.class_eval do
             include FogOptions
 
@@ -42,6 +42,11 @@ class Chef
               :boolean => true,
               :default => false,
               :proc => Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key }
+
+            option :aws_session_token,
+              :long => '--aws-session-token TOKEN',
+              :description => 'Your AWS Session Token, for use with AWS STS Federation or Session Tokens',
+              :proc => Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
           end
         end
       end
