@@ -48,6 +48,8 @@ If your `knife.rb` file will be checked into a SCM system (ie readable by others
 ```ruby
 knife[:aws_access_key_id] = ENV['AWS_ACCESS_KEY_ID']
 knife[:aws_secret_access_key] = ENV['AWS_SECRET_ACCESS_KEY']
+# Optional if you're using Amazon's STS
+knife[:aws_session_token] = ENV['AWS_SESSION_TOKEN']
 ```
 
 You also have the option of passing your AWS API Key/Secret into the individual knife subcommands using the `-A` (or `--aws-access-key-id`) `-K` (or `--aws-secret-access-key`) command options
@@ -82,7 +84,8 @@ Additionally the following options may be set in your `knife.rb`:
 - flavor
 - image
 - availability_zone
-- aws_ssh_key_id
+- ssh_key_name
+- aws_session_token
 - region
 - distro
 - template_file
@@ -108,15 +111,19 @@ knife-ec2 now includes the ability to retrieve the encrypted data bag secret and
 }
 ```
 
+### Supported URL format
+- `http` or `https` based: 'http://provisioning.bucket.com/chef/my-validator.pem'
+- `s3` based:  's3://chef/my-validator.pem'
+
 ### Use the following configuration options in `knife.rb` to set the source URLs:
 ```ruby
-knife[:validation_key_url] = 's3://provisioning.bucket.com/chef/my-validator.pem'
-knife[:s3_secret] = 's3://provisioning.bucket.com/chef/encrypted_data_bag_secret'
+knife[:validation_key_url] = 'http://provisioning.bucket.com/chef/my-validator.pem'
+knife[:s3_secret] = 'http://provisioning.bucket.com/chef/encrypted_data_bag_secret'
 ```
 
 ### Alternatively, URLs can be passed directly on the command line:
-- Validation Key: `--validation-key-url s3://provisioning.bucket.com/chef/my-validator.pem`
-- Encrypted Data Bag Secret: `--s3-secret s3://provisioning.bucket.com/chef/encrypted_data_bag_secret`
+- Validation Key: `--validation-key-url s3://chef/my-validator.pem`
+- Encrypted Data Bag Secret: `--s3-secret s3://chef/encrypted_data_bag_secret`
 
 Subcommands
 -----------
