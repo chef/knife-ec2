@@ -181,16 +181,21 @@ class Chef
 
           errors << "Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']" if(locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class == String)
 
+          # validations for ebs volume encryption
           if locate_config_value (:ebs_encrypted)
-            errors << '--ebs_encrypted option requires valid flavor to be specified' if locate_config_value(:ebs_encrypted) and !locate_config_value(:flavor)
+            errors << '--ebs_encrypted option requires valid flavor to be specified' if !locate_config_value(:flavor)
 
-            errors << "--ebs_encrypted option is not supported for #{locate_config_value(:flavor)} flavor" if locate_config_value(:flavor) && locate_config_value(:ebs_encrypted) && ! flavors.include?(locate_config_value(:flavor))
+            errors << "--ebs_encrypted option is not supported for #{locate_config_value(:flavor)} flavor" if locate_config_value(:flavor) && ! flavors.include?(locate_config_value(:flavor))
 
-            errors << '--ebs-encrypted option requires valid --ebs-size to be specified.' if !locate_config_value(:ebs_size)
+            errors << '--ebs-encrypted option requires valid --ebs-size to be specified' if !locate_config_value(:ebs_size)
 
-            errors << '--ebs-size should be in between 1-16384 for \'gp2\' ebs volume type.' if (locate_config_value(:ebs_size) && ! locate_config_value(:ebs_size).to_i.between?(1, 16384)) && locate_config_value(:ebs_volume_type) == 'gp2'
+            if locate_config_value(:ebs_size)
+              errors << '--ebs-size should be in between 1-16384 for \'gp2\' ebs volume type' if locate_config_value(:ebs_volume_type) == 'gp2' && ! locate_config_value(:ebs_size).to_i.between?(1, 16384)
 
-            errors << '--ebs-size should be in between 1-1024 for \'standard\' ebs volume type.' if locate_config_value(:ebs_volume_type) == 'standard' && ! locate_config_value(:ebs_size).to_i.between?(1, 1024)
+              errors << '--ebs-size should be in between 1-1024 for \'standard\' ebs volume type' if locate_config_value(:ebs_volume_type) == 'standard' && ! locate_config_value(:ebs_size).to_i.between?(1, 1024)
+
+              errors << '--ebs-size should be in between 4-16384 for \'io1\' ebs volume type' if locate_config_value(:ebs_volume_type) == 'io1' && ! locate_config_value(:ebs_size).to_i.between?(4, 16384)
+            end
           end
 
           error_message = ''

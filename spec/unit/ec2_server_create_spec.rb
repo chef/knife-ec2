@@ -107,18 +107,46 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --provisioned-iops option is required when using volume type of 'io1'.")
     end
 
-    it 'raise error if flavor option is not specified with ebs_encrypted option' do
-      Chef::Config[:knife][:ebs_encrypted] =  true
-      Chef::Config[:knife][:ebs_volume_type] = nil
-      @instance.config[:flavor] = nil
-      expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --ebs_encrypted option requires valid flavor to be specified.")
-    end
+    context 'when ebs_encrypted option specified' do
+      before(:each) do
+        Chef::Config[:knife][:ebs_encrypted] =  true
+      end
 
-    it 'raise invalid flavor error if its not included in valid flavor list for ebs_encrypted option' do
-      Chef::Config[:knife][:ebs_encrypted] =  true
-      Chef::Config[:knife][:ebs_volume_type] = nil
-      @instance.config[:flavor] = ''
-      expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --ebs_encrypted option is not supported for  flavor.")
+      it 'raise error if --flavor and --ebs-size option is not specified with ebs_encrypted option' do
+        Chef::Config[:knife][:ebs_volume_type] = nil
+        @instance.config[:flavor] = nil
+        expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --ebs_encrypted option requires valid flavor to be specified. --ebs-encrypted option requires valid --ebs-size to be specified.")
+      end
+
+      it 'raise invalid flavor error if its not included in valid flavor list for ebs_encrypted option' do
+        Chef::Config[:knife][:ebs_volume_type] = nil
+        Chef::Config[:knife][:ebs_size] = 8
+        @instance.config[:flavor] = 't1.large'
+        expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --ebs_encrypted option is not supported for t1.large flavor.")
+      end
+
+      it 'raise error if invalid ebs_size specified for \'standard\' VolumeType' do
+        Chef::Config[:knife][:ebs_volume_type] = 'standard'
+        Chef::Config[:knife][:ebs_size] = '1055'
+        Chef::Config[:knife][:flavor] = 'm3.medium'
+        expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --ebs-size should be in between 1-1024 for 'standard' ebs volume type.")
+      end
+
+      it 'raise error on invalid ebs_size specified for \'gp2\' VolumeType' do
+        Chef::Config[:knife][:ebs_volume_type] = 'gp2'
+        Chef::Config[:knife][:ebs_size] = '16500'
+        Chef::Config[:knife][:flavor] = 'm3.medium'
+        expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --ebs-size should be in between 1-16384 for 'gp2' ebs volume type.")
+      end
+
+      it 'raise error on invalid ebs_size specified for \'io1\' VolumeType' do
+        Chef::Config[:knife][:ebs_volume_type] = 'io1'
+        Chef::Config[:knife][:ebs_size] = '3'
+        Chef::Config[:knife][:flavor] = 'm3.medium'
+        Chef::Config[:knife][:ebs_provisioned_iops] = '200'
+        expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " --ebs-size should be in between 4-16384 for 'io1' ebs volume type.")
+      end
+
     end
   end
 
