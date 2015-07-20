@@ -139,6 +139,93 @@ class Chef
               :boolean => true,
               :default => false
 
+=begin
+            option :distro,
+              :short => "-d DISTRO",
+              :long => "--distro DISTRO",
+              :description => "Bootstrap a distro using a template. [DEPRECATED] Use --bootstrap-template option instead.",
+              :proc        => Proc.new { |v|
+                Chef::Log.warn("[DEPRECATED] -d / --distro option is deprecated. Use --bootstrap-template option instead.")
+                v
+              }
+
+            option :template_file,
+              :long => "--template-file TEMPLATE",
+              :description => "Full path to location of template to use. [DEPRECATED] Use -t / --bootstrap-template option instead.",
+              :proc        => Proc.new { |v|
+                Chef::Log.warn("[DEPRECATED] --template-file option is deprecated. Use -t / --bootstrap-template option instead.")
+                v
+              }
+=end
+
+            option :bootstrap_template,
+              :long => "--bootstrap-template TEMPLATE",
+              :description => "Bootstrap Chef using a built-in or custom template. Set to the full path of an erb template or use one of the built-in templates."
+
+            option :node_ssl_verify_mode,
+              :long        => "--node-ssl-verify-mode [peer|none]",
+              :description => "Whether or not to verify the SSL cert for all HTTPS requests.",
+              :proc        => Proc.new { |v|
+                valid_values = ["none", "peer"]
+                unless valid_values.include?(v)
+                  raise "Invalid value '#{v}' for --node-ssl-verify-mode. Valid values are: #{valid_values.join(", ")}"
+                end
+              }
+
+            option :node_verify_api_cert,
+              :long        => "--[no-]node-verify-api-cert",
+              :description => "Verify the SSL cert for HTTPS requests to the Chef server API.",
+              :boolean     => true
+
+            option :bootstrap_no_proxy,
+              :long => "--bootstrap-no-proxy [NO_PROXY_URL|NO_PROXY_IP]",
+              :description => "Do not proxy locations for the node being bootstrapped; this option is used internally by Opscode",
+              :proc => Proc.new { |np| Chef::Config[:knife][:bootstrap_no_proxy] = np }
+
+            option :bootstrap_url,
+              :long        => "--bootstrap-url URL",
+              :description => "URL to a custom installation script",
+              :proc        => Proc.new { |u| Chef::Config[:knife][:bootstrap_url] = u }
+
+            option :bootstrap_install_command,
+              :long        => "--bootstrap-install-command COMMANDS",
+              :description => "Custom command to install chef-client",
+              :proc        => Proc.new { |ic| Chef::Config[:knife][:bootstrap_install_command] = ic }
+
+            option :bootstrap_wget_options,
+              :long        => "--bootstrap-wget-options OPTIONS",
+              :description => "Add options to wget when installing chef-client",
+              :proc        => Proc.new { |wo| Chef::Config[:knife][:bootstrap_wget_options] = wo }
+
+            option :bootstrap_curl_options,
+              :long        => "--bootstrap-curl-options OPTIONS",
+              :description => "Add options to curl when install chef-client",
+              :proc        => Proc.new { |co| Chef::Config[:knife][:bootstrap_curl_options] = co }
+
+            option :bootstrap_vault_file,
+              :long        => '--bootstrap-vault-file VAULT_FILE',
+              :description => 'A JSON file with a list of vault(s) and item(s) to be updated'
+
+            option :bootstrap_vault_json,
+              :long        => '--bootstrap-vault-json VAULT_JSON',
+              :description => 'A JSON string with the vault(s) and item(s) to be updated'
+
+            option :bootstrap_vault_item,
+              :long        => '--bootstrap-vault-item VAULT_ITEM',
+              :description => 'A single vault and item to update as "vault:item"',
+              :proc        => Proc.new { |i|
+                (vault, item) = i.split(/:/)
+                Chef::Config[:knife][:bootstrap_vault_item] ||= {}
+                Chef::Config[:knife][:bootstrap_vault_item][vault] ||= []
+                Chef::Config[:knife][:bootstrap_vault_item][vault].push(item)
+                Chef::Config[:knife][:bootstrap_vault_item]
+              }
+
+            option :use_sudo_password,
+              :long => "--use-sudo-password",
+              :description => "Execute the bootstrap via sudo with password",
+              :boolean => false
+
           end
         end
       end
