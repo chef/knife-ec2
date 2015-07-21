@@ -609,5 +609,21 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
         Chef::Config[:knife].delete(:use_iam_profile)
       end
     end
+
+    describe 'when aws_session_token is present' do
+      before(:each) do
+        Chef::Config[:knife].delete(:use_iam_profile)
+        Chef::Config[:knife][:aws_secret_access_key] = 'aws_secret_access_key'
+        Chef::Config[:knife][:aws_access_key_id] = 'aws_access_key_id'
+        Chef::Config[:knife][:aws_session_token] = 'session-token'
+      end
+
+      it 'creates a connection using the session token' do
+        @ec2_connection = double(Fog::Compute::AWS)
+        @ec2_service = Chef::Knife::Cloud::Ec2Service.new
+        expect(Fog::Compute::AWS).to receive(:new).with(hash_including(:aws_session_token => 'session-token')).and_return(@ec2_connection)
+        @ec2_service.connection
+      end
+    end
   end
 end
