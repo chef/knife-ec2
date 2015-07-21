@@ -29,7 +29,7 @@ describe Chef::Knife::Ec2ServerCreate do
   before(:each) do
     @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
     @knife_ec2_create.initial_sleep_delay = 0
-    @knife_ec2_create.stub(:tcp_test_ssh).and_return(true)
+    allow(@knife_ec2_create).to receive(:tcp_test_ssh).and_return(true)
 
     {
       :image => 'image',
@@ -41,9 +41,9 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     @ec2_connection = double(Fog::Compute::AWS)
-    @ec2_connection.stub_chain(:tags).and_return double('create', :create => true)
-    @ec2_connection.stub_chain(:images, :get).and_return double('ami', :root_device_type => 'not_ebs', :platform => 'linux')
-    @ec2_connection.stub_chain(:addresses).and_return [double('addesses', {
+    allow(@ec2_connection).to receive(:tags).and_return double('create', :create => true)
+    allow(@ec2_connection).to receive_message_chain(:images, :get).and_return double('ami', :root_device_type => 'not_ebs', :platform => 'linux')
+    allow(@ec2_connection).to receive(:addresses).and_return [double('addesses', {
             :domain => 'standard',
             :public_ip => '111.111.111.111',
             :server_id => nil,
@@ -68,13 +68,13 @@ describe Chef::Knife::Ec2ServerCreate do
                            :root_device_type => 'not_ebs' }
 
     @ec2_server_attribs.each_pair do |attrib, value|
-      @new_ec2_server.stub(attrib).and_return(value)
+      allow(@new_ec2_server).to receive(attrib).and_return(value)
     end
 
     @s3_connection = double(Fog::Storage::AWS)
 
     @bootstrap = Chef::Knife::Bootstrap.new
-    Chef::Knife::Bootstrap.stub(:new).and_return(@bootstrap)
+    allow(Chef::Knife::Bootstrap).to receive(:new).and_return(@bootstrap)
 
     @validation_key_url = 's3://bucket/foo/bar'
     @validation_key_file = '/tmp/a_good_temp_file'
@@ -83,31 +83,31 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "run" do
     before do
-      @ec2_servers.should_receive(:create).and_return(@new_ec2_server)
-      @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
-      @ec2_connection.should_receive(:addresses)
+      expect(@ec2_servers).to receive(:create).and_return(@new_ec2_server)
+      expect(@ec2_connection).to receive(:servers).and_return(@ec2_servers)
+      expect(@ec2_connection).to receive(:addresses)
 
       @eip = "111.111.111.111"
-      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
+      expect(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
 
-      @knife_ec2_create.stub(:puts)
-      @knife_ec2_create.stub(:print)
+      allow(@knife_ec2_create).to receive(:puts)
+      allow(@knife_ec2_create).to receive(:print)
       @knife_ec2_create.config[:image] = '12345'
-      @bootstrap.should_receive(:run)
+      expect(@bootstrap).to receive(:run)
     end
 
     it "defaults to a distro of 'chef-full' for a linux instance" do
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
       @knife_ec2_create.config[:distro] = @knife_ec2_create.options[:distro][:default]
       expect(@knife_ec2_create).to receive(:default_bootstrap_template).and_return('chef-full')
       @knife_ec2_create.run
     end
 
     it "creates an EC2 instance and bootstraps it" do
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
-      @knife_ec2_create.should_receive(:ssh_override_winrm)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
+      expect(@knife_ec2_create).to receive(:ssh_override_winrm)
       @knife_ec2_create.run
-      @knife_ec2_create.server.should_not == nil
+      expect(@knife_ec2_create.server).to_not be_nil
     end
 
     it "set ssh_user value by using -x option for ssh bootstrap protocol or linux image" do
@@ -116,10 +116,10 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:winrm_user] = "ubuntu"
       @knife_ec2_create.config[:ssh_user] = "root"
 
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
       @knife_ec2_create.run
-      @knife_ec2_create.config[:ssh_user].should == "ubuntu"
-      @knife_ec2_create.server.should_not == nil
+      expect(@knife_ec2_create.config[:ssh_user]).to eq("ubuntu")
+      expect(@knife_ec2_create.server).to_not be_nil
     end
 
     it "set ssh_password value by using -P option for ssh bootstrap protocol or linux image" do
@@ -128,10 +128,10 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:winrm_password] = "winrm_password"
       @knife_ec2_create.config[:ssh_password] = nil
 
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
       @knife_ec2_create.run
-      @knife_ec2_create.config[:ssh_password].should == "winrm_password"
-      @knife_ec2_create.server.should_not == nil
+      expect(@knife_ec2_create.config[:ssh_password]).to eq("winrm_password")
+      expect(@knife_ec2_create.server).to_not be_nil
     end
 
     it "set ssh_port value by using -p option for ssh bootstrap protocol or linux image" do
@@ -140,10 +140,10 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:winrm_port] = "1234"
       @knife_ec2_create.config[:ssh_port] = "22"
 
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
       @knife_ec2_create.run
-      @knife_ec2_create.config[:ssh_port].should == "1234"
-      @knife_ec2_create.server.should_not == nil
+      expect(@knife_ec2_create.config[:ssh_port]).to eq("1234")
+      expect(@knife_ec2_create.server).to_not be_nil
     end
 
     it "set identity_file value by using -i option for ssh bootstrap protocol or linux image" do
@@ -152,76 +152,76 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:kerberos_keytab_file] = "kerberos_keytab_file"
       @knife_ec2_create.config[:identity_file] = nil
 
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
       @knife_ec2_create.run
-      @knife_ec2_create.config[:identity_file].should == "kerberos_keytab_file"
-      @knife_ec2_create.server.should_not == nil
+      expect(@knife_ec2_create.config[:identity_file]).to eq("kerberos_keytab_file")
+      expect(@knife_ec2_create.server).to_not be_nil
     end
 
     it "should never invoke windows bootstrap for linux instance" do
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
-      @knife_ec2_create.should_not_receive(:bootstrap_for_windows_node)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
+      expect(@knife_ec2_create).not_to receive(:bootstrap_for_windows_node)
       @knife_ec2_create.run
     end
 
     it "creates an EC2 instance, assigns existing EIP and bootstraps it" do
       @knife_ec2_create.config[:associate_eip] = @eip
 
-      @new_ec2_server.stub(:public_ip_address).and_return(@eip)
-      @ec2_connection.should_receive(:associate_address).with(@ec2_server_attribs[:id], @eip, nil, '')
-      @new_ec2_server.should_receive(:wait_for).at_least(:twice).and_return(true)
+      allow(@new_ec2_server).to receive(:public_ip_address).and_return(@eip)
+      expect(@ec2_connection).to receive(:associate_address).with(@ec2_server_attribs[:id], @eip, nil, '')
+      expect(@new_ec2_server).to receive(:wait_for).at_least(:twice).and_return(true)
 
       @knife_ec2_create.run
-      @knife_ec2_create.server.should_not == nil
+      expect(@knife_ec2_create.server).to_not be_nil
     end
 
     it "retries if it receives Fog::Compute::AWS::NotFound" do
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
-      @knife_ec2_create.should_receive(:create_tags).and_raise(Fog::Compute::AWS::NotFound)
-      @knife_ec2_create.should_receive(:create_tags).and_return(true)
-      @knife_ec2_create.should_receive(:sleep).and_return(true)
-      @knife_ec2_create.ui.should_receive(:warn).with(/retrying/)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
+      expect(@knife_ec2_create).to receive(:create_tags).and_raise(Fog::Compute::AWS::NotFound)
+      expect(@knife_ec2_create).to receive(:create_tags).and_return(true)
+      expect(@knife_ec2_create).to receive(:sleep).and_return(true)
+      expect(@knife_ec2_create.ui).to receive(:warn).with(/retrying/)
       @knife_ec2_create.run
     end
 
     it 'actually writes to the validation key tempfile' do
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
       Chef::Config[:knife][:validation_key_url] =
         @validation_key_url
       @knife_ec2_create.config[:validation_key_url] =
         @validation_key_url
 
-      @knife_ec2_create.stub_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
-      Chef::Knife::S3Source.stub(:fetch).with(@validation_key_url).and_return(@validation_key_body)
-      File.should_receive(:open).with(@validation_key_file, 'w')
+      allow(@knife_ec2_create).to receive_message_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
+      allow(Chef::Knife::S3Source).to receive(:fetch).with(@validation_key_url).and_return(@validation_key_body)
+      expect(File).to receive(:open).with(@validation_key_file, 'w')
       @knife_ec2_create.run
     end
   end
 
   describe "run for EC2 Windows instance" do
     before do
-      @ec2_servers.should_receive(:create).and_return(@new_ec2_server)
-      @ec2_connection.should_receive(:servers).and_return(@ec2_servers)
-      @ec2_connection.should_receive(:addresses)
+      expect(@ec2_servers).to receive(:create).and_return(@new_ec2_server)
+      expect(@ec2_connection).to receive(:servers).and_return(@ec2_servers)
+      expect(@ec2_connection).to receive(:addresses)
 
-      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
+      expect(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
 
-      @knife_ec2_create.stub(:puts)
-      @knife_ec2_create.stub(:print)
+      allow(@knife_ec2_create).to receive(:puts)
+      allow(@knife_ec2_create).to receive(:print)
       @knife_ec2_create.config[:identity_file] = "~/.ssh/aws-key.pem"
       @knife_ec2_create.config[:image] = '12345'
-      @knife_ec2_create.stub(:is_image_windows?).and_return(true)
-      @knife_ec2_create.stub(:tcp_test_winrm).and_return(true)
+      allow(@knife_ec2_create).to receive(:is_image_windows?).and_return(true)
+      allow(@knife_ec2_create).to receive(:tcp_test_winrm).and_return(true)
     end
 
     it "bootstraps via the WinRM protocol" do
       @knife_ec2_create.config[:winrm_password] = 'winrm-password'
       @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
       @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
-      Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
-      @bootstrap_winrm.should_receive(:run)
-      @knife_ec2_create.should_not_receive(:ssh_override_winrm)
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      allow(Chef::Knife::BootstrapWindowsWinrm).to receive(:new).and_return(@bootstrap_winrm)
+      expect(@bootstrap_winrm).to receive(:run)
+      expect(@knife_ec2_create).not_to receive(:ssh_override_winrm)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
       @knife_ec2_create.run
     end
 
@@ -229,9 +229,9 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:winrm_password] = 'winrm-password'
       @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
       @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
-      Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(@bootstrap_winrm)
-      @bootstrap_winrm.should_receive(:run)
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      allow(Chef::Knife::BootstrapWindowsWinrm).to receive(:new).and_return(@bootstrap_winrm)
+      expect(@bootstrap_winrm).to receive(:run)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
       allow(@knife_ec2_create).to receive(:is_image_windows?).and_return(true)
       expect(@knife_ec2_create).to receive(:default_bootstrap_template).and_return("windows-chef-client-msi")
       @knife_ec2_create.run
@@ -240,10 +240,10 @@ describe Chef::Knife::Ec2ServerCreate do
     it "bootstraps via the SSH protocol" do
       @knife_ec2_create.config[:bootstrap_protocol] = 'ssh'
       bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
-      Chef::Knife::BootstrapWindowsSsh.stub(:new).and_return(bootstrap_win_ssh)
-      bootstrap_win_ssh.should_receive(:run)
-      @knife_ec2_create.should_receive(:ssh_override_winrm)
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      allow(Chef::Knife::BootstrapWindowsSsh).to receive(:new).and_return(bootstrap_win_ssh)
+      expect(bootstrap_win_ssh).to receive(:run)
+      expect(@knife_ec2_create).to receive(:ssh_override_winrm)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
       @knife_ec2_create.run
     end
 
@@ -251,51 +251,51 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:bootstrap_protocol] = 'ssh'
       @knife_ec2_create.config[:ssh_port] = 422
 
-      @knife_ec2_create.should_receive(:tcp_test_ssh).with('ec2-75.101.253.10.compute-1.amazonaws.com', 422).and_return(true)
+      expect(@knife_ec2_create).to receive(:tcp_test_ssh).with('ec2-75.101.253.10.compute-1.amazonaws.com', 422).and_return(true)
 
       bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
-      Chef::Knife::BootstrapWindowsSsh.stub(:new).and_return(bootstrap_win_ssh)
-      bootstrap_win_ssh.should_receive(:run)
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
+      allow(Chef::Knife::BootstrapWindowsSsh).to receive(:new).and_return(bootstrap_win_ssh)
+      expect(bootstrap_win_ssh).to receive(:run)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
       @knife_ec2_create.run
     end
 
     it "should never invoke linux bootstrap" do
       @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
-      @knife_ec2_create.stub(:windows_password).and_return("")
-      @knife_ec2_create.should_not_receive(:bootstrap_for_linux_node)
-      @new_ec2_server.should_receive(:wait_for).and_return(true)
-      @knife_ec2_create.stub(:bootstrap_for_windows_node).and_return double("bootstrap", :run => true)
+      allow(@knife_ec2_create).to receive(:windows_password).and_return("")
+      expect(@knife_ec2_create).not_to receive(:bootstrap_for_linux_node)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
+      allow(@knife_ec2_create).to receive(:bootstrap_for_windows_node).and_return double("bootstrap", :run => true)
       @knife_ec2_create.run
     end
 
     it "waits for EC2 to generate password if not supplied" do
       @knife_ec2_create.config[:bootstrap_protocol] = 'winrm'
       @knife_ec2_create.config[:winrm_password] = nil
-      @knife_ec2_create.should_receive(:windows_password).and_return("")
-      @new_ec2_server.stub(:wait_for).and_return(true)
-      @knife_ec2_create.stub(:check_windows_password_available).and_return(true)
+      expect(@knife_ec2_create).to receive(:windows_password).and_return("")
+      allow(@new_ec2_server).to receive(:wait_for).and_return(true)
+      allow(@knife_ec2_create).to receive(:check_windows_password_available).and_return(true)
       bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
-      Chef::Knife::BootstrapWindowsWinrm.stub(:new).and_return(bootstrap_winrm)
-      bootstrap_winrm.should_receive(:run)
+      allow(Chef::Knife::BootstrapWindowsWinrm).to receive(:new).and_return(bootstrap_winrm)
+      expect(bootstrap_winrm).to receive(:run)
       @knife_ec2_create.run
     end
   end
 
   describe "when setting tags" do
     before do
-      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
-      @knife_ec2_create.stub(:bootstrap_for_linux_node).and_return double("bootstrap", :run => true)
-      @ec2_connection.stub(:servers).and_return(@ec2_servers)
-      @ec2_connection.should_receive(:addresses)
-      @new_ec2_server.stub(:wait_for).and_return(true)
-      @ec2_servers.stub(:create).and_return(@new_ec2_server)
-      @knife_ec2_create.stub(:puts)
-      @knife_ec2_create.stub(:print)
+      expect(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+      allow(@knife_ec2_create).to receive(:bootstrap_for_linux_node).and_return double("bootstrap", :run => true)
+      allow(@ec2_connection).to receive(:servers).and_return(@ec2_servers)
+      expect(@ec2_connection).to receive(:addresses)
+      allow(@new_ec2_server).to receive(:wait_for).and_return(true)
+      allow(@ec2_servers).to receive(:create).and_return(@new_ec2_server)
+      allow(@knife_ec2_create).to receive(:puts)
+      allow(@knife_ec2_create).to receive(:print)
     end
 
     it "sets the Name tag to the instance id by default" do
-      @ec2_connection.tags.should_receive(:create).with(:key => "Name",
+      expect(@ec2_connection.tags).to receive(:create).with(:key => "Name",
                                                         :value => @new_ec2_server.id,
                                                         :resource_id => @new_ec2_server.id)
       @knife_ec2_create.run
@@ -303,7 +303,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "sets the Name tag to the chef_node_name when given" do
       @knife_ec2_create.config[:chef_node_name] = "wombat"
-      @ec2_connection.tags.should_receive(:create).with(:key => "Name",
+      expect(@ec2_connection.tags).to receive(:create).with(:key => "Name",
                                                         :value => "wombat",
                                                         :resource_id => @new_ec2_server.id)
       @knife_ec2_create.run
@@ -311,7 +311,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "sets the Name tag to the specified name when given --tags Name=NAME" do
       @knife_ec2_create.config[:tags] = ["Name=bobcat"]
-      @ec2_connection.tags.should_receive(:create).with(:key => "Name",
+      expect(@ec2_connection.tags).to receive(:create).with(:key => "Name",
                                                         :value => "bobcat",
                                                         :resource_id => @new_ec2_server.id)
       @knife_ec2_create.run
@@ -319,7 +319,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "sets arbitrary tags" do
       @knife_ec2_create.config[:tags] = ["foo=bar"]
-      @ec2_connection.tags.should_receive(:create).with(:key => "foo",
+      expect(@ec2_connection.tags).to receive(:create).with(:key => "foo",
                                                         :value => "bar",
                                                         :resource_id => @new_ec2_server.id)
       @knife_ec2_create.run
@@ -366,7 +366,7 @@ describe Chef::Knife::Ec2ServerCreate do
         Chef::Config[:knife][:s3_secret] =
           's3://test.bucket/folder/encrypted_data_bag_secret'
         @secret_content = "TEST DATA BAG SECRET\n"
-        @knife_ec2_create.stub(:s3_secret).and_return(@secret_content)
+        allow(@knife_ec2_create).to receive(:s3_secret).and_return(@secret_content)
       end
 
       it 'sets the secret to the expected test string' do
@@ -449,72 +449,72 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "should set the bootstrap 'name argument' to the hostname of the EC2 server" do
-      @bootstrap.name_args.should == ['ec2-75.101.253.10.compute-1.amazonaws.com']
+      expect(@bootstrap.name_args).to eq(['ec2-75.101.253.10.compute-1.amazonaws.com'])
     end
 
     it "should set the bootstrap 'first_boot_attributes' correctly" do
-      @bootstrap.config[:first_boot_attributes].should == "{'my_attributes':{'foo':'bar'}"
+      expect(@bootstrap.config[:first_boot_attributes]).to eq("{'my_attributes':{'foo':'bar'}")
     end
 
     it "configures sets the bootstrap's run_list" do
-      @bootstrap.config[:run_list].should == ['role[base]']
+      expect(@bootstrap.config[:run_list]).to eq(['role[base]'])
     end
 
     it "configures the bootstrap to use the correct ssh_user login" do
-      @bootstrap.config[:ssh_user].should == 'ubuntu'
+      expect(@bootstrap.config[:ssh_user]).to eq('ubuntu')
     end
 
     it "configures the bootstrap to use the correct ssh_gateway host" do
-      @bootstrap.config[:ssh_gateway].should == 'bastion.host.com'
+      expect(@bootstrap.config[:ssh_gateway]).to eq('bastion.host.com')
     end
 
     it "configures the bootstrap to use the correct ssh identity file" do
-      @bootstrap.config[:identity_file].should == "~/.ssh/aws-key.pem"
+      expect(@bootstrap.config[:identity_file]).to eq("~/.ssh/aws-key.pem")
     end
 
     it "configures the bootstrap to use the correct ssh_port number" do
-      @bootstrap.config[:ssh_port].should == 22
+      expect(@bootstrap.config[:ssh_port]).to eq(22)
     end
 
     it "configures the bootstrap to use the configured node name if provided" do
-      @bootstrap.config[:chef_node_name].should == 'blarf'
+      expect(@bootstrap.config[:chef_node_name]).to eq('blarf')
     end
 
     it "configures the bootstrap to use the EC2 server id if no explicit node name is set" do
       @knife_ec2_create.config[:chef_node_name] = nil
 
       bootstrap = @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name)
-      bootstrap.config[:chef_node_name].should == @new_ec2_server.id
+      expect(bootstrap.config[:chef_node_name]).to eq(@new_ec2_server.id)
     end
 
     it "configures the bootstrap to use prerelease versions of chef if specified" do
-      @bootstrap.config[:prerelease].should be_falsey
+      expect(@bootstrap.config[:prerelease]).to be_falsey
 
       @knife_ec2_create.config[:prerelease] = true
 
       bootstrap = @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name)
-      bootstrap.config[:prerelease].should == true
+      expect(bootstrap.config[:prerelease]).to eq(true)
     end
 
     it "configures the bootstrap to use the desired distro-specific bootstrap script" do
-      @bootstrap.config[:distro].should == 'ubuntu-10.04-magic-sparkles'
+      expect(@bootstrap.config[:distro]).to eq('ubuntu-10.04-magic-sparkles')
     end
 
     it "configures the bootstrap to use sudo" do
-      @bootstrap.config[:use_sudo].should == true
+      expect(@bootstrap.config[:use_sudo]).to eq(true)
     end
 
     it "configured the bootstrap to use the desired template" do
-      @bootstrap.config[:template_file].should == '~/.chef/templates/my-bootstrap.sh.erb'
+      expect(@bootstrap.config[:template_file]).to eq('~/.chef/templates/my-bootstrap.sh.erb')
     end
 
     it "configured the bootstrap to set an ec2 hint (via Chef::Config)" do
-      Chef::Config[:knife][:hints]["ec2"].should_not be_nil
+      expect(Chef::Config[:knife][:hints]["ec2"]).not_to be_nil
     end
   end
   describe "when configuring the winrm bootstrap process for windows" do
     before do
-      @knife_ec2_create.stub(:fetch_server_fqdn).and_return("SERVERNAME")
+      allow(@knife_ec2_create).to receive(:fetch_server_fqdn).and_return("SERVERNAME")
       @knife_ec2_create.config[:winrm_user] = "Administrator"
       @knife_ec2_create.config[:winrm_password] = "password"
       @knife_ec2_create.config[:winrm_port] = 12345
@@ -536,44 +536,44 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "should set the winrm username correctly" do
-      @bootstrap.config[:winrm_user].should == @knife_ec2_create.config[:winrm_user]
+      expect(@bootstrap.config[:winrm_user]).to eq(@knife_ec2_create.config[:winrm_user])
     end
     it "should set the winrm password correctly" do
-      @bootstrap.config[:winrm_password].should == @knife_ec2_create.config[:winrm_password]
+      expect(@bootstrap.config[:winrm_password]).to eq(@knife_ec2_create.config[:winrm_password])
     end
 
     it "should set the winrm port correctly" do
-      @bootstrap.config[:winrm_port].should == @knife_ec2_create.config[:winrm_port]
+      expect(@bootstrap.config[:winrm_port]).to eq(@knife_ec2_create.config[:winrm_port])
     end
 
     it "should set the winrm transport layer correctly" do
-      @bootstrap.config[:winrm_transport].should == @knife_ec2_create.config[:winrm_transport]
+      expect(@bootstrap.config[:winrm_transport]).to eq(@knife_ec2_create.config[:winrm_transport])
     end
 
     it "should set the kerberos realm correctly" do
-      @bootstrap.config[:kerberos_realm].should == @knife_ec2_create.config[:kerberos_realm]
+      expect(@bootstrap.config[:kerberos_realm]).to eq(@knife_ec2_create.config[:kerberos_realm])
     end
 
     it "should set the kerberos service correctly" do
-      @bootstrap.config[:kerberos_service].should == @knife_ec2_create.config[:kerberos_service]
+      expect(@bootstrap.config[:kerberos_service]).to eq(@knife_ec2_create.config[:kerberos_service])
     end
 
     it "should set the bootstrap 'name argument' to the Windows/AD hostname of the EC2 server" do
-      @bootstrap.name_args.should == ["SERVERNAME"]
+      expect(@bootstrap.name_args).to eq(["SERVERNAME"])
     end
 
     it "should set the bootstrap 'name argument' to the hostname of the EC2 server when AD/Kerberos is not used" do
       @knife_ec2_create.config[:kerberos_realm] = nil
       @bootstrap = @knife_ec2_create.bootstrap_for_windows_node(@new_ec2_server, @new_ec2_server.dns_name)
-      @bootstrap.name_args.should == ['ec2-75.101.253.10.compute-1.amazonaws.com']
+      expect(@bootstrap.name_args).to eq(['ec2-75.101.253.10.compute-1.amazonaws.com'])
     end
 
     it "should set the bootstrap 'first_boot_attributes' correctly" do
-      @bootstrap.config[:first_boot_attributes].should == "{'my_attributes':{'foo':'bar'}"
+      expect(@bootstrap.config[:first_boot_attributes]).to eq("{'my_attributes':{'foo':'bar'}")
     end
 
     it "configures sets the bootstrap's run_list" do
-      @bootstrap.config[:run_list].should == ['role[base]']
+      expect(@bootstrap.config[:run_list]).to eq(['role[base]'])
     end
 
     it "configures auth_timeout for bootstrap to default to 25 minutes" do
@@ -589,9 +589,9 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "when validating the command-line parameters" do
     before do
-      Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
-      @knife_ec2_create.ui.stub(:error)
-      @knife_ec2_create.ui.stub(:msg)
+      allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+      allow(@knife_ec2_create.ui).to receive(:error)
+      allow(@knife_ec2_create.ui).to receive(:msg)
     end
 
     describe "when reading aws_credential_file" do
@@ -605,49 +605,49 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "reads UNIX Line endings" do
-        File.stub(:read).
+        allow(File).to receive(:read).
           and_return("AWSAccessKeyId=#{@access_key_id}\nAWSSecretKey=#{@secret_key}")
         @knife_ec2_create.validate!
-        Chef::Config[:knife][:aws_access_key_id].should == @access_key_id
-        Chef::Config[:knife][:aws_secret_access_key].should == @secret_key
+        expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
+        expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
       end
 
       it "reads DOS Line endings" do
-        File.stub(:read).
+        allow(File).to receive(:read).
           and_return("AWSAccessKeyId=#{@access_key_id}\r\nAWSSecretKey=#{@secret_key}")
         @knife_ec2_create.validate!
-        Chef::Config[:knife][:aws_access_key_id].should == @access_key_id
-        Chef::Config[:knife][:aws_secret_access_key].should == @secret_key
+        expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
+        expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
       end
       it "reads UNIX Line endings for new format" do
-        File.stub(:read).
+        allow(File).to receive(:read).
           and_return("aws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
         @knife_ec2_create.validate!
-        Chef::Config[:knife][:aws_access_key_id].should == @access_key_id
-        Chef::Config[:knife][:aws_secret_access_key].should == @secret_key
+        expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
+        expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
       end
 
       it "reads DOS Line endings for new format" do
-        File.stub(:read).
+        allow(File).to receive(:read).
           and_return("aws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
         @knife_ec2_create.validate!
-        Chef::Config[:knife][:aws_access_key_id].should == @access_key_id
-        Chef::Config[:knife][:aws_secret_access_key].should == @secret_key
-      end
+        expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
+        expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
+      end      
     end
 
     it 'understands that file:// validation key URIs are just paths' do
       Chef::Config[:knife][:validation_key_url] = 'file:///foo/bar'
-      @knife_ec2_create.validation_key_path.should eq('/foo/bar')
+      expect(@knife_ec2_create.validation_key_path).to eq('/foo/bar')
     end
 
     it 'returns a path to a tmp file when presented with a URI for the ' \
       'validation key' do
       Chef::Config[:knife][:validation_key_url] = @validation_key_url
 
-      @knife_ec2_create.stub_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
+      allow(@knife_ec2_create).to receive_message_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
 
-      @knife_ec2_create.validation_key_path.should eq(@validation_key_file)
+      expect(@knife_ec2_create.validation_key_path).to eq(@validation_key_file)
     end
 
     it "disallows security group names when using a VPC" do
@@ -655,55 +655,55 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd'
       @knife_ec2_create.config[:security_groups] = 'groupname'
 
-      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+      expect { @knife_ec2_create.validate! }.to raise_error SystemExit
     end
 
     it "disallows private ips when not using a VPC" do
       @knife_ec2_create.config[:private_ip_address] = '10.0.0.10'
 
-      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+      expect { @knife_ec2_create.validate! }.to raise_error SystemExit
     end
 
     it "disallows specifying credentials file and aws keys" do
       Chef::Config[:knife][:aws_credential_file] = '/apple/pear'
-      File.stub(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
+      allow(File).to receive(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
 
-      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+      expect { @knife_ec2_create.validate! }.to raise_error SystemExit
     end
 
     it "disallows associate public ip option when not using a VPC" do
       @knife_ec2_create.config[:associate_public_ip] = true
       @knife_ec2_create.config[:subnet_id] = nil
 
-      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+      expect { @knife_ec2_create.validate! }.to raise_error SystemExit
     end
 
     it "disallows ebs provisioned iops option when not using ebs volume type" do
       @knife_ec2_create.config[:ebs_provisioned_iops] = "123"
       @knife_ec2_create.config[:ebs_volume_type] = nil
 
-      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+      expect { @knife_ec2_create.validate! }.to raise_error SystemExit
     end
 
     it "disallows ebs provisioned iops option when not using ebs volume type 'io1'" do
       @knife_ec2_create.config[:ebs_provisioned_iops] = "123"
       @knife_ec2_create.config[:ebs_volume_type] = "standard"
 
-      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+      expect { @knife_ec2_create.validate! }.to raise_error SystemExit
     end
 
     it "disallows ebs volume type if its other than 'io1' or 'gp2' or 'standard'" do
       @knife_ec2_create.config[:ebs_provisioned_iops] = "123"
       @knife_ec2_create.config[:ebs_volume_type] = 'invalid'
 
-      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+      expect { @knife_ec2_create.validate! }.to raise_error SystemExit
     end
 
     it "disallows 'io1' ebs volume type when not using ebs provisioned iops" do
       @knife_ec2_create.config[:ebs_provisioned_iops] = nil
       @knife_ec2_create.config[:ebs_volume_type] = 'io1'
 
-      lambda { @knife_ec2_create.validate! }.should raise_error SystemExit
+      expect { @knife_ec2_create.validate! }.to raise_error SystemExit
     end
 
     context "when ebs_encrypted option specified" do
@@ -762,7 +762,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
       it "creates a connection without access keys" do
         @knife_ec2_create.config[:use_iam_profile] = true
-        Fog::Compute::AWS.should_receive(:new).with(hash_including(:use_iam_profile => true)).and_return(@ec2_connection)
+        expect(Fog::Compute::AWS).to receive(:new).with(hash_including(:use_iam_profile => true)).and_return(@ec2_connection)
         @knife_ec2_create.connection
       end
     end
@@ -770,7 +770,7 @@ describe Chef::Knife::Ec2ServerCreate do
     describe "when aws_session_token is present" do
       it "creates a connection using the session token" do
         @knife_ec2_create.config[:aws_session_token] = 'session-token'
-        Fog::Compute::AWS.should_receive(:new).with(hash_including(:aws_session_token => 'session-token')).and_return(@ec2_connection)
+        expect(Fog::Compute::AWS).to receive(:new).with(hash_including(:aws_session_token => 'session-token')).and_return(@ec2_connection)
         @knife_ec2_create.connection
       end
     end
@@ -778,28 +778,28 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "when creating the server definition" do
     before do
-      Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
+      allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
     end
 
     it "sets the specified placement_group" do
       @knife_ec2_create.config[:placement_group] = ['some_placement_group']
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:placement_group].should == ['some_placement_group']
+      expect(server_def[:placement_group]).to eq(['some_placement_group'])
     end
 
     it "sets the specified security group names" do
       @knife_ec2_create.config[:security_groups] = ['groupname']
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:groups].should == ['groupname']
+      expect(server_def[:groups]).to eq(['groupname'])
     end
 
     it "sets the specified security group ids" do
       @knife_ec2_create.config[:security_group_ids] = ['sg-aabbccdd']
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:security_group_ids].should == ['sg-aabbccdd']
+      expect(server_def[:security_group_ids]).to eq(['sg-aabbccdd'])
     end
 
     it "sets the image id from CLI arguments over knife config" do
@@ -807,7 +807,7 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][:image] = "ami-zzz"
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:image_id].should == "ami-aaa"
+      expect(server_def[:image_id]).to eq("ami-aaa")
     end
 
     it "sets the flavor id from CLI arguments over knife config" do
@@ -815,7 +815,7 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][:flavor] = "bitty"
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:flavor_id].should == "massive"
+      expect(server_def[:flavor_id]).to eq("massive")
     end
 
     it "sets the availability zone from CLI arguments over knife config" do
@@ -823,17 +823,17 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][:availability_zone] = "dat-one"
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:availability_zone].should == "dis-one"
+      expect(server_def[:availability_zone]).to eq("dis-one")
     end
 
     it "adds the specified ephemeral device mappings" do
       @knife_ec2_create.config[:ephemeral] = [ "/dev/sdb", "/dev/sdc", "/dev/sdd", "/dev/sde" ]
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:block_device_mapping].should == [{ "VirtualName" => "ephemeral0", "DeviceName" => "/dev/sdb" },
+      expect(server_def[:block_device_mapping]).to eq([{ "VirtualName" => "ephemeral0", "DeviceName" => "/dev/sdb" },
                                                    { "VirtualName" => "ephemeral1", "DeviceName" => "/dev/sdc" },
                                                    { "VirtualName" => "ephemeral2", "DeviceName" => "/dev/sdd" },
-                                                   { "VirtualName" => "ephemeral3", "DeviceName" => "/dev/sde" }]
+                                                   { "VirtualName" => "ephemeral3", "DeviceName" => "/dev/sde" }])
     end
 
     it "sets the specified private ip address" do
@@ -841,47 +841,46 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:private_ip_address] = '10.0.0.10'
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:subnet_id].should == 'subnet-1a2b3c4d'
-      server_def[:private_ip_address].should == '10.0.0.10'
+      expect(server_def[:subnet_id]).to eq('subnet-1a2b3c4d')
+      expect(server_def[:private_ip_address]).to eq('10.0.0.10')
     end
 
     it "sets the IAM server role when one is specified" do
       @knife_ec2_create.config[:iam_instance_profile] = ['iam-role']
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:iam_instance_profile_name].should == ['iam-role']
+      expect(server_def[:iam_instance_profile_name]).to eq(['iam-role'])
     end
 
     it "doesn't set an IAM server role by default" do
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:iam_instance_profile_name].should == nil
+      expect(server_def[:iam_instance_profile_name]).to eq(nil)
     end
 
     it "doesn't use IAM profile by default" do
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:use_iam_profile].should == nil
+      expect(server_def[:use_iam_profile]).to eq(nil)
     end
 
     it 'Set Tenancy Dedicated when both VPC mode and Flag is True' do
       @knife_ec2_create.config[:dedicated_instance] = true
-      @knife_ec2_create.stub(:vpc_mode? => true)
+      allow(@knife_ec2_create).to receive_messages(:vpc_mode? => true)
       server_def = @knife_ec2_create.create_server_def
-      server_def[:tenancy].should == "dedicated"
+      expect(server_def[:tenancy]).to eq("dedicated")
     end
 
     it 'Tenancy should be default with no vpc mode even is specified' do
       @knife_ec2_create.config[:dedicated_instance] = true
       server_def = @knife_ec2_create.create_server_def
-      server_def[:tenancy].should == nil
+      expect(server_def[:tenancy]).to eq(nil)
     end
 
     it 'Tenancy should be default with vpc but not requested' do
-      @knife_ec2_create.stub(:vpc_mode? => true)
-
+      allow(@knife_ec2_create).to receive_messages(:vpc_mode? => true)
       server_def = @knife_ec2_create.create_server_def
-      server_def[:tenancy].should == nil
+      expect(server_def[:tenancy]).to eq(nil)
     end
 
     it "sets associate_public_ip to true if specified and in vpc_mode" do
@@ -889,44 +888,44 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:associate_public_ip] = true
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:subnet_id].should == 'subnet-1a2b3c4d'
-      server_def[:associate_public_ip].should == true
+      expect(server_def[:subnet_id]).to eq('subnet-1a2b3c4d')
+      expect(server_def[:associate_public_ip]).to eq(true)
     end
 
     it "sets the spot price" do
       @knife_ec2_create.config[:spot_price] = '1.99'
       server_def = @knife_ec2_create.create_server_def
 
-      server_def[:price].should == '1.99'
+      expect(server_def[:price]).to eq('1.99')
     end
 
     context "when using ebs volume type and ebs provisioned iops rate options" do
       before do
-        @knife_ec2_create.stub_chain(:ami, :root_device_type).and_return("ebs")
-        @knife_ec2_create.stub_chain(:ami, :block_device_mapping).and_return([{"iops" => 123}])
-        @knife_ec2_create.stub(:msg)
-        @knife_ec2_create.stub(:puts)
+        allow(@knife_ec2_create).to receive_message_chain(:ami, :root_device_type).and_return("ebs")
+        allow(@knife_ec2_create).to receive_message_chain(:ami, :block_device_mapping).and_return([{"iops" => 123}])
+        allow(@knife_ec2_create).to receive(:msg)
+        allow(@knife_ec2_create).to receive(:puts)
       end
 
       it "sets the specified 'standard' ebs volume type" do
         @knife_ec2_create.config[:ebs_volume_type] = 'standard'
         server_def = @knife_ec2_create.create_server_def
 
-        server_def[:block_device_mapping].first['Ebs.VolumeType'].should == 'standard'
+        expect(server_def[:block_device_mapping].first['Ebs.VolumeType']).to eq('standard')
       end
 
       it "sets the specified 'io1' ebs volume type" do
         @knife_ec2_create.config[:ebs_volume_type] = 'io1'
         server_def = @knife_ec2_create.create_server_def
 
-        server_def[:block_device_mapping].first['Ebs.VolumeType'].should == 'io1'
+        expect(server_def[:block_device_mapping].first['Ebs.VolumeType']).to eq('io1')
       end
 
       it "sets the specified 'gp2' ebs volume type" do
         @knife_ec2_create.config[:ebs_volume_type] = 'gp2'
         server_def = @knife_ec2_create.create_server_def
 
-        server_def[:block_device_mapping].first['Ebs.VolumeType'].should == 'gp2'
+        expect(server_def[:block_device_mapping].first['Ebs.VolumeType']).to eq('gp2')
       end
 
       it "sets the specified ebs provisioned iops rate" do
@@ -934,20 +933,20 @@ describe Chef::Knife::Ec2ServerCreate do
         @knife_ec2_create.config[:ebs_volume_type] = 'io1'
         server_def = @knife_ec2_create.create_server_def
 
-        server_def[:block_device_mapping].first['Ebs.Iops'].should == '1234'
+        expect(server_def[:block_device_mapping].first['Ebs.Iops']).to eq('1234')
       end
 
       it "disallows non integer ebs provisioned iops rate" do
         @knife_ec2_create.config[:ebs_provisioned_iops] = "123abcd"
 
-        lambda { @knife_ec2_create.create_server_def }.should raise_error SystemExit
+        expect { @knife_ec2_create.create_server_def }.to raise_error SystemExit
       end
 
       it "sets the iops rate from ami" do
         @knife_ec2_create.config[:ebs_volume_type] = 'io1'
         server_def = @knife_ec2_create.create_server_def
 
-        server_def[:block_device_mapping].first['Ebs.Iops'].should == '123'
+        expect(server_def[:block_device_mapping].first['Ebs.Iops']).to eq('123')
       end
     end
   end
@@ -957,15 +956,15 @@ describe Chef::Knife::Ec2ServerCreate do
     let(:hostname) { 'test.host.com' }
 
     it "should wait for tunnelled ssh if a ssh gateway is provided" do
-      @knife_ec2_create.stub(:get_ssh_gateway_for).and_return(gateway)
-      @knife_ec2_create.should_receive(:wait_for_tunnelled_sshd).with(gateway, hostname)
+      allow(@knife_ec2_create).to receive(:get_ssh_gateway_for).and_return(gateway)
+      expect(@knife_ec2_create).to receive(:wait_for_tunnelled_sshd).with(gateway, hostname)
       @knife_ec2_create.wait_for_sshd(hostname)
     end
 
     it "should wait for direct ssh if a ssh gateway is not provided" do
-      @knife_ec2_create.stub(:get_ssh_gateway_for).and_return(nil)
+      allow(@knife_ec2_create).to receive(:get_ssh_gateway_for).and_return(nil)
       @knife_ec2_create.config[:ssh_port] = 22
-      @knife_ec2_create.should_receive(:wait_for_direct_sshd).with(hostname, 22)
+      expect(@knife_ec2_create).to receive(:wait_for_direct_sshd).with(hostname, 22)
       @knife_ec2_create.wait_for_sshd(hostname)
     end
   end
@@ -975,70 +974,70 @@ describe Chef::Knife::Ec2ServerCreate do
     let(:hostname) { 'test.host.com' }
 
     it "should give precedence to the ssh gateway specified in the knife configuration" do
-      Net::SSH::Config.stub(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("ssh some.other.gateway.com nc %h %p"))
+      allow(Net::SSH::Config).to receive(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("ssh some.other.gateway.com nc %h %p"))
       @knife_ec2_create.config[:ssh_gateway] = gateway
-      @knife_ec2_create.get_ssh_gateway_for(hostname).should == gateway
+      expect(@knife_ec2_create.get_ssh_gateway_for(hostname)).to eq(gateway)
     end
 
     it "should return the ssh gateway specified in the ssh configuration even if the config option is not set" do
       # This should already be false, but test this explicitly for regression
       @knife_ec2_create.config[:ssh_gateway] = false
-      Net::SSH::Config.stub(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("ssh #{gateway} nc %h %p"))
-      @knife_ec2_create.get_ssh_gateway_for(hostname).should == gateway
+      allow(Net::SSH::Config).to receive(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("ssh #{gateway} nc %h %p"))
+      expect(@knife_ec2_create.get_ssh_gateway_for(hostname)).to eq(gateway)
     end
 
     it "should return nil if the ssh gateway cannot be parsed from the ssh proxy command" do
-      Net::SSH::Config.stub(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("cannot parse host"))
-      @knife_ec2_create.get_ssh_gateway_for(hostname).should be_nil
+      allow(Net::SSH::Config).to receive(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("cannot parse host"))
+      expect(@knife_ec2_create.get_ssh_gateway_for(hostname)).to be_nil
     end
 
     it "should return nil if the ssh proxy is not a proxy command" do
-      Net::SSH::Config.stub(:for).and_return(:proxy => Net::SSH::Proxy::HTTP.new("httphost.com"))
-      @knife_ec2_create.get_ssh_gateway_for(hostname).should be_nil
+      allow(Net::SSH::Config).to receive(:for).and_return(:proxy => Net::SSH::Proxy::HTTP.new("httphost.com"))
+      expect(@knife_ec2_create.get_ssh_gateway_for(hostname)).to be_nil
     end
 
     it "returns nil if the ssh config has no proxy" do
-      Net::SSH::Config.stub(:for).and_return(:user => "darius")
-      @knife_ec2_create.get_ssh_gateway_for(hostname).should be_nil
+      allow(Net::SSH::Config).to receive(:for).and_return(:user => "darius")
+      expect(@knife_ec2_create.get_ssh_gateway_for(hostname)).to be_nil
     end
 
   end
 
   describe "ssh_connect_host" do
     before(:each) do
-      @new_ec2_server.stub(
+      allow(@new_ec2_server).to receive_messages(
         :dns_name => 'public_name',
         :private_ip_address => 'private_ip',
         :custom => 'custom',
         :public_ip_address => '111.111.111.111'
       )
-      @knife_ec2_create.stub(:server => @new_ec2_server)
+      allow(@knife_ec2_create).to receive_messages(:server => @new_ec2_server)
     end
 
     describe "by default" do
       it 'should use public dns name' do
-        @knife_ec2_create.ssh_connect_host.should == 'public_name'
+        expect(@knife_ec2_create.ssh_connect_host).to eq('public_name')
       end
     end
 
     describe "when dns name not exist" do
       it 'should use public_ip_address ' do
-        @new_ec2_server.stub(:dns_name).and_return(nil)
-        @knife_ec2_create.ssh_connect_host.should == '111.111.111.111'
+        allow(@new_ec2_server).to receive(:dns_name).and_return(nil)
+        expect(@knife_ec2_create.ssh_connect_host).to eq('111.111.111.111')
       end
     end
 
     describe "with vpc_mode?" do
       it 'should use private ip' do
-        @knife_ec2_create.stub(:vpc_mode? => true)
-        @knife_ec2_create.ssh_connect_host.should == 'private_ip'
+        allow(@knife_ec2_create).to receive_messages(:vpc_mode? => true)
+        expect(@knife_ec2_create.ssh_connect_host).to eq('private_ip')
       end
     end
 
     describe "with custom server attribute" do
       it 'should use custom server attribute' do
         @knife_ec2_create.config[:server_connect_attribute] = 'custom'
-        @knife_ec2_create.ssh_connect_host.should == 'custom'
+        expect(@knife_ec2_create.ssh_connect_host).to eq('custom')
       end
     end
   end
@@ -1050,14 +1049,14 @@ describe Chef::Knife::Ec2ServerCreate do
     let(:local_port) { 23 }
 
     before(:each) do
-      @knife_ec2_create.stub(:configure_ssh_gateway).and_return(gateway)
+      allow(@knife_ec2_create).to receive(:configure_ssh_gateway).and_return(gateway)
     end
 
     it "should test ssh through a gateway" do
       @knife_ec2_create.config[:ssh_port] = 22
-      gateway.should_receive(:open).with(hostname, 22).and_yield(local_port)
-      @knife_ec2_create.should_receive(:tcp_test_ssh).with('localhost', local_port).and_return(true)
-      @knife_ec2_create.tunnel_test_ssh(gateway_host, hostname).should == true
+      expect(gateway).to receive(:open).with(hostname, 22).and_yield(local_port)
+      expect(@knife_ec2_create).to receive(:tcp_test_ssh).with('localhost', local_port).and_return(true)
+      expect(@knife_ec2_create.tunnel_test_ssh(gateway_host, hostname)).to eq(true)
     end
   end
 
@@ -1066,46 +1065,46 @@ describe Chef::Knife::Ec2ServerCreate do
     let(:gateway_user) { 'gateway_user' }
 
     it "configures a ssh gateway with no user and the default port when the SSH Config is empty" do
-      Net::SSH::Config.stub(:for).and_return({})
-      Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => 22)
+      allow(Net::SSH::Config).to receive(:for).and_return({})
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, :port => 22)
       @knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
 
     it "configures a ssh gateway with the user specified in the SSH Config" do
-      Net::SSH::Config.stub(:for).and_return({ :user => gateway_user })
-      Net::SSH::Gateway.should_receive(:new).with(gateway_host, gateway_user, :port => 22)
+      allow(Net::SSH::Config).to receive(:for).and_return({ :user => gateway_user })
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, gateway_user, :port => 22)
       @knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
 
     it "configures a ssh gateway with the user specified in the ssh gateway string" do
-      Net::SSH::Config.stub(:for).and_return({ :user => gateway_user })
-      Net::SSH::Gateway.should_receive(:new).with(gateway_host, 'override_user', :port => 22)
+      allow(Net::SSH::Config).to receive(:for).and_return({ :user => gateway_user })
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, 'override_user', :port => 22)
       @knife_ec2_create.configure_ssh_gateway("override_user@#{gateway_host}")
     end
 
     it "configures a ssh gateway with the port specified in the ssh gateway string" do
-      Net::SSH::Config.stub(:for).and_return({})
-      Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => '24')
+      allow(Net::SSH::Config).to receive(:for).and_return({})
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, :port => '24')
       @knife_ec2_create.configure_ssh_gateway("#{gateway_host}:24")
     end
 
     it "configures a ssh gateway with the keys specified in the SSH Config" do
-      Net::SSH::Config.stub(:for).and_return({ :keys => ['configuredkey'] })
-      Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => 22, :keys => ['configuredkey'])
+      allow(Net::SSH::Config).to receive(:for).and_return({ :keys => ['configuredkey'] })
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, :port => 22, :keys => ['configuredkey'])
       @knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
 
     it "configures the ssh gateway with the key specified on the knife config / command line" do
       @knife_ec2_create.config[:ssh_gateway_identity] = "/home/fireman/.ssh/gateway.pem"
       #Net::SSH::Config.stub(:for).and_return({ :keys => ['configuredkey'] })
-      Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => 22, :keys => ['/home/fireman/.ssh/gateway.pem'])
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, :port => 22, :keys => ['/home/fireman/.ssh/gateway.pem'])
       @knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
 
     it "prefers the knife config over the ssh config for the gateway keys" do
       @knife_ec2_create.config[:ssh_gateway_identity] = "/home/fireman/.ssh/gateway.pem"
-      Net::SSH::Config.stub(:for).and_return({ :keys => ['not_this_key_dude'] })
-      Net::SSH::Gateway.should_receive(:new).with(gateway_host, nil, :port => 22, :keys => ['/home/fireman/.ssh/gateway.pem'])
+      allow(Net::SSH::Config).to receive(:for).and_return({ :keys => ['not_this_key_dude'] })
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, :port => 22, :keys => ['/home/fireman/.ssh/gateway.pem'])
       @knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
   end
@@ -1114,24 +1113,24 @@ describe Chef::Knife::Ec2ServerCreate do
     # Normally we would only get the header after we send a client header, e.g. 'SSH-2.0-client'
     it "should return true if we get an ssh header" do
       @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
-      TCPSocket.stub(:new).and_return(StringIO.new("SSH-2.0-OpenSSH_6.1p1 Debian-4"))
-      IO.stub(:select).and_return(true)
-      @knife_ec2_create.should_receive(:tcp_test_ssh).and_yield.and_return(true)
+      allow(TCPSocket).to receive(:new).and_return(StringIO.new("SSH-2.0-OpenSSH_6.1p1 Debian-4"))
+      allow(IO).to receive(:select).and_return(true)
+      expect(@knife_ec2_create).to receive(:tcp_test_ssh).and_yield.and_return(true)
       @knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22) {nil}
     end
 
     it "should return false if we do not get an ssh header" do
       @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
-      TCPSocket.stub(:new).and_return(StringIO.new(""))
-      IO.stub(:select).and_return(true)
-      @knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22).should be_falsey
+      allow(TCPSocket).to receive(:new).and_return(StringIO.new(""))
+      allow(IO).to receive(:select).and_return(true)
+      expect(@knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22)).to be_falsey
     end
 
     it "should return false if the socket isn't ready" do
       @knife_ec2_create = Chef::Knife::Ec2ServerCreate.new
-      TCPSocket.stub(:new)
-      IO.stub(:select).and_return(false)
-      @knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22).should be_falsey
+      allow(TCPSocket).to receive(:new)
+      allow(IO).to receive(:select).and_return(false)
+      expect(@knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22)).to be_falsey
     end
   end
 end

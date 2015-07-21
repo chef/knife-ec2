@@ -33,25 +33,24 @@ describe Chef::Knife::S3Source do
     it 'converts URI to path with leading / removed' do
       @s3_source.url = "http://s3.amazonaws.com/#{@bucket_name}/#{@test_file_path}"
       @s3_source.instance_eval { path }
-      @s3_source.instance_eval { path }.should eq(@test_file_path)
+      expect(@s3_source.instance_eval { path }).to eq(@test_file_path)
     end
 
     it 'correctly retrieves the bucket name from the URI' do
       @s3_source.url = "http://s3.amazonaws.com/#{@bucket_name}/#{@test_file_path}"
       @s3_source.instance_eval { bucket }
-      @s3_source.instance_eval { bucket }.should eq(@bucket_name)
+      expect(@s3_source.instance_eval { bucket }).to eq(@bucket_name)
     end
 
     it 'gets back the correct bucket contents' do
       @s3_source.url = "http://s3.amazonaws.com/#{@bucket_name}/#{@test_file_path}"
-      @s3_source.body.should eq(@test_file_content)
+      expect(@s3_source.body).to eq(@test_file_content)
     end
 
     it 'gets back a bucket object with bucket_obj' do
       @s3_source.url = "http://s3.amazonaws.com/#{@bucket_name}/#{@test_file_path}"
       @s3_source.instance_eval { bucket_obj }
-      @s3_source.instance_eval { bucket_obj }.should
-        be_kind_of(Fog::Storage::AWS::Directory)
+      expect(@s3_source.instance_eval { bucket_obj }).to be_kind_of(Fog::Storage::AWS::Directory)
     end
   end
 
@@ -59,19 +58,18 @@ describe Chef::Knife::S3Source do
     it 'correctly retrieves the bucket name from the URI' do
       @s3_source.url = "s3://#{@bucket_name}/#{@test_file_path}"
       @s3_source.instance_eval { bucket }
-      @s3_source.instance_eval { bucket }.should eq(@bucket_name)
+      expect(@s3_source.instance_eval { bucket }).to eq(@bucket_name)
     end
 
     it 'gets back the correct bucket contents' do
       @s3_source.url = "s3://#{@bucket_name}/#{@test_file_path}"
-      @s3_source.body.should eq(@test_file_content)
+      expect(@s3_source.body).to eq(@test_file_content)
     end
 
     it 'gets back a bucket object with bucket_obj' do
       @s3_source.url = "s3://#{@bucket_name}/#{@test_file_path}"
       @s3_source.instance_eval { bucket_obj }
-      @s3_source.instance_eval { bucket_obj }.should
-        be_kind_of(Fog::Storage::AWS::Directory)
+      expect(@s3_source.instance_eval { bucket_obj }).to be_kind_of(Fog::Storage::AWS::Directory)
     end
   end
 end
