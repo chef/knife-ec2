@@ -102,7 +102,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "Spot Instance creation" do
     before do
-      Fog::Compute::AWS.should_receive(:new).and_return(@ec2_connection)
+      allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
       @knife_ec2_create.config[:spot_price] = 0.001
       @knife_ec2_create.config[:spot_request_type] = 'persistent'
       allow(@knife_ec2_create).to receive(:puts)
