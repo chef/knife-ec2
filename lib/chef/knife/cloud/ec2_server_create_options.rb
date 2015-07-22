@@ -27,10 +27,10 @@ class Chef
               :description => "The Availability Zone",
               :proc => Proc.new { |key| Chef::Config[:knife][:availability_zone] = key }
 
-            option :ec2_ssh_key_id,
-              :long => "--ec2-ssh-key-id KEY",
-              :description => "The ec2 SSH keypair id",
-              :proc => Proc.new { |key| Chef::Config[:knife][:ec2_ssh_key_id] = key }
+            option :ssh_key_name,
+              :long => "--ssh-key KEY",
+              :description => "The AWS SSH key id",
+              :proc => Proc.new { |key| Chef::Config[:knife][:ssh_key_name] = key }
 
             option :iam_instance_profile,
               :long => "--iam-profile NAME",
@@ -87,7 +87,6 @@ class Chef
 
             option :aws_user_data,
               :long => "--user-data USER_DATA_FILE",
-              :short => "-u USER_DATA_FILE",
               :description => "The EC2 User Data file to provision the instance with",
               :proc => Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
               :default => nil

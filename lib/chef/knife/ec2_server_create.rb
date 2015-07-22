@@ -28,7 +28,7 @@ class Chef
         def before_exec_command
           super
           set_image_os_type
-          # setup the create options
+          # setup the create
           @create_options = {
             :server_def => {
               #servers require a name, knife-cloud generates the chef_node_name
@@ -37,7 +37,7 @@ class Chef
               :flavor_id => locate_config_value(:flavor),
               :groups => locate_config_value(:ec2_security_groups),
               :security_group_ids => locate_config_value(:security_group_ids),
-              :key_name => locate_config_value(:ec2_ssh_key_id),
+              :key_name => locate_config_value(:ssh_key_name),
               :availability_zone => locate_config_value(:availability_zone),
               :placement_group => locate_config_value(:placement_group),
               :iam_instance_profile_name => locate_config_value(:iam_instance_profile),
@@ -163,7 +163,7 @@ class Chef
 
           errors = []
 
-          errors << "You must provide SSH Key." if locate_config_value(:bootstrap_protocol) == 'ssh' && !locate_config_value(:identity_file).nil? && locate_config_value(:ec2_ssh_key_id).nil?
+          errors << "You must provide SSH Key." if locate_config_value(:bootstrap_protocol) == 'ssh' && !locate_config_value(:identity_file).nil? && locate_config_value(:ssh_key_name).nil?
 
           errors << "You must provide --image-os-type option [windows/linux]" if ! (%w(windows linux).include?(locate_config_value(:image_os_type)))
 
@@ -390,9 +390,9 @@ class Chef
           else
             @create_options[:server_def][:user_data] << "$computer = [ADSI]\"WinNT://$env:computername,computer\"\n$newuser = $computer.Create(\"user\", \"#{locate_config_value(:ssh_user)}\")\n $newuser.SetPassword(\"#{locate_config_value(:ssh_password)}\")\n$newuser.SetInfo()\n $localadmin = ([adsi](\"WinNT://./Administrators,group\"))\n $localadmin.PSBase.Invoke(\"Add\",$newuser.PSBase.Path)\n " if locate_config_value(:ssh_user).downcase != "administrator"
           end
-          if Chef::Config[:knife][:aws_user_data]
+          if locate_config_value(:aws_user_data)
             begin
-              user_data_file = File.read(Chef::Config[:knife][:aws_user_data]).gsub("<powershell>", "").gsub("</powershell>", "")
+              user_data_file = File.read(locate_config_value(:aws_user_data)).gsub("<powershell>", "").gsub("</powershell>", "")
               if(user_data_file.include? "<script>")
                 @create_options[:server_def][:user_data] << "</powershell>"
                 @create_options[:server_def][:user_data ] << user_data_file
@@ -401,7 +401,7 @@ class Chef
                 @create_options[:server_def][:user_data] << "</powershell>"
               end
             rescue
-              ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+              ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
             end
           else
             @create_options[:server_def][:user_data] << "</powershell>"
@@ -416,11 +416,11 @@ class Chef
             load_user_data_for_win
             Chef::Log.debug @create_options[:server_def][:user_data]
           else
-            if Chef::Config[:knife][:aws_user_data]
+            if locate_config_value(:aws_user_data)
               begin
-                @create_options[:server_def].merge!(:user_data => File.read(Chef::Config[:knife][:aws_user_data]))
+                @create_options[:server_def].merge!(:user_data => File.read(locate_config_value(:aws_user_data)))
               rescue
-                ui.warn("Cannot read #{Chef::Config[:knife][:aws_user_data]}: #{$!.inspect}. Ignoring option.")
+                ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
               end
             end
           end

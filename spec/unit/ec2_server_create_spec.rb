@@ -57,14 +57,14 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife][:bootstrap_protocol] = "ssh"
       Chef::Config[:knife][:identity_file] = "identity_file"
       Chef::Config[:knife][:image_os_type] = "linux"
-      Chef::Config[:knife][:ec2_ssh_key_id] = "ec2_ssh_key"
+      Chef::Config[:knife][:ssh_key_name] = "ssh_key_name"
     end
 
     after(:all) do
       Chef::Config[:knife].delete(:bootstrap_protocol)
       Chef::Config[:knife].delete(:identity_file)
       Chef::Config[:knife].delete(:image_os_type)
-      Chef::Config[:knife].delete(:ec2_ssh_key_id)
+      Chef::Config[:knife].delete(:ssh_key_name)
       Chef::Config[:knife].delete(:ebs_provisioned_iops)
       Chef::Config[:knife].delete(:ebs_volume_type)
       Chef::Config[:knife].delete(:ebs_encrypted)
@@ -75,7 +75,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
     end
 
     it "raise error if ssh key is missing" do
-      Chef::Config[:knife].delete(:ec2_ssh_key_id)
+      Chef::Config[:knife].delete(:ssh_key_name)
       expect { @instance.validate_params! }.to raise_error(Chef::Knife::Cloud::CloudExceptions::ValidationError,  " You must provide SSH Key..")
     end
 
@@ -166,7 +166,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       Chef::Config[:knife][:security_group_ids] = "test_ec2_security_groups_id"
       Chef::Config[:knife][:availability_zone] = "test_zone"
       Chef::Config[:knife][:server_create_timeout] = "600"
-      Chef::Config[:knife][:ec2_ssh_key_id] = "ec2_ssh_key"
+      Chef::Config[:knife][:ssh_key_name] = "ec2_ssh_key_name"
       Chef::Config[:knife][:subnet_id] = "test_subnet_id"
       Chef::Config[:knife][:private_ip_address] = "test_private_ip_address"
       Chef::Config[:knife][:dedicated_instance] = "dedicated_instance"
@@ -182,7 +182,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
     after(:each) do
       Chef::Config[:knife].delete(:image)
       Chef::Config[:knife].delete(:flavor)
-      Chef::Config[:knife].delete(:ec2_ssh_key_id)
+      Chef::Config[:knife].delete(:ssh_key_name)
       Chef::Config[:knife].delete(:ec2_security_groups)
       Chef::Config[:knife].delete(:security_group_ids)
       Chef::Config[:knife].delete(:availability_zone)
@@ -194,7 +194,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
       expect(@instance.create_options[:server_def][:tags]["Name"]).to be == "chef_node_name"
       expect(@instance.create_options[:server_def][:image_id]).to be == "image"
       expect(@instance.create_options[:server_def][:flavor_id]).to be == "flavor"
-      expect(@instance.create_options[:server_def][:key_name]).to be == "ec2_ssh_key"
+      expect(@instance.create_options[:server_def][:key_name]).to be == "ec2_ssh_key_name"
       expect(@instance.create_options[:server_def][:groups]).to be == "ec2_security_groups"
       expect(@instance.create_options[:server_def][:security_group_ids]).to be == "test_ec2_security_groups_id"
       expect(@instance.create_options[:server_def][:availability_zone]).to be == "test_zone"
