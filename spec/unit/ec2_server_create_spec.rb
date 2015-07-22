@@ -323,10 +323,19 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
         expect(@instance.create_options[:server_def][:block_device_mapping].first['Ebs.Iops']).to be == '123'
       end
     end
+
+    context "when using spot price option" do
+      it "sets the spot price" do
+        @instance.config[:spot_price] = '1.99'
+        @instance.before_exec_command
+        expect(@instance.create_options[:server_def][:price]).to be == '1.99'
+      end
+    end
   end
 
   describe "#execute_command" do
     before(:each) do
+
       @instance = Chef::Knife::Cloud::Ec2ServerCreate.new
       allow(@instance).to receive(:service).and_return(double)
     end
