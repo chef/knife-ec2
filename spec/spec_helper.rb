@@ -15,13 +15,17 @@
 
 $:.unshift File.expand_path('../../lib', __FILE__)
 require 'chef/node'
-require 'fog'
 require 'chef/knife/ec2_server_create'
 require 'chef/knife/bootstrap_windows_ssh'
 require 'resource_spec_helper'
 require 'test/knife-utils/test_bed'
 require "securerandom"
 require 'server_command_common_spec_helper'
+
+
+RSpec.configure do |c|
+  c.filter_run_excluding :exclude => true
+end
 
 def find_instance_id(instance_name, file)
   file.lines.each do |line|
@@ -57,7 +61,7 @@ def is_config_present
   err_msg = "\nPlease set #{unset_env_var.join(', ')} environment"
   err_msg = err_msg + ( unset_env_var.length > 1 ? " variables " : " variable " ) + "for integration tests."
   puts err_msg unless unset_env_var.empty?
-  
+
   %w(EC2_SSH_USER EC2_GROUPS EC2_SSH_KEY_ID EC2_PRI_KEY EC2_INVALID_FLAVOR EC2_LINUX_IMAGE EC2_WINDOWS_IMAGE EC2_WINDOWS_SSH_IMAGE EC2_WINDOWS_SSH_USER EC2_WINDOWS_SSH_PASSWORD PLACEMENT_GROUP SUBNET_ID SECURITY_GROUP_IDS).each do |ec2_config_opt|
     option_value = ENV[ec2_config_opt] || (ec2_config[ec2_config_opt] if ec2_config)
     if option_value.nil?
@@ -69,7 +73,7 @@ def is_config_present
   config_err_msg = "\nPlease set #{unset_config_options.join(', ')} config"
   config_err_msg = config_err_msg + ( unset_config_options.length > 1 ? " options in ../spec/integration/config/environment.yml or as environment variables" : " option in ../spec/integration/config/environment.yml or as environment variable" ) + " for integration tests."
   puts config_err_msg unless unset_config_options.empty?
-  
+
   is_config
 end
 
@@ -85,9 +89,9 @@ end
 def get_fog_connection
   auth_params = { :provider => 'AWS', :aws_access_key_id => "#{ENV['AWS_ACCESS_KEY_ID']}",
                      :aws_secret_access_key => "#{ENV['AWS_SECRET_ACCESS_KEY']}" }
-    
+
   begin
-    fog_connection = Fog::Compute.new(auth_params)  
+    fog_connection = Fog::Compute.new(auth_params)
   rescue Exception => e
     puts "Connection failure, please check your authentication config. #{e.message}"
     exit 1
@@ -107,7 +111,7 @@ def check_and_delete_preserved_ebs_volume(cmd_output)
 
   # Delete instance
   run(delete_instance_cmd(cmd_output))
-  
+
   # create fog Connection to check preseved ebs volume
   fog_connection = get_fog_connection
 
@@ -117,7 +121,7 @@ def check_and_delete_preserved_ebs_volume(cmd_output)
   tries = 6
   # Cleanup preseved ebs volume
   begin
-    fog_connection.volumes.get(ebs_volume_id).destroy  
+    fog_connection.volumes.get(ebs_volume_id).destroy
   rescue Exception => e
     # wait for detach ebs volume
     puts "Preseved ebs volume: '#{ebs_volume_id}' not deleted. Please use AWS Console to delete it.Error: #{e.message}" if (tries -= 1) <= 0
@@ -150,3 +154,4 @@ def init_ec2_test
     puts "Error while creating file - ec2.pem"
   end
 end
+
