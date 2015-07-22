@@ -417,7 +417,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
   context "when ssh_key_name option is used in knife config also it is passed on the CLI" do
     before do
-      Fog::Compute::AWS.stub(:new).and_return(@ec2_connection)
+      allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       @knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
     end
