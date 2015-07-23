@@ -405,6 +405,7 @@ class Chef
           wait_msg += "Y - Wait for Spot Instance request fulfillment\n"
           wait_msg += "N - Do not wait for Spot Instance request fulfillment. "
           wait_msg += ui.color("[WARN :: Request would be alive on AWS ec2 side but execution of Chef Bootstrap on the target instance will get skipped.]\n", :red, :bold)
+          wait_msg += ui.color("\n[WARN :: For any of the above mentioned choices, (Y) - if the instance does not get allocated before the command itself times-out or (N) - user decides to exit, then in both cases user needs to manually bootstrap the instance in future after it gets allocated.]\n\n", :cyan, :bold)
           confirm(wait_msg)
 
           print ui.color("Waiting for Spot Request fulfillment:  ", :cyan)
