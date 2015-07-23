@@ -1,17 +1,18 @@
 Knife EC2
 =========
-[![Gem Version](https://badge.fury.io/rb/knife-ec2.png)](http://badge.fury.io/rb/knife-ec2)
-[![Build Status](https://travis-ci.org/opscode/knife-ec2.png?branch=master)](https://travis-ci.org/opscode/knife-ec2)
-[![Dependency Status](https://gemnasium.com/opscode/knife-ec2.png)](https://gemnasium.com/opscode/knife-ec2)
+[![Gem Version](https://badge.fury.io/rb/knife-ec2.svg)](http://badge.fury.io/rb/knife-ec2)
+[![Build Status](https://travis-ci.org/chef/knife-ec2.svg?branch=master)](https://travis-ci.org/chef/knife-ec2)
+[![Dependency Status](https://gemnasium.com/chef/knife-ec2.svg)](https://gemnasium.com/chef/knife-ec2)
 
 This is the official Chef Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
 
-Documentation: <http://docs.opscode.com/plugin_knife_ec2.html>
- * Source: <http://github.com/opscode/knife-ec2/tree/master>
- * Tickets/Issues: <http://tickets.opscode.com/browse/KNIFE>
- * IRC: `#chef` and `#chef-hacking` on Freenode
- * Mailing list: <http://lists.opscode.com>
+* Documentation: <http://docs.chef.io/plugin_knife_ec2.html>
+* Source: <http://github.com/chef/knife-ec2/tree/master>
+* Issues: <https://github.com/chef/knife-ec2/issues>
+* IRC: `#chef` and `#chef-hacking` on Freenode
+* Mailing list: <http://lists.chef.io>
 
+Note: Documentation needs to be updated in chef docs
 
 Installation
 ------------
@@ -40,8 +41,6 @@ In order to communicate with the Amazon's EC2 API you will have to tell Knife ab
 ```ruby
 knife[:aws_access_key_id] = "Your AWS Access Key ID"
 knife[:aws_secret_access_key] = "Your AWS Secret Access Key"
-# Optional if you're using Amazon's STS
-knife[:aws_session_token] = ENV['AWS_SESSION_TOKEN']
 ```
 
 If your `knife.rb` file will be checked into a SCM system (ie readable by others) you may want to read the values from environment variables:
@@ -49,6 +48,8 @@ If your `knife.rb` file will be checked into a SCM system (ie readable by others
 ```ruby
 knife[:aws_access_key_id] = ENV['AWS_ACCESS_KEY_ID']
 knife[:aws_secret_access_key] = ENV['AWS_SECRET_ACCESS_KEY']
+# Optional if you're using Amazon's STS
+knife[:aws_session_token] = ENV['AWS_SESSION_TOKEN']
 ```
 
 You also have the option of passing your AWS API Key/Secret into the individual knife subcommands using the `-A` (or `--aws-access-key-id`) `-K` (or `--aws-secret-access-key`) command options
@@ -64,17 +65,26 @@ you already have a file with these keys somewhere in this format:
     AWSAccessKeyId=Your AWS Access Key ID
     AWSSecretKey=Your AWS Secret Access Key
 
-        In this case, you can point the <tt>aws_credential_file</tt> option to
-        this file in your <tt>knife.rb</tt> file, like so:
 
-            knife[:aws_credential_file] = "/path/to/credentials/file/in/above/format"
+The new config file format used by Amazon's command line tools is also supported:
+
+    [default]
+    aws_access_key_id = Your AWS Access Key ID
+    aws_secret_access_key = Your AWS Secret Access Key
+
+In this case, you can point the <tt>aws_credential_file</tt> option to
+this file in your <tt>knife.rb</tt> file, like so:
+
+```ruby
+knife[:aws_credential_file] = "/path/to/credentials/file/in/above/format"
+```
 
 Additionally the following options may be set in your `knife.rb`:
 
 - flavor
 - image
 - availability_zone
-- aws_ssh_key_id
+- ssh_key_name
 - aws_session_token
 - region
 - distro
@@ -82,7 +92,7 @@ Additionally the following options may be set in your `knife.rb`:
 
 Using Cloud-Based Secret Data
 -----------------------------
-knife-ec2 now includes the ability to retrieve the encrypted data bag secret and validation keys directly from a cloud-based assets store (currently on S3 is supported).  To enable this functionality, you must first upload keys to S3 and give them appropriate permissions.  The following is a suggested set of IAM permissions required to make this work:
+knife-ec2 now includes the ability to retrieve the encrypted data bag secret and validation keys directly from a cloud-based assets store (currently on S3 is supported). To enable this functionality, you must first upload keys to S3 and give them appropriate permissions. The following is a suggested set of IAM permissions required to make this work:
 
 ```json
 {
@@ -107,14 +117,13 @@ knife-ec2 now includes the ability to retrieve the encrypted data bag secret and
 
 ### Use the following configuration options in `knife.rb` to set the source URLs:
 ```ruby
-knife[:validation_key_url] = 'http://provisioning.bucket.com/chef/evertrue-validator.pem'
+knife[:validation_key_url] = 'http://provisioning.bucket.com/chef/my-validator.pem'
 knife[:s3_secret] = 'http://provisioning.bucket.com/chef/encrypted_data_bag_secret'
 ```
 
 ### Alternatively, URLs can be passed directly on the command line:
 - Validation Key: `--validation-key-url s3://chef/my-validator.pem`
 - Encrypted Data Bag Secret: `--s3-secret s3://chef/encrypted_data_bag_secret`
-
 
 Subcommands
 -----------
@@ -131,9 +140,10 @@ Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap
     knife ec2 server create -I ami-d0f89fb9 --ssh-key your-public-key-id -f m1.medium --ssh-user ubuntu --identity-file ~/.ssh/your-private-key
 
     # A Windows instance via the WinRM protocol -- --ssh-key is still required due to EC2 API operations that need it to grant access to the Windows instance
-    knife ec2 server create -I ami-173d747e -G windows -f m1.medium --user-data ~/your-user-data-file -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id
+    # `--spot-price` option lets you specify the spot pricing
+    knife ec2 server create -I ami-173d747e -G windows -f m1.medium --user-data ~/your-user-data-file -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --spot-price price-in-USD
 
-View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](http://docs.opscode.com/plugin_knife_windows.html).
+View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](http://docs.chef.io/plugin_knife_windows.html).
 
 #### `knife ec2 server delete`
 Deletes an existing server in the currently configured AWS account. **By default, this does not delete the associated node and client objects from the Chef server. To do so, add the `--purge` flag**
@@ -141,19 +151,12 @@ Deletes an existing server in the currently configured AWS account. **By default
 #### `knife ec2 server list`
 Outputs a list of all servers in the currently configured AWS account. **Note, this shows all instances associated with the account, some of which may not be currently managed by the Chef server.**
 
-#### `knife ec2 instance data`
-Generates instance metadata in meant to be used with Opscode's custom AMIs. This will read your knife configuration `~/.chef/knife.rb` for the validation certificate and Chef server URL to use and output in JSON format. The subcommand also accepts a list of roles/recipes that will be in the node's initial run list.
-
-**Note**: Using Opscode's custom AMIs reflect an older way of launching instances in EC2 for Chef and should be considered DEPRECATED. Leveraging this plugins's `knife ec2 server create` subcommands with a base AMIs directly from your Linux distribution (ie Ubuntu AMIs from Canonical) is much preferred and more flexible. Although this subcommand will remain, the Opscode custom AMIs are currently out of date.
-
-In-depth usage instructions can be found on the [Chef Wiki](http://wiki.opscode.com/display/chef/EC2+Bootstrap+Fast+Start+Guide).
-
 License and Authors
 -------------------
-- Author:: Adam Jacob (<adam@getchef.com>)
+- Author:: Adam Jacob (<adam@chef.io>)
 
 ```text
-Copyright 2009-2014 Opscode, Inc.
+Copyright 2009-2015 Opscode, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
