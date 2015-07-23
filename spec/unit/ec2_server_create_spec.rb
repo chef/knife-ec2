@@ -76,7 +76,7 @@ describe Chef::Knife::Ec2ServerCreate do
                            :instance_count => nil,
                            :instance_id => 'test_spot_instance_id',
                            :state => 'open',
-                           :key_name => 'aws_ssh_key_id',
+                           :key_name => 'ssh_key_name',
                            :availability_zone => nil, 
                            :flavor_id => 'm1.small',
                            :image_id => 'image' }
@@ -87,7 +87,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     @spot_request_attribs.each_pair do |attrib, value|
-      @new_spot_request.stub(attrib).and_return(value)
+      allow(@new_spot_request).to receive(attrib).and_return(value)
     end
 
     @s3_connection = double(Fog::Storage::AWS)
@@ -114,7 +114,7 @@ describe Chef::Knife::Ec2ServerCreate do
           :groups => nil,
           :security_group_ids => nil,
           :flavor_id => nil,
-          :key_name => "aws_ssh_key_id",
+          :key_name => "ssh_key_name",
           :availability_zone => nil,
           :price => 0.001,
           :request_type => 'persistent',
