@@ -468,7 +468,7 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
 
     it 'should use public_ip_address when dns name not exist' do
       allow(@instance.server).to receive(:public_ip_address).and_return("127.0.0.1")
-      @instance.stub(:dns_name).and_return(nil)
+      allow(@instance).to receive(:dns_name).and_return(nil)
       @instance.before_bootstrap
       expect(@instance.config[:bootstrap_ip_address]).to eq('127.0.0.1')
     end
@@ -588,9 +588,9 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
         Chef::Config[:knife].delete(:aws_secret_access_key)
 
         @ec2_connection = double(Fog::Compute::AWS)
-        @ec2_connection.stub_chain(:tags).and_return double('create', :create => true)
-        @ec2_connection.stub_chain(:images, :get).and_return double('ami', :root_device_type => 'not_ebs', :platform => 'linux')
-        @ec2_connection.stub_chain(:addresses).and_return [double('addesses', {
+        allow(@ec2_connection).to receive_message_chain(:tags).and_return double('create', :create => true)
+        allow(@ec2_connection).to receive_message_chain(:images, :get).and_return double('ami', :root_device_type => 'not_ebs', :platform => 'linux')
+        allow(@ec2_connection).to receive_message_chain(:addresses).and_return [double('addesses', {
                 :domain => 'standard',
                 :public_ip => '111.111.111.111',
                 :server_id => nil,

@@ -19,11 +19,11 @@ require 'chef/knife/ec2_server_create'
 require 'chef/knife/bootstrap_windows_ssh'
 require 'resource_spec_helper'
 require 'test/knife-utils/test_bed'
-require "securerandom"
+require 'securerandom'
 require 'server_command_common_spec_helper'
 
-
 RSpec.configure do |c|
+  c.raise_errors_for_deprecations!
   c.filter_run_excluding :exclude => true
 end
 
@@ -84,7 +84,6 @@ end
 def create_node_name(name)
   @name_node  = (name == "linux") ? "ec2-integration-test-linux-#{SecureRandom.hex(4)}" :  "ec2-integration-test-win-#{SecureRandom.hex(4)}"
 end
-
 
 def get_fog_connection
   auth_params = { :provider => 'AWS', :aws_access_key_id => "#{ENV['AWS_ACCESS_KEY_ID']}",
