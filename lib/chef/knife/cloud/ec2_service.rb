@@ -27,6 +27,7 @@ class Chef
           else
             options[:auth_params][:aws_access_key_id] = Chef::Config[:knife][:aws_access_key_id]
             options[:auth_params][:aws_secret_access_key] = Chef::Config[:knife][:aws_secret_access_key]
+            options[:auth_params][:aws_session_token] = Chef::Config[:knife][:aws_session_token]
           end
 
           super(options)
