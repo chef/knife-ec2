@@ -310,6 +310,11 @@ class Chef
         :description => "The maximum hourly USD price for the instance",
         :default => nil
 
+      option :spot_request_type,
+        :long => "--spot-request-type TYPE",
+        :description => "The Spot Instance request type. Possible values are 'one-time' and 'persistent', default value is 'one-time'",
+        :default => "one-time"
+
       option :aws_connection_timeout,
         :long => "--aws-connection-timeout MINUTES",
         :description => "The maximum time in minutes to wait to for aws connection. Default is 10 min",
@@ -395,6 +400,14 @@ class Chef
           msg_pair("Spot Request ID", spot_request.id)
           msg_pair("Spot Request Type", spot_request.request_type)
           msg_pair("Spot Price", spot_request.price)
+
+          wait_msg = "Do you want to wait for Spot Instance Request fulfillment? (Y/N) \n"
+          wait_msg += "Y - Wait for Spot Instance request fulfillment\n"
+          wait_msg += "N - Do not wait for Spot Instance request fulfillment. "
+          wait_msg += ui.color("[WARN :: Request would be alive on AWS ec2 side but execution of Chef Bootstrap on the target instance will get skipped.]\n", :red, :bold)
+          wait_msg += ui.color("\n[WARN :: For any of the above mentioned choices, (Y) - if the instance does not get allocated before the command itself times-out or (N) - user decides to exit, then in both cases user needs to manually bootstrap the instance in future after it gets allocated.]\n\n", :cyan, :bold)
+          confirm(wait_msg)
+
           print ui.color("Waiting for Spot Request fulfillment:  ", :cyan)
           spot_request.wait_for do
             @spinner ||= %w{| / - \\}
@@ -833,7 +846,8 @@ class Chef
           :flavor_id => locate_config_value(:flavor),
           :key_name => locate_config_value(:ssh_key_name),
           :availability_zone => locate_config_value(:availability_zone),
-          :price => locate_config_value(:spot_price)
+          :price => locate_config_value(:spot_price),
+          :request_type => locate_config_value(:spot_request_type)
         }
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?

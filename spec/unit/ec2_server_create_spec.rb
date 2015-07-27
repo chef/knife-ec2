@@ -52,6 +52,8 @@ describe Chef::Knife::Ec2ServerCreate do
 
     @ec2_servers = double()
     @new_ec2_server = double()
+    @spot_requests = double
+    @new_spot_request = double
 
     @ec2_server_attribs = { :id => 'i-39382318',
                            :flavor_id => 'm1.small',
@@ -67,8 +69,25 @@ describe Chef::Knife::Ec2ServerCreate do
                            :private_ip_address => '10.251.75.20',
                            :root_device_type => 'not_ebs' }
 
+    @spot_request_attribs = { :id => 'test_spot_request_id',
+                           :price => 0.001,
+                           :request_type => 'persistent',
+                           :created_at => '2015-07-14 09:53:11 UTC',
+                           :instance_count => nil,
+                           :instance_id => 'test_spot_instance_id',
+                           :state => 'open',
+                           :key_name => 'ssh_key_name',
+                           :availability_zone => nil, 
+                           :flavor_id => 'm1.small',
+                           :image_id => 'image' }
+
+
     @ec2_server_attribs.each_pair do |attrib, value|
       allow(@new_ec2_server).to receive(attrib).and_return(value)
+    end
+
+    @spot_request_attribs.each_pair do |attrib, value|
+      allow(@new_spot_request).to receive(attrib).and_return(value)
     end
 
     @s3_connection = double(Fog::Storage::AWS)
@@ -79,6 +98,70 @@ describe Chef::Knife::Ec2ServerCreate do
     @validation_key_url = 's3://bucket/foo/bar'
     @validation_key_file = '/tmp/a_good_temp_file'
     @validation_key_body = "TEST VALIDATION KEY\n"
+  end
+
+  describe "Spot Instance creation" do
+    before do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+      @knife_ec2_create.config[:spot_price] = 0.001
+      @knife_ec2_create.config[:spot_request_type] = 'persistent'
+      allow(@knife_ec2_create).to receive(:puts)
+      allow(@knife_ec2_create).to receive(:msg_pair)
+      allow(@knife_ec2_create.ui).to receive(:color).and_return('')
+      allow(@knife_ec2_create).to receive(:confirm)
+      @spot_instance_server_def = {
+          :image_id => "image",
+          :groups => nil,
+          :security_group_ids => nil,
+          :flavor_id => nil,
+          :key_name => "ssh_key_name",
+          :availability_zone => nil,
+          :price => 0.001,
+          :request_type => 'persistent',
+          :placement_group => nil,
+          :iam_instance_profile_name => nil,
+          :ebs_optimized => "false"
+        }
+      allow(@bootstrap).to receive(:run)
+    end
+
+    it "creates a new spot instance request with request type as persistent" do
+      expect(@ec2_connection).to receive(
+        :spot_requests).and_return(@spot_requests)
+      expect(@spot_requests).to receive(
+        :create).with(@spot_instance_server_def).and_return(@new_spot_request)
+      @knife_ec2_create.config[:yes] = true
+      allow(@new_spot_request).to receive(:wait_for).and_return(true)
+      allow(@ec2_connection).to receive(:servers).and_return(@ec2_servers)
+      allow(@ec2_servers).to receive(
+        :get).with(@new_spot_request.instance_id).and_return(@new_ec2_server)
+      allow(@new_ec2_server).to receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+      expect(@new_spot_request.request_type).to eq('persistent')
+    end
+
+    it "successfully creates a new spot instance" do
+      allow(@ec2_connection).to receive(
+        :spot_requests).and_return(@spot_requests)
+      allow(@spot_requests).to receive(
+        :create).with(@spot_instance_server_def).and_return(@new_spot_request)
+      @knife_ec2_create.config[:yes] = true
+      expect(@new_spot_request).to receive(:wait_for).and_return(true)
+      expect(@ec2_connection).to receive(:servers).and_return(@ec2_servers)
+      expect(@ec2_servers).to receive(
+        :get).with(@new_spot_request.instance_id).and_return(@new_ec2_server)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+    end
+
+    it "does not create the spot instance request and creates a regular instance" do
+      @knife_ec2_create.config.delete(:spot_price)
+      expect(@ec2_connection).to receive(:servers).and_return(@ec2_servers)
+      expect(@ec2_servers).to receive(
+        :create).and_return(@new_ec2_server)
+      expect(@new_ec2_server).to receive(:wait_for).and_return(true)
+      @knife_ec2_create.run
+    end
   end
 
   describe "run" do
@@ -897,6 +980,20 @@ describe Chef::Knife::Ec2ServerCreate do
       server_def = @knife_ec2_create.create_server_def
 
       expect(server_def[:price]).to eq('1.99')
+    end
+
+    it "sets the spot instance request type as persistent" do
+      @knife_ec2_create.config[:spot_request_type] = 'persistent'
+      server_def = @knife_ec2_create.create_server_def
+
+      expect(server_def[:request_type]).to eq('persistent')
+    end
+
+    it "sets the spot instance request type as one-time" do
+      @knife_ec2_create.config[:spot_request_type] = 'one-time'
+      server_def = @knife_ec2_create.create_server_def
+
+      expect(server_def[:request_type]).to eq('one-time')
     end
 
     context "when using ebs volume type and ebs provisioned iops rate options" do
