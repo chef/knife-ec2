@@ -32,7 +32,7 @@ https://github.com/opscode/knife-ec2
 
 ## Issues fixed in knife-ec2 0.11.0
 
-* Update `fog` gem dependency to `fog v1.25`
+* Update `fog` gem dependency to `fog v1.29`
 * Remove 'em-winrm' gem dependency
 * [knife-ec2:#273](https://github.com/chef/knife-ec2/pull/273) Remove -s option for data bag secret and subnets
 * [knife-ec2:#265](https://github.com/chef/knife-ec2/pull/265) showing error message for incorrect option input
