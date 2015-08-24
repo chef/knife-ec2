@@ -20,6 +20,7 @@
 require 'chef/knife/ec2_base'
 require 'chef/knife/s3_source'
 require 'chef/knife/winrm_base'
+require 'chef/knife/bootstrap_windows_base'
 
 class Chef
   class Knife
@@ -27,6 +28,7 @@ class Chef
 
       include Knife::Ec2Base
       include Knife::WinrmBase
+      include Knife::BootstrapWindowsBase
       deps do
         require 'tempfile'
         require 'fog'
@@ -678,6 +680,8 @@ class Chef
           bootstrap.config[:ca_trust_file] = locate_config_value(:ca_trust_file)
           bootstrap.config[:winrm_port] = locate_config_value(:winrm_port)
           bootstrap.config[:auth_timeout] = locate_config_value(:auth_timeout)
+          bootstrap.config[:winrm_ssl_verify_mode] = locate_config_value(:winrm_ssl_verify_mode)
+          bootstrap.config[:msi_url] = locate_config_value(:msi_url)
         elsif locate_config_value(:bootstrap_protocol) == 'ssh'
           bootstrap = Chef::Knife::BootstrapWindowsSsh.new
           bootstrap.config[:ssh_user] = locate_config_value(:ssh_user)
