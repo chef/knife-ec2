@@ -39,6 +39,12 @@ class Chef
             :description => "File containing AWS credentials as used by aws cmdline tools",
             :proc => Proc.new { |key| Chef::Config[:knife][:aws_credential_file] = key }
 
+          option :aws_profile,
+            :long => "--aws-profile PROFILE",
+            :description => "AWS profile, from credential file, to use",
+            :default => 'default',
+            :proc => Proc.new { |key| Chef::Config[:knife][:aws_profile] = key }
+
           option :aws_access_key_id,
             :short => "-A ID",
             :long => "--aws-access-key-id KEY",
@@ -115,14 +121,14 @@ class Chef
             # AWSAccessKeyId=somethingsomethingdarkside
             # AWSSecretKey=somethingsomethingcomplete
             #               OR
+            # [default]
             # aws_access_key_id = somethingsomethingdarkside
             # aws_secret_access_key = somethingsomethingdarkside
 
-            aws_creds = []
-            File.read(Chef::Config[:knife][:aws_credential_file]).each_line do | line |
-              aws_creds << line.split("=").map(&:strip) if line.include?("=")
-            end
-            entries = Hash[*aws_creds.flatten]
+            aws_creds = ini_parse(File.read(Chef::Config[:knife][:aws_credential_file]))
+            profile = Chef::Config[:knife][:aws_profile] || 'default'
+            entries = aws_creds.values.first.has_key?("AWSAccessKeyId") ? aws_creds.values.first : aws_creds[profile]
+
             Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId'] || entries['aws_access_key_id']
             Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey'] || entries['aws_secret_access_key']
           end
@@ -148,6 +154,25 @@ class Chef
         name = profile['arn'].split('/')[-1]
       end
       name ||= ''
+    end
+
+    def ini_parse(file)
+      current_section = {}
+      map = {}
+      file.each_line do |line|
+        line = line.split(/^|\s;/).first # remove comments
+        section = line.match(/^\s*\[([^\[\]]+)\]\s*$/) unless line.nil?
+        if section
+          current_section = section[1]
+        elsif current_section
+          item = line.match(/^\s*(.+?)\s*=\s*(.+?)\s*$/) unless line.nil?
+          if item
+            map[current_section] ||= {}
+            map[current_section][item[1]] = item[2]
+          end
+        end
+      end
+      map
     end
   end
 end

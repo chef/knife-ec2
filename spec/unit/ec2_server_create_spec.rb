@@ -704,7 +704,7 @@ describe Chef::Knife::Ec2ServerCreate do
       end
       it "reads UNIX Line endings for new format" do
         allow(File).to receive(:read).
-          and_return("aws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
+          and_return("[default]\naws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
         @knife_ec2_create.validate!
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
@@ -712,11 +712,20 @@ describe Chef::Knife::Ec2ServerCreate do
 
       it "reads DOS Line endings for new format" do
         allow(File).to receive(:read).
-          and_return("aws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
+          and_return("[default]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
         @knife_ec2_create.validate!
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
-      end      
+      end
+
+      it "loads the correct profile" do
+        Chef::Config[:knife][:aws_profile] = 'other'
+        allow(File).to receive(:read).
+          and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET\n\n[other]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
+        @knife_ec2_create.validate!
+        expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
+        expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
+      end
     end
 
     it 'understands that file:// validation key URIs are just paths' do
