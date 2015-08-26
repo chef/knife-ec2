@@ -682,6 +682,8 @@ class Chef
           bootstrap.config[:auth_timeout] = locate_config_value(:auth_timeout)
           bootstrap.config[:winrm_ssl_verify_mode] = locate_config_value(:winrm_ssl_verify_mode)
           bootstrap.config[:msi_url] = locate_config_value(:msi_url)
+          bootstrap.config[:install_as_service] = locate_config_value(:install_as_service)
+          bootstrap.config[:session_timeout] = locate_config_value(:session_timeout)
         elsif locate_config_value(:bootstrap_protocol) == 'ssh'
           bootstrap = Chef::Knife::BootstrapWindowsSsh.new
           bootstrap.config[:ssh_user] = locate_config_value(:ssh_user)
@@ -1170,7 +1172,6 @@ class Chef
 
       def load_winrm_deps
         require 'winrm'
-        require 'em-winrm'
         require 'chef/knife/winrm'
         require 'chef/knife/bootstrap_windows_winrm'
         require 'chef/knife/bootstrap_windows_ssh'
