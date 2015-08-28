@@ -77,7 +77,7 @@ describe Chef::Knife::Ec2ServerCreate do
                            :instance_id => 'test_spot_instance_id',
                            :state => 'open',
                            :key_name => 'ssh_key_name',
-                           :availability_zone => nil, 
+                           :availability_zone => nil,
                            :flavor_id => 'm1.small',
                            :image_id => 'image' }
 
@@ -465,7 +465,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
       allow(@knife_ec2_create).to receive(:ami).and_return(false)
     end
-      
+
     it "gives warning message and creates the attribute with the required name" do
       expect(@knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb config is deprecated, use ssh_key_name option instead.")
       @knife_ec2_create.validate!
@@ -479,7 +479,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
       allow(@knife_ec2_create).to receive(:ami).and_return(false)
     end
-      
+
     it "gives warning message and gives preference to CLI value over knife config's value" do
       expect(@knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb config is deprecated, use ssh_key_name option instead.")
       @knife_ec2_create.validate!
@@ -492,7 +492,7 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       allow(@knife_ec2_create).to receive(:ami).and_return(false)
     end
-     
+
     it "does nothing" do
       @knife_ec2_create.validate!
     end
@@ -504,7 +504,7 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       @knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
     end
-      
+
     it "ssh-key passed over CLI gets preference over knife config value" do
       server_def = @knife_ec2_create.create_server_def
       expect(server_def[:key_name]).to eq(@knife_ec2_create.config[:ssh_key_name])
@@ -595,6 +595,7 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(Chef::Config[:knife][:hints]["ec2"]).not_to be_nil
     end
   end
+  
   describe "when configuring the winrm bootstrap process for windows" do
     before do
       allow(@knife_ec2_create).to receive(:fetch_server_fqdn).and_return("SERVERNAME")
@@ -610,6 +611,10 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:distro] = 'ubuntu-10.04-magic-sparkles'
       @knife_ec2_create.config[:run_list] = ['role[base]']
       @knife_ec2_create.config[:json_attributes] = "{'my_attributes':{'foo':'bar'}"
+      @knife_ec2_create.config[:winrm_ssl_verify_mode] = 'basic'
+      @knife_ec2_create.config[:msi_url] = 'https://opscode-omnibus-packages.s3.amazonaws.com/windows/2008r2/x86_64/chef-client-12.3.0-1.msi'
+      @knife_ec2_create.config[:install_as_service] = true
+      @knife_ec2_create.config[:session_timeout] = "90"
       @bootstrap = @knife_ec2_create.bootstrap_for_windows_node(@new_ec2_server, @new_ec2_server.dns_name)
    end
 
@@ -653,6 +658,22 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "should set the bootstrap 'first_boot_attributes' correctly" do
       expect(@bootstrap.config[:first_boot_attributes]).to eq("{'my_attributes':{'foo':'bar'}")
+    end
+
+    it "should set the bootstrap 'winrm_ssl_verify_mode' correctly" do
+      expect(@bootstrap.config[:winrm_ssl_verify_mode]).to eq("basic")
+    end
+
+    it "should set the bootstrap 'msi_url' correctly" do
+      expect(@bootstrap.config[:msi_url]).to eq('https://opscode-omnibus-packages.s3.amazonaws.com/windows/2008r2/x86_64/chef-client-12.3.0-1.msi')
+    end
+
+    it "should set the bootstrap 'install_as_service' correctly" do
+      expect(@bootstrap.config[:install_as_service]).to eq(@knife_ec2_create.config[:install_as_service])
+    end
+
+    it "should set the bootstrap 'session_timeout' correctly" do
+      expect(@bootstrap.config[:session_timeout]).to eq(@knife_ec2_create.config[:session_timeout])
     end
 
     it "configures sets the bootstrap's run_list" do
@@ -725,7 +746,7 @@ describe Chef::Knife::Ec2ServerCreate do
         @knife_ec2_create.validate!
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
-      end
+      end      
     end
 
     it 'understands that file:// validation key URIs are just paths' do

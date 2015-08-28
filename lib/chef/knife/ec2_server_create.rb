@@ -20,6 +20,7 @@
 require 'chef/knife/ec2_base'
 require 'chef/knife/s3_source'
 require 'chef/knife/winrm_base'
+require 'chef/knife/bootstrap_windows_base'
 
 class Chef
   class Knife
@@ -27,6 +28,7 @@ class Chef
 
       include Knife::Ec2Base
       include Knife::WinrmBase
+      include Knife::BootstrapWindowsBase
       deps do
         require 'tempfile'
         require 'fog'
@@ -678,6 +680,7 @@ class Chef
           bootstrap.config[:ca_trust_file] = locate_config_value(:ca_trust_file)
           bootstrap.config[:winrm_port] = locate_config_value(:winrm_port)
           bootstrap.config[:auth_timeout] = locate_config_value(:auth_timeout)
+          bootstrap.config[:winrm_ssl_verify_mode] = locate_config_value(:winrm_ssl_verify_mode)
         elsif locate_config_value(:bootstrap_protocol) == 'ssh'
           bootstrap = Chef::Knife::BootstrapWindowsSsh.new
           bootstrap.config[:ssh_user] = locate_config_value(:ssh_user)
@@ -690,6 +693,9 @@ class Chef
           exit 1
         end
         bootstrap.name_args = [fqdn]
+        bootstrap.config[:msi_url] = locate_config_value(:msi_url)
+        bootstrap.config[:install_as_service] = locate_config_value(:install_as_service)
+        bootstrap.config[:session_timeout] = locate_config_value(:session_timeout)
         bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
         bootstrap_common_params(bootstrap)
       end
@@ -1166,7 +1172,6 @@ class Chef
 
       def load_winrm_deps
         require 'winrm'
-        require 'em-winrm'
         require 'chef/knife/winrm'
         require 'chef/knife/bootstrap_windows_winrm'
         require 'chef/knife/bootstrap_windows_ssh'
