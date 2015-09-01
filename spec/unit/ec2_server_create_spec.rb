@@ -609,7 +609,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @bootstrap = @knife_ec2_create.bootstrap_for_windows_node(@new_ec2_server, @new_ec2_server.dns_name)
     end
 
-    it "sets teh bootstrap 'forward_agent' correctly" do
+    it "sets the bootstrap 'forward_agent' correctly" do
       expect(@bootstrap.config[:forward_agent]).to eq(true)
     end
   end
