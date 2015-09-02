@@ -387,6 +387,12 @@ class Chef
         :description => "Execute the bootstrap via sudo with password",
         :boolean => false
 
+      option :forward_agent,
+        :short => "-A",
+        :long => "--forward-agent",
+        :description => "Enable SSH agent forwarding",
+        :boolean => true
+
       def run
         $stdout.sync = true
 
@@ -688,6 +694,7 @@ class Chef
           bootstrap.config[:ssh_port] = locate_config_value(:ssh_port)
           bootstrap.config[:identity_file] = locate_config_value(:identity_file)
           bootstrap.config[:no_host_key_verify] = locate_config_value(:no_host_key_verify)
+          bootstrap.config[:forward_agent] = locate_config_value(:forward_agent)
         else
           ui.error("Unsupported Bootstrapping Protocol. Supported : winrm, ssh")
           exit 1

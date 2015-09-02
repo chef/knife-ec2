@@ -595,6 +595,24 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(Chef::Config[:knife][:hints]["ec2"]).not_to be_nil
     end
   end
+
+  describe "when configuring the ssh bootstrap process for windows" do
+    before do
+      allow(@knife_ec2_create).to receive(:fetch_server_fqdn).and_return("SERVERNAME")
+      @knife_ec2_create.config[:ssh_user] = "administrator"
+      @knife_ec2_create.config[:ssh_password] = "password"
+      @knife_ec2_create.config[:ssh_port] = 22
+      @knife_ec2_create.config[:forward_agent] = true
+      @knife_ec2_create.config[:bootstrap_protocol] = 'ssh'
+      @knife_ec2_create.config[:image] = '12345'
+      allow(@knife_ec2_create).to receive(:is_image_windows?).and_return(true)
+      @bootstrap = @knife_ec2_create.bootstrap_for_windows_node(@new_ec2_server, @new_ec2_server.dns_name)
+    end
+
+    it "sets the bootstrap 'forward_agent' correctly" do
+      expect(@bootstrap.config[:forward_agent]).to eq(true)
+    end
+  end
   
   describe "when configuring the winrm bootstrap process for windows" do
     before do
