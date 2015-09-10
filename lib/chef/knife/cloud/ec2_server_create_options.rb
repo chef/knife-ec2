@@ -143,6 +143,11 @@ class Chef
               :description => "The maximum hourly USD price for the instance",
               :default => nil
 
+            option :spot_request_type,
+              :long => "--spot-request-type TYPE",
+              :desctiption => "The Spot Instance request type. Possible vales are 'one-time' and 'persistent', default value is 'one-time'.",
+              :default => "one-time"
+
           end
         end
       end
