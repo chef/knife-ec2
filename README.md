@@ -16,6 +16,14 @@ Note: Documentation needs to be updated in chef docs
 
 Installation
 ------------
+
+If you're using [ChefDK](http://downloads.chef.io/chef-dk/), simply install the
+Gem:
+
+```bash
+chef gem install knife-ec2
+```
+
 If you're using bundler, simply add Chef and Knife EC2 to your `Gemfile`:
 
 ```ruby
@@ -156,7 +164,7 @@ License and Authors
 - Author:: Adam Jacob (<adam@chef.io>)
 
 ```text
-Copyright 2009-2015 Opscode, Inc.
+Copyright 2009-2015 Chef Software, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

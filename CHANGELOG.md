@@ -4,10 +4,10 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/opscode/knife-ec2/commits).
 
-## Planned for future release
+## Latest release: 0.11.0 (2015-08-24)
 * [knife-ec2:#330](https://github.com/chef/knife-ec2/pull/330) Modification for attribute precedence issue
 
-## Latest release: 0.11.0 (2015-05-21)
+
 * [knife-ec2:#293](https://github.com/chef/knife-ec2/pull/293) s3_source: Lazy load fog library
 * [knife-ec2:#284](https://github.com/chef/knife-ec2/pull/284) Enable Spot Pricing
 * [knife-ec2:#280](https://github.com/chef/knife-ec2/pull/280) Support for EBS volume encryption in knife-ec2 server create options
@@ -16,7 +16,7 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 * [knife-ec2:#265](https://github.com/chef/knife-ec2/pull/265) showing error message for incorrect option input
 * [knife-ec2:#261](https://github.com/chef/knife-ec2/pull/261) Remove 'em-winrm' gem dependency
 
-## Unreleased changes
+
 * [KNIFE-464](https://tickets.opscode.com/browse/KNIFE-464) Support EC2 STS, i.e. AWS Federation tokens for authentication
 
 ## Release: 0.10.0.rc.1 (2014-10-08)
