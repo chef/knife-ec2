@@ -330,6 +330,12 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
         @instance.before_exec_command
         expect(@instance.create_options[:server_def][:price]).to be == '1.99'
       end
+
+      it "sets spot request type" do
+        @instance.config[:spot_request_type] = 'persistent'
+        @instance.before_exec_command
+        expect(@instance.create_options[:server_def][:request_type]).to be == 'persistent'
+      end
     end
   end
 
@@ -367,6 +373,40 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
     end
   end
 
+  describe "Spot instance creation" do
+    before(:each) do
+      @instance = Chef::Knife::Cloud::Ec2ServerCreate.new
+      @ec2_connection = double(Fog::Compute::AWS)
+
+      @instance.config[:spot_price] = 0.666
+      @instance.config[:spot_request_type] = 'persistent'
+      @new_spot_request = double
+
+      @spot_request_attribs = { :id => 'test_spot_request_id',
+                                :price => 0.666,
+                                :request_type => 'persistent',
+                                :created_at => '2015-07-14 09:53:11 UTC',
+                                :instance_count => nil,
+                                :instance_id => 'test_spot_instance_id',
+                                :state => 'open',
+                                :key_name => 'ssh_key_name',
+                                :availability_zone => nil,
+                                :flavor_id => 'm1.small',
+                                :image_id => 'image' }
+
+      @spot_request_attribs.each_pair do |attrib, value|
+        allow(@new_spot_request).to receive(attrib).and_return(value)
+      end
+    end
+
+    it "creates a spot instance request with spot request type persistent" do
+      allow(@instance.service).to receive(:connection).and_return(@ec2_connection)
+      allow(@ec2_connection).to receive_message_chain(:servers, :get)
+      expect(@instance).to receive(:create_spot_request).and_return(@new_spot_request)
+      expect(@new_spot_request.request_type).to eq('persistent')
+      @instance.execute_command
+    end
+  end
   describe "#after_exec_command" do
     before(:each) do
       @instance = Chef::Knife::Cloud::Ec2ServerCreate.new
