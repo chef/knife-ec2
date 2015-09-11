@@ -31,7 +31,7 @@ class Chef
       include Knife::BootstrapWindowsBase
       deps do
         require 'tempfile'
-        require 'fog'
+        require 'fog/aws'
         require 'uri'
         require 'readline'
         require 'chef/json_compat'
