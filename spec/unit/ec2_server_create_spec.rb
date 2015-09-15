@@ -566,7 +566,8 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
 
     it "reads UNIX Line endings for new format" do
       allow(File).to receive(:read).
-        and_return("aws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
+        and_return("[default]\naws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
+      Chef::Config[:knife][:aws_profile] = "default"
       @instance.validate!
       expect(Chef::Config[:knife][:aws_access_key_id]).to be == @access_key_id
       expect(Chef::Config[:knife][:aws_secret_access_key]).to be == @secret_key
@@ -574,10 +575,19 @@ describe Chef::Knife::Cloud::Ec2ServerCreate do
 
     it "reads DOS Line endings for new format" do
       allow(File).to receive(:read).
-        and_return("aws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
+        and_return("[default]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
+        Chef::Config[:knife][:aws_profile] = "default"
       @instance.validate!
       expect(Chef::Config[:knife][:aws_access_key_id]).to be == @access_key_id
       expect(Chef::Config[:knife][:aws_secret_access_key]).to be == @secret_key
+    end
+
+    it "it loads the specified aws profile from the credential file correctly" do
+      allow(File).to receive(:read).and_return("[default]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}\n[randomprofile]\r\naws_access_key_id=ID\r\naws_secret_access_key=SECRET")
+      Chef::Config[:knife][:aws_profile] = "randomprofile"
+      @instance.validate!
+      expect(Chef::Config[:knife][:aws_access_key_id]).to be == "ID"
+      expect(Chef::Config[:knife][:aws_secret_access_key]).to be == "SECRET"
     end
   end
 
