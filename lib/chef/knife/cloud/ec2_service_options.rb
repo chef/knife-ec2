@@ -47,6 +47,12 @@ class Chef
               :long => '--aws-session-token TOKEN',
               :description => 'Your AWS Session Token, for use with AWS STS Federation or Session Tokens',
               :proc => Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
+
+            option :aws_profile,
+              :long => '--aws-profile PROFILE',
+              :decription => 'AWS profile, from credential file, to use',
+              :default => 'default',
+              :proc => Proc.new { |key| Chef::Config[:knife][:aws_profile] = key}
           end
         end
       end

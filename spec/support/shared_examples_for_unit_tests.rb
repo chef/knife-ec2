@@ -30,14 +30,16 @@ shared_examples_for "ec2 command with validations" do |instance|
     context "with aws_credential_file" do
       before(:each) do
         Chef::Config[:knife][:aws_credential_file] = "creds_file_path"
+        Chef::Config[:knife][:aws_profile] = "default"
       end
 
       after(:each) do
         Chef::Config[:knife].delete(:aws_credential_file)
+        Chef::Config[:knife].delete(:aws_profile)
       end
 
       it "raise error while specifying credentials file and aws keys together." do
-        allow(File).to receive(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
+        allow(File).to receive(:read).and_return("[default]\nAWSAccessKeyId=b\nAWSSecretKey=a")
         expect(instance.ui).to receive(:error).with("Either provide a credentials file or the access key and secret keys but not both.")
         expect(lambda { instance.validate! }).to raise_error
       end
@@ -50,7 +52,7 @@ shared_examples_for "ec2 command with validations" do |instance|
       it "raise error while specifying credentials file with only aws_access_key_id." do
         Chef::Config[:knife].delete(:aws_access_key_id)
         Chef::Config[:knife].delete(:aws_secret_access_key)
-        allow(File).to receive(:read).and_return("AWSAccessKeyId=b")
+        allow(File).to receive(:read).and_return("[default]\nAWSAccessKeyId=b")
         expect(instance.ui).to receive(:error).with("You did not provide a valid 'AWS Secret Access Key' value.")
         expect(lambda { instance.validate! }).to raise_error
       end
@@ -58,7 +60,7 @@ shared_examples_for "ec2 command with validations" do |instance|
       it "raise error while specifying credentials file with only aws_secret_access_key." do
         Chef::Config[:knife].delete(:aws_access_key_id)
         Chef::Config[:knife].delete(:aws_secret_access_key)
-        allow(File).to receive(:read).and_return("AWSSecretKey=a")
+        allow(File).to receive(:read).and_return("[default]\nAWSSecretKey=a")
         expect(instance.ui).to receive(:error).with("You did not provide a valid 'AWS Access Key Id' value.")
         expect(lambda { instance.validate! }).to raise_error
       end
