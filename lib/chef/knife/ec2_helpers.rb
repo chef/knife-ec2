@@ -5,7 +5,6 @@
 
 require 'chef/knife/cloud/ec2_service_options'
 require 'chef/knife/cloud/ec2_service'
-require 'pry'
 class Chef
   class Knife
     class Cloud
@@ -56,14 +55,11 @@ class Chef
              section = line.match(/^\s*\[([^\[\]]+)\]\s*$/) unless line.nil?
              if section
                current_section = section[1]
-               binding.pry
              elsif current_section
                item = line.match(/^\s*(.+?)\s*=\s*(.+?)\s*$/) unless line.nil?
-               binding.pry
                if item
                  map[current_section] ||= {}
                  map[current_section][item[1]] = item[2]
-                 binding.pry
                end
              end
           end
