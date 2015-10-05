@@ -21,6 +21,7 @@ require 'chef/knife/ec2_base'
 require 'chef/knife/s3_source'
 require 'chef/knife/winrm_base'
 require 'chef/knife/bootstrap_windows_base'
+require 'byebug'
 
 class Chef
   class Knife
@@ -851,6 +852,25 @@ class Chef
         end
       end
 
+      def ssl_config_user_data
+        <<-EOH
+
+<powershell>
+
+$vm_name = "#{locate_config_value(:chef_node_name)}"
+winrm quickconfig -q
+New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+$create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $create_listener_cmd
+
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+
+</powershell>
+
+        EOH
+      end
+
       def create_server_def
         server_def = {
           :image_id => locate_config_value(:image),
@@ -869,11 +889,24 @@ class Chef
         server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
         server_def[:associate_public_ip] = locate_config_value(:associate_public_ip) if vpc_mode? and config[:associate_public_ip]
 
-        if locate_config_value(:aws_user_data)
-          begin
-            server_def.merge!(:user_data => File.read(locate_config_value(:aws_user_data)))
-          rescue
-            ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
+        byebug
+        if locate_config_value(:winrm_transport) == 'ssl'
+          if locate_config_value(:aws_user_data)
+            begin
+              server_def.merge!(:user_data => File.open(locate_config_value(:aws_user_data),"a").write(ssl_config_user_data))
+            rescue
+              ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
+            end
+          else
+            server_def.merge!(:user_data => ssl_config_user_data)
+          end
+        else
+          if locate_config_value(:aws_user_data)
+            begin
+              server_def.merge!(:user_data => File.read(locate_config_value(:aws_user_data)))
+            rescue
+              ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
+            end
           end
         end
 
