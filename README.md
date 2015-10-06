@@ -160,6 +160,21 @@ Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap
 
 View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](http://docs.chef.io/plugin_knife_windows.html).
 
+##### Options for bootstrapping Windows
+
+The `knife ec2 server create` command also supports the following
+options for bootstrapping a Windows node after the VM s created:
+
+    :winrm_password                The WinRM password
+    :winrm_authentication_protocol Defaults to negotiate, supports kerberos, can be set to basic for debugging
+    :winrm_transport               Defaults to plaintext, use ssl for improved privacy
+    :winrm_port                    Defaults to 5985 plaintext transport, or 5986 for SSL
+    :ca_trust_file                 The CA certificate file to use to verify the server when using SSL
+    :winrm_ssl_verify_mode         Defaults to verify_peer, use verify_none to skip validation of the server certificate during testing
+    :kerberos_keytab_file          The Kerberos keytab file used for authentication
+    :kerberos_realm                The Kerberos realm used for authentication
+    :kerberos_service              The Kerberos service used for authentication
+
 #### `knife ec2 server delete`
 Deletes an existing server in the currently configured AWS account. **By default, this does not delete the associated node and client objects from the Chef server. To do so, add the `--purge` flag**
 

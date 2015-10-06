@@ -4,7 +4,13 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/opscode/knife-ec2/commits).
 
-## Latest release: 0.11.0 (2015-08-24)
+## Latest Release: 0.12.0 (2015-10-1)
+
+* [knife-ec2:#305](https://github.com/chef/knife-ec2/pull/305) Updates to support standard .aws/credentials file
+* [knife-ec2 #354](https://github.com/chef/knife-ec2/pull/354) knife-windows 1.0.0 dependency, support for validatorless bootstrap, other Chef 12 bootstrap options
+* [knife-ec2 #356](https://github.com/chef/knife-ec2/pull/356) Added --forward-agent option
+
+## Release: 0.11.0 (2015-08-24)
 * [knife-ec2:#330](https://github.com/chef/knife-ec2/pull/330) Modification for attribute precedence issue
 * [knife-ec2:#293](https://github.com/chef/knife-ec2/pull/293) s3_source: Lazy load fog library
 * [knife-ec2:#284](https://github.com/chef/knife-ec2/pull/284) Enable Spot Pricing
