@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.version      = Knife::Ec2::VERSION
   s.authors      = ['Adam Jacob', 'Seth Chisamore']
   s.email        = ['adam@opscode.com', 'schisamo@opscode.com']
-  s.homepage     = 'https://github.com/opscode/knife-ec2'
+  s.homepage     = 'https://github.com/chef/knife-ec2'
   s.summary      = "EC2 Support for Chef's Knife Command"
   s.description  = s.summary
   s.license      = 'Apache-2.0'

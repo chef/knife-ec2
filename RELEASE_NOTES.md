@@ -32,8 +32,8 @@ See the [CHANGELOG](https://github.com/chef/knife-ec2/blob/0.12.0/CHANGELOG.md) 
 [DOC_CHANGES.md](https://github.com/chef/knife-ec2/blob/0.12.0/DOC_CHANGES.md) for relevant documentation updates.
 
 Issues with `knife-ec2` should be reported in the issue system at
-https://github.com/opscode/knife-ec2/issues. Learn more about how you can
-contribute features and bug fixes to `knife-ec2` at https://github.com/opscode/knife-ec2/blob/master/CONTRIBUTING.md.
+https://github.com/chef/knife-ec2/issues. Learn more about how you can
+contribute features and bug fixes to `knife-ec2` at https://github.com/chef/knife-ec2/blob/master/CONTRIBUTING.md.
 
 ## Features added in knife-ec2 0.12.0
 
@@ -45,7 +45,7 @@ contribute features and bug fixes to `knife-ec2` at https://github.com/opscode/k
 
 ## knife-ec2 on RubyGems and Github
 https://rubygems.org/gems/knife-ec2
-https://github.com/opscode/knife-ec2
+https://github.com/chef/knife-ec2
 
 ## Issues fixed in knife-ec2 0.11.0
 See the [0.12.0 CHANGELOG](https://github.com/chef/knife-ec2/blob/0.12.0/CHANGELOG.md)
