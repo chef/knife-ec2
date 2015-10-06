@@ -42,7 +42,8 @@ class Chef
               :placement_group => locate_config_value(:placement_group),
               :iam_instance_profile_name => locate_config_value(:iam_instance_profile),
               :price => locate_config_value(:spot_price),
-              :request_type => locate_config_value(:spot_request_type)
+	      :request_type => locate_config_value(:spot_request_type),
++             :forward_agent => locate_config_value(:forward_agent)
             },
             :server_create_timeout => locate_config_value(:server_create_timeout)
           }
