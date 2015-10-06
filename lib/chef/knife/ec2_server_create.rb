@@ -21,7 +21,6 @@ require 'chef/knife/ec2_base'
 require 'chef/knife/s3_source'
 require 'chef/knife/winrm_base'
 require 'chef/knife/bootstrap_windows_base'
-require 'byebug'
 
 class Chef
   class Knife
@@ -853,7 +852,7 @@ class Chef
       end
 
       def ssl_config_user_data
-        <<-EOH
+<<-EOH
 
 <powershell>
 
@@ -868,7 +867,11 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
 </powershell>
 
-        EOH
+EOH
+      end
+
+      def ssl_config_data_already_exist?
+        File.read(locate_config_value(:aws_user_data)).gsub(/\\\\/,"\\").include? ssl_config_user_data
       end
 
       def create_server_def
@@ -889,11 +892,15 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
         server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
         server_def[:associate_public_ip] = locate_config_value(:associate_public_ip) if vpc_mode? and config[:associate_public_ip]
 
-        byebug
         if locate_config_value(:winrm_transport) == 'ssl'
           if locate_config_value(:aws_user_data)
             begin
-              server_def.merge!(:user_data => File.open(locate_config_value(:aws_user_data),"a").write(ssl_config_user_data))
+              if !ssl_config_data_already_exist?
+                f = File.open(locate_config_value(:aws_user_data),"a")
+                f.write(ssl_config_user_data)
+                f.close
+              end
+              server_def.merge!(:user_data => File.read(locate_config_value(:aws_user_data)))
             rescue
               ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
             end
