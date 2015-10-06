@@ -4,65 +4,58 @@ This file is reset everytime when a new release is done. Contents of this file i
 
 # knife-ec2 doc changes
 
-Documentation changes are given below for **knife-ec2 version 0.10.0**.
+Documentation changes are given below for **knife-ec2 version 0.12.0**.
 
-## Provisioned IOPS support for `server create` command
+## `knife ec2 server create` subcommand changes
 
-Options are now available in the `knife ec2 server create` subcommand to
-specify provisioned IOPS for the created instance.
+### SSH agent forwarding with --forward-agent option
+The `--forward-agent` option has been added to the `knife ec2 server
+create` subcommand. This enables SSH agent forwarding, and has the
+same behavior during bootstrap of the created node as the
+`--forward-agent` option of the [`knife bootstrap` subcommand](https://docs.chef.io/knife_bootstrap.html).
 
-### Option `--ebs-volume-type`
+### WinRM security `--winrm-authentication-protocol` option
+`knife-ec2`'s `server create` subcommand supports bootstrap via
+the `WinRM` remote command protocol. The
+`--winrm-authentication-protocol` option controls authentication to
+the remote system (the bootstrapped node). This option's behavior is
+covered in the
+[knife-windows](https://github.com/chef/knife-windows/blob/v1.0.0/DOC_CHANGES.md)
+subcommand documentation which has identically named option.
 
-This command line option and associated plugin configuration `:ebs_volume_type` allow you to specify an EBS volume of type `standard` or `io1` as a `string` parameter to this option. The former is the default, the latter will allow the specification of a provisioned IOPS rate through the `--provisioned-iops` option.
+Note that with this change, the default authentication used for WinRM
+communication specified by the `--winrm-authentication-protocol`
+option is the `negotiate` protocol, which is different than that used
+by previous versions of `knife-ec2`. This may lead to some
+compatibility issues when using WinRM's plaintext transport
+(`--winrm-transport` set to the default of `plaintext`) running from `knife ec2 server create`
+from an operating system other than Windows.
 
-### Option `--provisioned-iops`
-This command line option and the associated `:ebs_provisioned_iops` plugin
-configuration enables the EC2 instance to be configured with the specified
-provisioned IOPS rate given as an argument to this option. It is only valid if
-the EBS volume type is `io1` as specified by the `--ebs-volume-type` option
-for this plugin.
+To avoid problems with the `negotiate` protocol on a non-Windows
+system, configure `--winrm-transport` to `ssl` to use SSL which also
+improves the robustness against information disclosure or tampering
+attacks.
 
-## Use of secret parameters from S3 for `server create` command
+You may also revert to previous authentication behavior by specifying `basic` for the
+`--winrm-authentication-protocol` option. More details on this change
+can be found in [documentation](https://github.com/chef/knife-windows/blob/v1.0.0/DOC_CHANGES.md#winrm-authentication-protocol-defaults-to-negotiate-regardless-of-name-formats) for `knife-windows`.
 
-The options below allow some secrets used with the `knife ec2 server create`
-command to be specified as URL's. Examples are also given in the README.md.
+### Chef Client installation options on Windows
+The following options are available for Windows systems:
 
-### Option `--s3-secret`
-This option allows the specification of an AWS S3 storage bucket that contains
-a data bag secret file -- this option can be used in place of the
-`secret_file` option. It takes an S3 URL as an argument (e.g.
-`s3://bucket/file`) -- that file should contain encrypted data bag secret file
+* `--msi-url URL`: Optional. Used to override the location from which Chef
+  Client is downloaded. If not specified, Chef Client is downloaded
+  from the Internet -- this option allows downloading from a private network
+  location for instance.
+* `--install-as-service`: Install chef-client as a service on Windows
+  systems
+* `--bootstrap-install-command`: Optional. Instead of downloading Chef
+  Client and installing it using a default installation command,
+  bootstrap will invoke this command. If an image already has
+  Chef Client installed, this command can be specified as empty
+  (`''`), in which case no installation will be done and the rest of
+  bootstrap will proceed as if it's already installed.
 
-### Option `--validation-key-url`
-This option allows the validation key to be specified as a URL. It takes a URL
-as an argument.
+For more detail, see the [knife-windows documentation](https://docs.chef.io/plugin_knife_windows.html).
 
-## Option `--aws-session-token`
-The option `--aws-session-token` was added for all knife-ec2 subcommands to
-allow support for federation use cases utilizing EC2 STS tokens.
 
-## SSH Gateway from SSH Config
-Any available SSH Gateway settings in your SSH configuration file are now used
-by default. This includes using any SSH keys specified for the target host.
-This allows simpler command-line usage of the knife plugin with less of a need
-for complex command line invocations.
-
-## Support Spot Instances
-You can now request a spot instance at a specific price.
-
-### Option `--spot-price`
-This option allows the maximum desired spot price to be specified. It takes a
-price in US dollars.
-
-## Pass separate SSH Gateway key
-You can pass an SSH key to be used for authenticating to the SSH Gateway with
-the --ssh-gateway-identity option.
-
-### options
-
-```
---aws-session-token
-```
-
-Your AWS Session Token, for use with AWS STS Federation or Session Tokens.
-This option is available for all subcommands.
