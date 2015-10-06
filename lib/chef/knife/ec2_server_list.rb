@@ -1,7 +1,7 @@
 #
-# Copyright:: Copyright (c) 2010-2011 Opscode, Inc.
 # Author:: Adam Jacob (<adam@chef.io>)
 # Author:: Seth Chisamore (<schisamo@chef.io>)
+# Copyright:: Copyright (c) 2010-2015 Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -77,7 +77,7 @@ class Chef
       end
 
       def groups_with_ids(groups)
-        groups.map{|g| 
+        groups.map{|g|
           "#{g} (#{@group_id_hash[g]})"
         }
       end
@@ -99,7 +99,7 @@ class Chef
 
         server_list = [
           ui.color('Instance ID', :bold),
-        
+
           if config[:name]
             ui.color("Name", :bold)
           end,
@@ -115,33 +115,33 @@ class Chef
           ui.color('Image', :bold),
           ui.color('SSH Key', :bold),
           ui.color('Security Groups', :bold),
-          
+
           if config[:tags]
             config[:tags].split(",").collect do |tag_name|
               ui.color("Tag:#{tag_name}", :bold)
             end
           end,
-          
+
           ui.color('IAM Profile', :bold),
           ui.color('State', :bold)
         ].flatten.compact
-        
+
         output_column_count = server_list.length
-        
+
         if !config[:region]
           ui.warn "No region was specified in knife.rb or as an argument. The default region, us-east-1, will be used:"
         end
-        
+
         connection.servers.all.each do |server|
           server_list << server.id.to_s
-          
+
           if config[:name]
             server_list << server.tags["Name"].to_s
           end
-          
+
           server_list << server.public_ip_address.to_s
           server_list << server.private_ip_address.to_s
-          
+
           server_list << ui.color(
                                   server.flavor_id.to_s,
                                   fcolor(server.flavor_id.to_s)
@@ -157,13 +157,13 @@ class Chef
           server_list << server.image_id.to_s
           server_list << server.key_name.to_s
           server_list << server.groups.join(", ")
-          
+
           if config[:tags]
             config[:tags].split(",").each do |tag_name|
               server_list << server.tags[tag_name].to_s
             end
           end
-          
+
           server_list << iam_name_from_profile(server.iam_instance_profile)
 
           server_list << begin
