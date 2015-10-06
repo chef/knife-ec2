@@ -2,7 +2,7 @@
 
 Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
-prior to release 0.8.0, please visit the [source repository](https://github.com/opscode/knife-ec2/commits).
+prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
 ## Latest Release: 0.12.0 (2015-10-1)
 
@@ -22,8 +22,8 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 * [KNIFE-464](https://tickets.opscode.com/browse/KNIFE-464) Support EC2 STS, i.e. AWS Federation tokens for authentication
 
 ## Release: 0.10.0.rc.1 (2014-10-08)
-* [Issue:#237](https://github.com/opscode/knife-ec2/issues/237) Provide a way to the validation key and data bag secret from S3
-* [Issue:#243](https://github.com/opscode/knife-ec2/issues/243) Support new AWS CLI configuration file format
+* [Issue:#237](https://github.com/chef/knife-ec2/issues/237) Provide a way to the validation key and data bag secret from S3
+* [Issue:#243](https://github.com/chef/knife-ec2/issues/243) Support new AWS CLI configuration file format
 * Update `knife-windows` gem dependency to `knife-windows 0.8.rc.0` for improved Windows authentication integration
 * Update `fog` gem dependency to `fog 1.23.0`
 * Provisioned IOPS support via the `--provisioned-iops` and `--ebs-volume-type` options
@@ -42,7 +42,7 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
   instance on creation
 
 ## Releases prior to 0.8.0
-Please see <https://github.com/opscode/knife-ec2/commits> to view changes in
+Please see <https://github.com/chef/knife-ec2/commits> to view changes in
 the form of commits to the source repository for releases before 0.8.0.
 
 
