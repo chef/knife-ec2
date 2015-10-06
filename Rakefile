@@ -1,8 +1,8 @@
 #
-# Copyright:: Copyright (c) 2008, 2010 Opscode, Inc.
 # Author:: Adam Jacob (<adam@chef.io>)
 # Author:: Daniel DeLeo (<dan@chef.io>)
 # Author:: Seth Chisamore (<schisamo@chef.io>)
+# Copyright:: Copyright (c) 2008-2015 Chef Software, Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
