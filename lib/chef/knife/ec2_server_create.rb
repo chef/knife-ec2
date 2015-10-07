@@ -856,7 +856,7 @@ class Chef
 
 <powershell>
 
-$vm_name = "#{locate_config_value(:chef_node_name)}"
+$vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
 winrm quickconfig -q
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;

@@ -1278,4 +1278,186 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(@knife_ec2_create.tcp_test_ssh("blackhole.ninja", 22)).to be_falsey
     end
   end
+
+  describe 'ssl_config_data_already_exist?' do
+
+    context 'ssl config data does not exist in user supplied user_data' do
+      before do
+        user_user_data = 'user_user_data.ps1'
+        File.open(user_user_data,"w+") do |f|
+          f.write <<-EOH
+user_command_1\\\\user_command_2\\\\user_command_3
+user_command_4
+          EOH
+        end
+        @knife_ec2_create.config[:aws_user_data] = user_user_data
+      end
+
+      it 'returns false' do
+        expect(@knife_ec2_create.ssl_config_data_already_exist?).to eq(false)
+      end
+    end
+
+    context 'ssl config data already exist in user supplied user_data' do
+      before do
+        user_user_data = 'user_user_data.ps1'
+        File.open(user_user_data,"w+") do |f|
+          f.write <<-EOH
+user_command_1
+user_command_2
+
+<powershell>
+
+$vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+winrm quickconfig -q
+New-SelfSignedCertificate -certstorelocation cert:\\\\localmachine\\\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\\\localmachine\\\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+$create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $create_listener_cmd
+
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+
+</powershell>
+
+          EOH
+        end
+        @knife_ec2_create.config[:aws_user_data] = user_user_data
+      end
+
+      it 'returns false' do
+        expect(@knife_ec2_create.ssl_config_data_already_exist?).to eq(true)
+      end
+    end
+
+    after(:each) do
+      @knife_ec2_create.config.delete(:aws_user_data)
+    end
+  end
+
+  describe 'ssl config user data' do
+    before(:each) do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+      Chef::Config[:knife][:ssh_key_name] = "mykey"
+      @knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
+    end
+
+    context 'when ssl transport is used and user_data is supplied on cli' do
+      before do
+        @knife_ec2_create.config[:winrm_transport] = 'ssl'
+        user_user_data = 'user_user_data.ps1'
+        File.open(user_user_data,"w+") do |f|
+          f.write <<-EOH
+user_command_1
+user_command_2
+          EOH
+        end
+        @knife_ec2_create.config[:aws_user_data] = user_user_data
+        @server_def_user_data = <<-EOH
+user_command_1
+user_command_2
+
+<powershell>
+
+$vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+winrm quickconfig -q
+New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+$create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $create_listener_cmd
+
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+
+</powershell>
+
+        EOH
+
+      end
+        
+      it "appends ssl config to user's user_data" do
+        server_def = @knife_ec2_create.create_server_def 
+
+        expect(server_def[:user_data]).to eq(@server_def_user_data)
+      end
+
+      after do
+        @knife_ec2_create.config.delete(:aws_user_data)
+      end
+    end
+
+    context "when ssl transport is used and user_data is not supplied on cli" do
+      before do
+        @knife_ec2_create.config[:winrm_transport] = 'ssl'
+        @server_def_user_data = <<-EOH
+
+<powershell>
+
+$vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+winrm quickconfig -q
+New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+$create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $create_listener_cmd
+
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+
+</powershell>
+
+        EOH
+
+      end
+        
+      it "created user_data only with default ssl configuration" do
+        server_def = @knife_ec2_create.create_server_def 
+
+        expect(server_def[:user_data]).to eq(@server_def_user_data)
+      end
+    end
+
+    context "when plaintext transport is used and user_data is supplied on cli" do
+      before do
+        @knife_ec2_create.config[:winrm_transport] = 'plaintext'
+        user_user_data = 'user_user_data.ps1'
+        File.open(user_user_data,"w+") do |f|
+          f.write <<-EOH
+user_command_1
+user_command_2
+          EOH
+        end
+        @knife_ec2_create.config[:aws_user_data] = user_user_data
+        @server_def_user_data = <<-EOH
+user_command_1
+user_command_2
+        EOH
+      end
+        
+      it "user_data is created only with user's user_data" do
+        server_def = @knife_ec2_create.create_server_def 
+
+        expect(server_def[:user_data]).to eq(@server_def_user_data)
+      end
+
+      after do
+        @knife_ec2_create.config.delete(:aws_user_data)
+      end
+    end
+
+    context "when plaintext transport is used and user_data is not supplied on cli" do
+      before do
+        @knife_ec2_create.config[:winrm_transport] = 'plaintext'
+        @server_def_user_data = nil
+      end
+        
+      it "user_data is nil or empty" do
+        server_def = @knife_ec2_create.create_server_def 
+
+        expect(server_def[:user_data]).to eq(@server_def_user_data)
+      end
+    end
+
+    after(:each) do
+      @knife_ec2_create.config.delete(:ssh_key_name)
+      Chef::Config[:knife].delete(:ssh_key_name)
+      @knife_ec2_create.config.delete(:winrm_transport)
+    end
+  end
 end
