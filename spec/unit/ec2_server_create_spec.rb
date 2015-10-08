@@ -1281,16 +1281,19 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe 'ssl_config_data_already_exist?' do
 
+    before(:each) do
+      @user_user_data = 'user_user_data.ps1'
+      @knife_ec2_create.config[:aws_user_data] = @user_user_data
+    end
+
     context 'ssl config data does not exist in user supplied user_data' do
       before do
-        user_user_data = 'user_user_data.ps1'
-        File.open(user_user_data,"w+") do |f|
+        File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
 user_command_1\\\\user_command_2\\\\user_command_3
 user_command_4
           EOH
         end
-        @knife_ec2_create.config[:aws_user_data] = user_user_data
       end
 
       it 'returns false' do
@@ -1300,8 +1303,7 @@ user_command_4
 
     context 'ssl config data already exist in user supplied user_data' do
       before do
-        user_user_data = 'user_user_data.ps1'
-        File.open(user_user_data,"w+") do |f|
+        File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
 user_command_1
 user_command_2
@@ -1321,7 +1323,6 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
           EOH
         end
-        @knife_ec2_create.config[:aws_user_data] = user_user_data
       end
 
       it 'returns false' do
@@ -1331,30 +1332,37 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
     after(:each) do
       @knife_ec2_create.config.delete(:aws_user_data)
+      FileUtils.rm_rf @user_user_data
     end
   end
 
-  describe 'ssl config user data' do
+  describe 'attach ssl config into user data when transport is ssl' do
     before(:each) do
       allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       @knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
     end
 
-    context 'when ssl transport is used and user_data is supplied on cli' do
+    context 'when user_data script provided by user contains only <script> section' do
       before do
         @knife_ec2_create.config[:winrm_transport] = 'ssl'
-        user_user_data = 'user_user_data.ps1'
-        File.open(user_user_data,"w+") do |f|
+        @user_user_data = 'user_user_data.ps1'
+        File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
-user_command_1
-user_command_2
+<script>
+
+ipconfig > c:\\ipconfig_data.txt
+
+</script>
           EOH
         end
-        @knife_ec2_create.config[:aws_user_data] = user_user_data
         @server_def_user_data = <<-EOH
-user_command_1
-user_command_2
+<script>
+
+ipconfig > c:\\ipconfig_data.txt
+
+</script>
+
 
 <powershell>
 
@@ -1368,27 +1376,153 @@ iex $create_listener_cmd
 netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
 
 </powershell>
-
         EOH
-
+        @knife_ec2_create.config[:aws_user_data] = @user_user_data
       end
-        
-      it "appends ssl config to user's user_data" do
-        server_def = @knife_ec2_create.create_server_def 
+
+      it "appends ssl config to user supplied user_data after <script> tag section" do
+        server_def = @knife_ec2_create.create_server_def
 
         expect(server_def[:user_data]).to eq(@server_def_user_data)
       end
 
       after do
         @knife_ec2_create.config.delete(:aws_user_data)
+        FileUtils.rm_rf @user_user_data
       end
     end
 
-    context "when ssl transport is used and user_data is not supplied on cli" do
+    context 'when user_data script provided by user contains <powershell> section' do
+      before do
+        @knife_ec2_create.config[:winrm_transport] = 'ssl'
+        @user_user_data = 'user_user_data.ps1'
+        File.open(@user_user_data,"w+") do |f|
+          f.write <<-EOH
+<powershell>
+
+Get-DscLocalConfigurationManager > c:\\dsc_data.txt
+</powershell>
+          EOH
+        end
+        @server_def_user_data = <<-EOH
+<powershell>
+
+Get-DscLocalConfigurationManager > c:\\dsc_data.txt
+
+$vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+winrm quickconfig -q
+New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+$create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $create_listener_cmd
+
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+
+</powershell>
+        EOH
+        @knife_ec2_create.config[:aws_user_data] = @user_user_data
+      end
+
+      it "appends ssl config to user supplied user_data at the end of <powershell> tag section" do
+        server_def = @knife_ec2_create.create_server_def
+
+        expect(server_def[:user_data]).to eq(@server_def_user_data)
+      end
+
+      after do
+        @knife_ec2_create.config.delete(:aws_user_data)
+        FileUtils.rm_rf @user_user_data
+      end
+    end
+
+    context 'when user_data script provided by user already contains ssl config code' do
+      before do
+        @knife_ec2_create.config[:winrm_transport] = 'ssl'
+        @user_user_data = 'user_user_data.ps1'
+        File.open(@user_user_data,"w+") do |f|
+          f.write <<-EOH
+<powershell>
+
+Get-DscLocalConfigurationManager > c:\\dsc_data.txt
+
+$vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+winrm quickconfig -q
+New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+$create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $create_listener_cmd
+
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+
+</powershell>
+        EOH
+        end
+        @server_def_user_data = <<-EOH
+<powershell>
+
+Get-DscLocalConfigurationManager > c:\\dsc_data.txt
+
+$vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+winrm quickconfig -q
+New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+$create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $create_listener_cmd
+
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+
+</powershell>
+        EOH
+        @knife_ec2_create.config[:aws_user_data] = @user_user_data
+      end
+
+      it "does no modifications and passes user_data as it is to server_def" do
+        server_def = @knife_ec2_create.create_server_def
+
+        expect(server_def[:user_data]).to eq(@server_def_user_data)
+      end
+
+      after do
+        @knife_ec2_create.config.delete(:aws_user_data)
+        FileUtils.rm_rf @user_user_data
+      end
+    end
+
+    context 'when user_data script provided by user has invalid syntax' do
+      before do
+        @knife_ec2_create.config[:winrm_transport] = 'ssl'
+        @user_user_data = 'user_user_data.ps1'
+        File.open(@user_user_data,"w+") do |f|
+          f.write <<-EOH
+<powershell>
+
+Get-DscLocalConfigurationManager > c:\\dsc_data.txt
+
+<script>
+
+ipconfig > c:\\ipconfig_data.txt
+
+</script>
+        EOH
+        end
+        @knife_ec2_create.config[:aws_user_data] = @user_user_data
+      end
+
+      it "gives error and exits" do
+        expect(@knife_ec2_create.ui).to receive(:error).with("Provided user_data file is invalid.")
+        expect { @knife_ec2_create.create_server_def }.to raise_error SystemExit
+      end
+
+      after do
+        @knife_ec2_create.config.delete(:aws_user_data)
+        FileUtils.rm_rf @user_user_data
+      end
+    end
+
+    context "when user_data is not supplied by user on cli" do
       before do
         @knife_ec2_create.config[:winrm_transport] = 'ssl'
         @server_def_user_data = <<-EOH
-
 <powershell>
 
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
@@ -1401,12 +1535,10 @@ iex $create_listener_cmd
 netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
 
 </powershell>
-
         EOH
-
       end
         
-      it "created user_data only with default ssl configuration" do
+      it "creates user_data only with default ssl configuration" do
         server_def = @knife_ec2_create.create_server_def 
 
         expect(server_def[:user_data]).to eq(@server_def_user_data)
@@ -1416,17 +1548,25 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
     context "when plaintext transport is used and user_data is supplied on cli" do
       before do
         @knife_ec2_create.config[:winrm_transport] = 'plaintext'
-        user_user_data = 'user_user_data.ps1'
-        File.open(user_user_data,"w+") do |f|
+        @user_user_data = 'user_user_data.ps1'
+        File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
-user_command_1
-user_command_2
+<script>
+
+ipconfig > c:\\ipconfig_data.txt
+netstat > c:\\netstat_data.txt
+
+</script>
           EOH
         end
-        @knife_ec2_create.config[:aws_user_data] = user_user_data
+        @knife_ec2_create.config[:aws_user_data] = @user_user_data
         @server_def_user_data = <<-EOH
-user_command_1
-user_command_2
+<script>
+
+ipconfig > c:\\ipconfig_data.txt
+netstat > c:\\netstat_data.txt
+
+</script>
         EOH
       end
         
@@ -1438,6 +1578,7 @@ user_command_2
 
       after do
         @knife_ec2_create.config.delete(:aws_user_data)
+        FileUtils.rm_rf @user_user_data
       end
     end
 
