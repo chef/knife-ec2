@@ -1519,6 +1519,61 @@ ipconfig > c:\\ipconfig_data.txt
       end
     end
 
+    context 'when user_data script provided by user has <powershell> and <script> tag sections' do
+      before do
+        @knife_ec2_create.config[:winrm_transport] = 'ssl'
+        @user_user_data = 'user_user_data.ps1'
+        File.open(@user_user_data,"w+") do |f|
+          f.write <<-EOH
+<powershell>
+
+Get-DscLocalConfigurationManager > c:\\dsc_data.txt
+
+</powershell>
+<script>
+
+ipconfig > c:\\ipconfig_data.txt
+
+</script>
+        EOH
+        end
+        @server_def_user_data = <<-EOH
+<powershell>
+
+Get-DscLocalConfigurationManager > c:\\dsc_data.txt
+
+
+$vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+winrm quickconfig -q
+New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+$create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $create_listener_cmd
+
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+
+</powershell>
+<script>
+
+ipconfig > c:\\ipconfig_data.txt
+
+</script>
+        EOH
+        @knife_ec2_create.config[:aws_user_data] = @user_user_data
+      end
+
+      it "appends ssl config to user supplied user_data at the end of <powershell> tag section" do
+        server_def = @knife_ec2_create.create_server_def
+
+        expect(server_def[:user_data]).to eq(@server_def_user_data)
+      end
+
+      after do
+        @knife_ec2_create.config.delete(:aws_user_data)
+        FileUtils.rm_rf @user_user_data
+      end
+    end
+
     context "when user_data is not supplied by user on cli" do
       before do
         @knife_ec2_create.config[:winrm_transport] = 'ssl'
