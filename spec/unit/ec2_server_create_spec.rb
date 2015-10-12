@@ -1310,10 +1310,15 @@ user_command_2
 
 <powershell>
 
+If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
+  winrm quickconfig -q
+}
+If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b" -Quiet) {
+  winrm delete winrm/config/listener?Address=*+Transport=HTTP
+}
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
-winrm quickconfig -q
-New-SelfSignedCertificate -certstorelocation cert:\\\\localmachine\\\\my -dnsname $vm_name
-$thumbprint = (Get-ChildItem -Path cert:\\\\localmachine\\\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $create_listener_cmd
 
@@ -1341,11 +1346,11 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
       allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       @knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
+      @knife_ec2_create.config[:winrm_transport] = "ssl"
     end
 
     context 'when user_data script provided by user contains only <script> section' do
       before do
-        @knife_ec2_create.config[:winrm_transport] = 'ssl'
         @user_user_data = 'user_user_data.ps1'
         File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
@@ -1366,8 +1371,13 @@ ipconfig > c:\\ipconfig_data.txt
 
 <powershell>
 
+If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
+  winrm quickconfig -q
+}
+If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b" -Quiet) {
+  winrm delete winrm/config/listener?Address=*+Transport=HTTP
+}
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
-winrm quickconfig -q
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1394,7 +1404,6 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
     context 'when user_data script provided by user contains <powershell> section' do
       before do
-        @knife_ec2_create.config[:winrm_transport] = 'ssl'
         @user_user_data = 'user_user_data.ps1'
         File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
@@ -1409,8 +1418,13 @@ Get-DscLocalConfigurationManager > c:\\dsc_data.txt
 
 Get-DscLocalConfigurationManager > c:\\dsc_data.txt
 
+If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
+  winrm quickconfig -q
+}
+If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b" -Quiet) {
+  winrm delete winrm/config/listener?Address=*+Transport=HTTP
+}
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
-winrm quickconfig -q
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1437,7 +1451,6 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
     context 'when user_data script provided by user already contains ssl config code' do
       before do
-        @knife_ec2_create.config[:winrm_transport] = 'ssl'
         @user_user_data = 'user_user_data.ps1'
         File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
@@ -1445,8 +1458,13 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
 Get-DscLocalConfigurationManager > c:\\dsc_data.txt
 
+If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
+  winrm quickconfig -q
+}
+If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b" -Quiet) {
+  winrm delete winrm/config/listener?Address=*+Transport=HTTP
+}
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
-winrm quickconfig -q
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1462,8 +1480,13 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
 Get-DscLocalConfigurationManager > c:\\dsc_data.txt
 
+If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
+  winrm quickconfig -q
+}
+If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b" -Quiet) {
+  winrm delete winrm/config/listener?Address=*+Transport=HTTP
+}
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
-winrm quickconfig -q
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1490,7 +1513,6 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
     context 'when user_data script provided by user has invalid syntax' do
       before do
-        @knife_ec2_create.config[:winrm_transport] = 'ssl'
         @user_user_data = 'user_user_data.ps1'
         File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
@@ -1521,7 +1543,6 @@ ipconfig > c:\\ipconfig_data.txt
 
     context 'when user_data script provided by user has <powershell> and <script> tag sections' do
       before do
-        @knife_ec2_create.config[:winrm_transport] = 'ssl'
         @user_user_data = 'user_user_data.ps1'
         File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
@@ -1543,8 +1564,13 @@ ipconfig > c:\\ipconfig_data.txt
 Get-DscLocalConfigurationManager > c:\\dsc_data.txt
 
 
+If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
+  winrm quickconfig -q
+}
+If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b" -Quiet) {
+  winrm delete winrm/config/listener?Address=*+Transport=HTTP
+}
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
-winrm quickconfig -q
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1576,12 +1602,16 @@ ipconfig > c:\\ipconfig_data.txt
 
     context "when user_data is not supplied by user on cli" do
       before do
-        @knife_ec2_create.config[:winrm_transport] = 'ssl'
         @server_def_user_data = <<-EOH
 <powershell>
 
+If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
+  winrm quickconfig -q
+}
+If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b" -Quiet) {
+  winrm delete winrm/config/listener?Address=*+Transport=HTTP
+}
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
-winrm quickconfig -q
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1600,9 +1630,86 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
       end
     end
 
-    context "when plaintext transport is used and user_data is supplied on cli" do
+    context "when user has specified --create-no-ssl-listener along with his/her own user_data on cli" do
       before do
-        @knife_ec2_create.config[:winrm_transport] = 'plaintext'
+        @knife_ec2_create.config[:create_no_ssl_listener] = true
+        @user_user_data = 'user_user_data.ps1'
+        File.open(@user_user_data,"w+") do |f|
+          f.write <<-EOH
+<powershell>
+
+Get-DscLocalConfigurationManager > c:\\dsc_data.txt
+
+</powershell>
+<script>
+
+ipconfig > c:\\ipconfig_data.txt
+
+</script>
+        EOH
+        end
+        @server_def_user_data = <<-EOH
+<powershell>
+
+Get-DscLocalConfigurationManager > c:\\dsc_data.txt
+
+</powershell>
+<script>
+
+ipconfig > c:\\ipconfig_data.txt
+
+</script>
+        EOH
+        @knife_ec2_create.config[:aws_user_data] = @user_user_data
+      end
+
+      it "does not attach ssl config into the user_data supplied by user on cli" do
+        server_def = @knife_ec2_create.create_server_def
+
+        expect(server_def[:user_data]).to eq(@server_def_user_data)
+      end
+
+      after do
+        @knife_ec2_create.config.delete(:create_no_ssl_listener)
+        @knife_ec2_create.config.delete(:aws_user_data)
+        FileUtils.rm_rf @user_user_data
+      end
+    end
+
+    context "when user has specified --create-no-ssl-listener with no user_data on cli" do
+      before do
+        @knife_ec2_create.config[:create_no_ssl_listener] = true
+        @server_def_user_data = nil
+      end
+
+      it "creates nil or empty user_data" do
+        server_def = @knife_ec2_create.create_server_def
+
+        expect(server_def[:user_data]).to eq(@server_def_user_data)
+      end
+
+      after do
+        @knife_ec2_create.config.delete(:create_no_ssl_listener)
+      end
+    end
+
+    after(:each) do
+      @knife_ec2_create.config.delete(:ssh_key_name)
+      Chef::Config[:knife].delete(:ssh_key_name)
+      @knife_ec2_create.config.delete(:winrm_transport)
+    end
+  end
+
+  describe "do not attach ssl config into user data when transport is plaintext" do
+    before(:each) do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+      Chef::Config[:knife][:ssh_key_name] = "mykey"
+      @knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
+      @knife_ec2_create.config[:winrm_transport] = "plaintext"
+    end
+
+    context "when user_data is supplied on cli" do
+      before do
         @user_user_data = 'user_user_data.ps1'
         File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
@@ -1637,18 +1744,17 @@ netstat > c:\\netstat_data.txt
       end
     end
 
-    context "when plaintext transport is used and user_data is not supplied on cli" do
+    context "when user_data is not supplied on cli" do
       before do
-        @knife_ec2_create.config[:winrm_transport] = 'plaintext'
         @server_def_user_data = nil
       end
         
-      it "user_data is nil or empty" do
+      it "creates nil or empty user_data" do
         server_def = @knife_ec2_create.create_server_def 
 
         expect(server_def[:user_data]).to eq(@server_def_user_data)
       end
-    end
+    end    
 
     after(:each) do
       @knife_ec2_create.config.delete(:ssh_key_name)

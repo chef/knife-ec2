@@ -393,6 +393,11 @@ class Chef
         :description => "Enable SSH agent forwarding",
         :boolean => true
 
+      option :create_no_ssl_listener,
+        :long => "--create-no-ssl-listener",
+        :description => "Do not create ssl listener, if this option is not specified ssl listener will be created by default.",
+        :boolean => true
+
       def run
         $stdout.sync = true
 
@@ -854,8 +859,13 @@ class Chef
       def ssl_config_user_data
 <<-EOH
 
+If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
+  winrm quickconfig -q
+}
+If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b" -Quiet) {
+  winrm delete winrm/config/listener?Address=*+Transport=HTTP
+}
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
-winrm quickconfig -q
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -886,7 +896,7 @@ EOH
             script_lines.insert(-1,"\n\n" + ps_start_tag + ssl_config_user_data + ps_end_tag)
           end
         end
-        script_lines.join
+        script_lines
       end
 
       def create_server_def
@@ -910,13 +920,19 @@ EOH
         if locate_config_value(:winrm_transport) == 'ssl'
           if locate_config_value(:aws_user_data)
             begin
-              user_data = process_user_data(File.readlines(locate_config_value(:aws_user_data)))
+              user_data = File.readlines(locate_config_value(:aws_user_data))
+              if !config[:create_no_ssl_listener]
+                user_data = process_user_data(user_data)
+              end
+              user_data = user_data.join
               server_def.merge!(:user_data => user_data)
             rescue
               ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
             end
           else
-            server_def.merge!(:user_data => "<powershell>\n" + ssl_config_user_data + "</powershell>\n")
+            if !config[:create_no_ssl_listener]
+              server_def.merge!(:user_data => "<powershell>\n" + ssl_config_user_data + "</powershell>\n")
+            end
           end
         else
           if locate_config_value(:aws_user_data)
