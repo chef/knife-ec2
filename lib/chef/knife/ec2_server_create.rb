@@ -393,6 +393,11 @@ class Chef
         :description => "Enable SSH agent forwarding",
         :boolean => true
 
+      option :create_no_ssl_listener,
+        :long => "--create-no-ssl-listener",
+        :description => "Do not create ssl listener, if this option is not specified ssl listener will be created by default.",
+        :boolean => true
+
       def run
         $stdout.sync = true
 
@@ -851,6 +856,49 @@ class Chef
         end
       end
 
+      def ssl_config_user_data
+<<-EOH
+
+If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
+  winrm quickconfig -q
+}
+If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b" -Quiet) {
+  winrm delete winrm/config/listener?Address=*+Transport=HTTP
+}
+$vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+$create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $create_listener_cmd
+
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+
+EOH
+      end
+
+      def ssl_config_data_already_exist?
+        File.read(locate_config_value(:aws_user_data)).gsub(/\\\\/,"\\").include? ssl_config_user_data.strip
+      end
+
+      def process_user_data(script_lines)
+        if !ssl_config_data_already_exist?
+          ps_start_tag = "<powershell>\n"
+          ps_end_tag = "</powershell>\n"
+          ps_start_tag_index = script_lines.index(ps_start_tag) || script_lines.index(ps_start_tag.strip)
+          ps_end_tag_index = script_lines.index(ps_end_tag) || script_lines.index(ps_end_tag.strip)
+          case
+          when ( ps_start_tag_index && !ps_end_tag_index ) || ( !ps_start_tag_index && ps_end_tag_index )
+            ui.error("Provided user_data file is invalid.")
+            exit 1
+          when ps_start_tag_index && ps_end_tag_index
+            script_lines[ps_end_tag_index] = ssl_config_user_data + ps_end_tag
+          when !ps_start_tag_index && !ps_end_tag_index
+            script_lines.insert(-1,"\n\n" + ps_start_tag + ssl_config_user_data + ps_end_tag)
+          end
+        end
+        script_lines
+      end
+
       def create_server_def
         server_def = {
           :image_id => locate_config_value(:image),
@@ -869,11 +917,30 @@ class Chef
         server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
         server_def[:associate_public_ip] = locate_config_value(:associate_public_ip) if vpc_mode? and config[:associate_public_ip]
 
-        if locate_config_value(:aws_user_data)
-          begin
-            server_def.merge!(:user_data => File.read(locate_config_value(:aws_user_data)))
-          rescue
-            ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
+        if locate_config_value(:winrm_transport) == 'ssl'
+          if locate_config_value(:aws_user_data)
+            begin
+              user_data = File.readlines(locate_config_value(:aws_user_data))
+              if !config[:create_no_ssl_listener]
+                user_data = process_user_data(user_data)
+              end
+              user_data = user_data.join
+              server_def.merge!(:user_data => user_data)
+            rescue
+              ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
+            end
+          else
+            if !config[:create_no_ssl_listener]
+              server_def.merge!(:user_data => "<powershell>\n" + ssl_config_user_data + "</powershell>\n")
+            end
+          end
+        else
+          if locate_config_value(:aws_user_data)
+            begin
+              server_def.merge!(:user_data => File.read(locate_config_value(:aws_user_data)))
+            rescue
+              ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
+            end
           end
         end
 
