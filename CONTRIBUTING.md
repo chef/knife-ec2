@@ -6,11 +6,11 @@ You can find the answers to additional frequently asked questions [on the wiki](
 
 ## Quick-contribute
 
-*   Create an account on our [bug tracker](http://tickets.opscode.com/browse/KNIFE)
+*   Create an account on our [bug tracker](https://tickets.opscode.com/browse/KNIFE)
 *   Sign our contributor agreement (CLA) [
 online](https://secure.echosign.com/public/hostedForm?formid=PJIF5694K6L)
     (keep reading if you're contributing on behalf of your employer)
-* Create a ticket for your change on the [bug tracker](http://tickets.opscode.com/browse/KNIFE)
+* Create a ticket for your change on the [bug tracker](https://tickets.opscode.com/browse/KNIFE)
 * Link to your patch as a rebased git branch or pull request from the ticket
 * Resolve the ticket as fixed
 
@@ -37,14 +37,14 @@ your employer fill out our [Corporate CLA](https://secure.echosign.com/public/ho
 ## Issue Tracking
 
 You can file tickets to describe the bug you'd like to fix or feature you'd
-like to add via the [knife-ec2 project](http://tickets.opscode.com/browse/KNIFE). For your contribution to be reviewed
+like to add via the [knife-ec2 project](https://tickets.opscode.com/browse/KNIFE). For your contribution to be reviewed
 and merged, you **must** file a ticket.
 
 ## Contribution Details
 
 Once you've created the ticket, you can make a pull request to
-knife-ec2 on GitHub at <https://github.com/opscode/knife-ec2> that references
-that ticket. 
+knife-ec2 on GitHub at <https://github.com/chef/knife-ec2> that references
+that ticket.
 
 ## Testing Instructions
 
@@ -53,7 +53,7 @@ knife-ec2:
 
     bundle install
     bundle exec rspec spec
-    
+
 **All tests must pass** before your contribution can be merged. Thus it's a good idea
 to execute the tests without your change to be sure you understand how to run
 them, as well as after to validate that you've avoided regressions.

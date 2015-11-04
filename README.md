@@ -1,23 +1,23 @@
 Knife EC2
 =========
-[![Gem Version](https://badge.fury.io/rb/knife-ec2.svg)](http://badge.fury.io/rb/knife-ec2)
+[![Gem Version](https://badge.fury.io/rb/knife-ec2.svg)](https://rubygems.org/gems/knife-ec2)
 [![Build Status](https://travis-ci.org/chef/knife-ec2.svg?branch=master)](https://travis-ci.org/chef/knife-ec2)
 [![Dependency Status](https://gemnasium.com/chef/knife-ec2.svg)](https://gemnasium.com/chef/knife-ec2)
 
 This is the official Chef Knife plugin for EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
 
 * Documentation: <https://github.com/chef/knife-ec2/blob/master/README.md>
-* Source: <http://github.com/chef/knife-ec2/tree/master>
+* Source: <https://github.com/chef/knife-ec2/tree/master>
 * Issues: <https://github.com/chef/knife-ec2/issues>
 * IRC: `#chef` and `#chef-hacking` on Freenode
-* Mailing list: <http://lists.chef.io>
+* Mailing list: <https://discourse.chef.io/>
 
 Note: Documentation needs to be updated in chef docs
 
 Installation
 ------------
 
-If you're using [ChefDK](http://downloads.chef.io/chef-dk/), simply install the
+If you're using [ChefDK](https://downloads.chef.io/chef-dk/), simply install the
 Gem:
 
 ```bash
@@ -158,7 +158,7 @@ Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap
     # `--spot-price` option lets you specify the spot pricing
     knife ec2 server create -I ami-173d747e -G windows -f m1.medium --user-data ~/your-user-data-file -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --spot-price price-in-USD
 
-View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](http://docs.chef.io/plugin_knife_windows.html).
+View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](https://docs.chef.io/plugin_knife_windows.html).
 
 ##### Options for bootstrapping Windows
 
