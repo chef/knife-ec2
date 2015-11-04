@@ -10,7 +10,7 @@ This is the official Chef Knife plugin for EC2. This plugin gives knife the abil
 * Source: <https://github.com/chef/knife-ec2/tree/master>
 * Issues: <https://github.com/chef/knife-ec2/issues>
 * IRC: `#chef` and `#chef-hacking` on Freenode
-* Mailing list: <http://lists.chef.io>
+* Mailing list: <https://discourse.chef.io/>
 
 Note: Documentation needs to be updated in chef docs
 
