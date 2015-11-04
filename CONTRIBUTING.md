@@ -1,6 +1,6 @@
 # Contributing to Knife-EC2
 
-We're glad you want to contribute to Knife-EC2! The first
+We're glad you want to contribute to knife-ec2! The first
 step is the desire to improve the project.
 
 ## Quick Contributing Steps
@@ -9,7 +9,7 @@ step is the desire to improve the project.
 2. Create an account on the [Chef Supermarket](https://supermarket.chef.io/).
 3. [Become a contributor](https://supermarket.chef.io/become-a-contributor) by
 signing our Contributor License Agreement (CLA).
-4. Create a pull request for your change on [GitHub](https://github.com).
+4. Create a pull request for your change on [GitHub](https://github.com/chef/knife-ec2/pulls).
 5. The Knife-EC2 maintainers will review your change, and either merge the
 change or offer suggestions.
 
@@ -77,8 +77,7 @@ Date:   Wed Sep 18 11:44:40 2015 -0700
 ## <a name="issues"></a>Issue Tracking
 
 Chef uses Github Issues to track issues with knife-ec2. Issues should be
-submitted in the appropriate cookbook's Github repository at:
-https://github.com/chef-cookbooks/COOKBOOK_NAME/issues/new.
+submitted at https://github.com/chef/knife-ec2/issues/new.
 
 In order to decrease the back and forth in issues, and to help us get to
 the bottom of them quickly we use the below issue template. You can copy/paste
@@ -86,7 +85,7 @@ this template into the issue you are opening and edit it accordingly.
 
 <a name="issuetemplate"></a>
 ```
-### Environment: [Details about the environment such as the Operating System, cookbook details, etc...]
+### Environment: [Details about the environment such as the Operating System, Ruby release, etc...]
 
 ### Scenario:
 [What you are trying to achieve and you can't?]
@@ -106,7 +105,7 @@ this template into the issue you are opening and edit it accordingly.
 
 ## Using git
 
-You can copy a chef coobook repository to your local workstation by running
+You can copy the knife-ec2 repository to your local workstation by running
 `git clone git://github.com/chef/knife-ec2.git`.
 
 For collaboration purposes, it is best if you create a GitHub account
@@ -150,7 +149,7 @@ page on the Chef Docs site.
 ## Unit Tests
 
 Knife-EC2 is tested with rspec unit tests to ensure changes don't cause
-regressions for other use cases.  All non-trivial changes must include
+regressions for other use cases. All non-trivial changes must include
 additional unit tests.
 
 To run the rspec tests run the following commands from the root of the
@@ -170,7 +169,7 @@ for improvement in the code itself or the implementation.
 
 ## Release Cycle
 
-The versioning for Chef Software Cookbook projects is X.Y.Z.
+The versioning for Chef Software projects is X.Y.Z.
 
 * X is a major release, which may not be fully compatible with prior
   major releases
@@ -182,21 +181,19 @@ The versioning for Chef Software Cookbook projects is X.Y.Z.
 These resources will help you learn more about Chef and connect to
 other members of the Chef community:
 
-* [Chef Community Guidelines](http://docs.chef.io/community_guidelines.html)
-* [chef](http://lists.chef.io/sympa/info/chef) and
-  [chef-dev](http://lists.chef.io/sympa/info/chef-dev) mailing
-  lists
+* [Chef Community Guidelines](https://docs.chef.io/community_guidelines.html)
+* [Chef Mailing List](https://discourse.chef.io/c/dev)
 * #chef and #chef-hacking IRC channels on irc.freenode.net
-* [Supermarket site](http://supermarket.chef.io)
+* [Supermarket site](https://supermarket.chef.io/)
 * [Chef Docs](http://docs.chef.io)
-* Chef Software Chef [product page](http://www.chef.io/chef)
+* Chef Software Chef [product page](https://www.chef.io/chef/)
 
 
 ## Contribution Do's and Don't's
 
 Please do include tests for your contribution. If you need help, ask on the
 [chef-dev mailing list](https://discourse.chef.io/c/dev) or the [#chef-hacking
-IRC channel](http://community.chef.io/chat/chef-hacking). Please provide
+IRC channel](https://botbot.me/freenode/chef-hacking/). Please provide
 evidence of testing your contribution if it isn't trivial so we don't have to
 duplicate effort in testing.
 
