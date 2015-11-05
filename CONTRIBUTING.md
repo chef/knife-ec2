@@ -1,4 +1,4 @@
-# Contributing to Knife-EC2
+# Contributing to knife-ec2
 
 We're glad you want to contribute to knife-ec2! The first
 step is the desire to improve the project.
@@ -10,7 +10,7 @@ step is the desire to improve the project.
 3. [Become a contributor](https://supermarket.chef.io/become-a-contributor) by
 signing our Contributor License Agreement (CLA).
 4. Create a pull request for your change on [GitHub](https://github.com/chef/knife-ec2/pulls).
-5. The Knife-EC2 maintainers will review your change, and either merge the
+5. The knife-ec2 maintainers will review your change, and either merge the
 change or offer suggestions.
 
 ## The Apache License and the CLA/CCLA
@@ -148,7 +148,7 @@ page on the Chef Docs site.
 
 ## Unit Tests
 
-Knife-EC2 is tested with rspec unit tests to ensure changes don't cause
+knife-ec2 is tested with rspec unit tests to ensure changes don't cause
 regressions for other use cases. All non-trivial changes must include
 additional unit tests.
 
