@@ -194,7 +194,8 @@ class Chef
         :short => "-r RUN_LIST",
         :long => "--run-list RUN_LIST",
         :description => "Comma separated list of roles/recipes to apply",
-        :proc => lambda { |o| o.split(/[\s,]+/) }
+        :proc => lambda { |o| o.split(/[\s,]+/) },
+        :default => []
 
       option :secret,
         :long => "--secret ",
