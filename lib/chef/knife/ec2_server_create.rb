@@ -1192,7 +1192,7 @@ EOH
         else
           false
         end
-      rescue SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, IOError
+      rescue SocketError, Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Errno::ENETUNREACH, Errno::ENOTCONN, IOError
         Chef::Log.debug("ssh failed to connect: #{hostname}")
         sleep 2
         false
