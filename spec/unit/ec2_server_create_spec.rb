@@ -20,7 +20,7 @@ require File.expand_path('../../spec_helper', __FILE__)
 require 'net/ssh/proxy/http'
 require 'net/ssh/proxy/command'
 require 'net/ssh/gateway'
-require 'fog'
+require 'fog/aws'
 require 'chef/knife/bootstrap'
 require 'chef/knife/bootstrap_windows_winrm'
 require 'chef/knife/bootstrap_windows_ssh'
