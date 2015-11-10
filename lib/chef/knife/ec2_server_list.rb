@@ -46,21 +46,6 @@ class Chef
         :long => "--tags TAG1,TAG2",
         :description => "List of tags to output"
 
-      def fcolor(flavor)
-        case flavor
-        when "t1.micro"
-          fcolor = :blue
-        when "m1.small"
-          fcolor = :magenta
-        when "m1.medium"
-          fcolor = :cyan
-        when "m1.large"
-          fcolor = :green
-        when "m1.xlarge"
-          fcolor = :red
-        end
-      end
-
       def azcolor(az)
         case az
         when /a$/
@@ -141,11 +126,7 @@ class Chef
 
           server_list << server.public_ip_address.to_s
           server_list << server.private_ip_address.to_s
-
-          server_list << ui.color(
-                                  server.flavor_id.to_s,
-                                  fcolor(server.flavor_id.to_s)
-                                )
+          server_list << server.flavor_id.to_s
 
           if config[:az]
             server_list << ui.color(
