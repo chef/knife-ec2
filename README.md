@@ -65,12 +65,12 @@ knife[:aws_session_token] = ENV['AWS_SESSION_TOKEN']
 ```
 
 ### CLI Arguments
-You also have the option of passing your AWS API Key/Secret into the individual knife subcommands using the `-A` (or `--aws-access-key-id`) `-K` (or `--aws-secret-access-key`) command options
+You also have the option of passing your AWS API Key/Secret into the individual knife subcommands using the `--aws-access-key-id` and `--aws-secret-access-key` command options
 
 Example of provisioning a new t2.micro Ubuntu 14.04 webserver:
 
 ```bash
-$ knife ec2 server create -r 'role[webserver]' -I ami-cd0fd6be -f t2.micro -A 'Your AWS Access Key ID' -K "Your AWS Secret Access Key"
+$ knife ec2 server create -r 'role[webserver]' -I ami-cd0fd6be -f t2.micro --aws-access-key-id 'Your AWS Access Key ID' --aws-secret-access-key "Your AWS Secret Access Key"
 ```
 
 ### AWS Credential File
@@ -85,8 +85,14 @@ aws_secret_access_key = Your AWS Secret Access Key
 In this case, you can point the `aws_credential_file` option to this file in your `knife.rb` file, like so:
 
 ```ruby
-knife[:aws_credential_file] = "/path/to/credentials/file/in/above/format"
+knife[:aws_credential_file] = "/path/to/credentials/file"
 ```
+Since the Knife config file is just Ruby you can also avoid hardcoding your home directory, which creates a config that can be used for any user:
+
+```ruby
+knife[:aws_credential_file] = File.join(ENV['HOME'], "/.aws/credentials")
+```
+
 
 If you have multiple profiles in your credentials file you can define which profile to use. The `default` profile will be used if not supplied,
 
@@ -118,7 +124,7 @@ knife-ec2 now includes the ability to retrieve the encrypted data bag secret and
         "s3:List*"
       ],
       "Resource": [
-        "arn:aws:s3:::provisioning.bucket.com/chef/*"
+        "arn:aws:s3:::example.com/chef/*"
       ]
     }
   ]
@@ -126,14 +132,14 @@ knife-ec2 now includes the ability to retrieve the encrypted data bag secret and
 ```
 
 ### Supported URL format
-- `http` or `https` based: '[http://provisioning.bucket.com/chef/my-validator.pem](http://provisioning.bucket.com/chef/my-validator.pem)'
+- `http` or `https` based: 'http://example.com/chef/my-validator.pem'
 - `s3` based:  's3://chef/my-validator.pem'
 
 ### Use the following configuration options in `knife.rb` to set the source URLs:
 
 ```ruby
-knife[:validation_key_url] = 'http://provisioning.bucket.com/chef/my-validator.pem'
-knife[:s3_secret] = 'http://provisioning.bucket.com/chef/encrypted_data_bag_secret'
+knife[:validation_key_url] = 'http://example.com/chef/my-validator.pem'
+knife[:s3_secret] = 'http://example.com/chef/encrypted_data_bag_secret'
 ```
 
 ### Alternatively, URLs can be passed directly on the command line:
@@ -165,7 +171,7 @@ The `knife ec2 server create` command also supports the following options for bo
 ```
 :winrm_password                The WinRM password
 :winrm_authentication_protocol Defaults to negotiate, supports kerberos, can be set to basic for debugging
-:winrm_transport               Defaults to plaintext, use ssl for improved privacy
+:winrm_transport               Defaults to plaintext, use ssl for improved security
 :winrm_port                    Defaults to 5985 plaintext transport, or 5986 for SSL
 :ca_trust_file                 The CA certificate file to use to verify the server when using SSL
 :winrm_ssl_verify_mode         Defaults to verify_peer, use verify_none to skip validation of the server certificate during testing
