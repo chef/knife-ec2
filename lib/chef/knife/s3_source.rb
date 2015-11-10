@@ -38,7 +38,7 @@ class Chef
       end
 
       def fog
-        require 'fog' # lazy load the fog library to speed up the knife run
+        require 'fog/aws' # lazy load the fog library to speed up the knife run
         @fog ||= Fog::Storage::AWS.new(
           aws_access_key_id: Chef::Config[:knife][:aws_access_key_id],
           aws_secret_access_key: Chef::Config[:knife][:aws_secret_access_key]
