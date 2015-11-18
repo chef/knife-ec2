@@ -1108,15 +1108,20 @@ EOH
       end
 
       def ssh_connect_host
+        connect_attribute = ""
         @ssh_connect_host ||= if config[:server_connect_attribute]
                                 server.send(config[:server_connect_attribute])
+                                connect_attribute = config[:server_connect_attribute]
                               else
                                 if vpc_mode? && !config[:associate_public_ip]
                                   server.private_ip_address
+                                  connect_attribute = "private_ip_address"
                                 else
                                   server.dns_name || server.public_ip_address
+                                  connect_attribute = server.dns_name ? "dns_name" : "public_ip_address"
                                 end
                               end
+        puts "SSH Target Address: #{connect_attribute}(#{@ssh_connect_host})"
       end
 
       def create_tags(hashed_tags)
