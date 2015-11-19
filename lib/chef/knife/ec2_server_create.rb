@@ -1108,19 +1108,18 @@ EOH
       end
 
       def ssh_connect_host
-        connect_attribute = ""
         if config[:server_connect_attribute]
-          @ssh_connect_host ||= server.send(config[:server_connect_attribute])
           connect_attribute = config[:server_connect_attribute]
         else
           if vpc_mode? && !config[:associate_public_ip]
-            @ssh_connect_host ||= server.private_ip_address
             connect_attribute = "private_ip_address"
           else
-            @ssh_connect_host ||= server.dns_name || server.public_ip_address
             connect_attribute = server.dns_name ? "dns_name" : "public_ip_address"
           end
         end
+
+        @ssh_connect_host ||= server.send(connect_attribute)
+
         puts
         puts "SSH Target Address: #{connect_attribute}(#{@ssh_connect_host})"
         @ssh_connect_host
