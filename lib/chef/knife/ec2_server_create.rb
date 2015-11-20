@@ -271,7 +271,7 @@ class Chef
       option :server_connect_attribute,
         :long => "--server-connect-attribute ATTRIBUTE",
         :short => "-a ATTRIBUTE",
-        :description => "The EC2 server attribute to use for SSH connection. Use this attr for creating VPC instances along with --associate-eip",
+        :description => "The EC2 server attribute to use for the SSH connection if necessary, e.g. public_ip_address or private_ip_address.",
         :default => nil
 
       option :associate_public_ip,
