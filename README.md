@@ -162,10 +162,10 @@ knife ec2 server create -I ami-d0f89fb9 --ssh-key your-public-key-id -f m1.mediu
 # `--spot-price` option lets you specify the spot pricing
 knife ec2 server create -I ami-173d747e -G windows -f m1.medium --user-data ~/your-user-data-file -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --spot-price price-in-USD
 
-# Pass --server-connect-attribute if the machine is in VPC mode
+# Pass --server-connect-attribute to specify the instance attribute that we will try to connect to via ssh/winrm
 # Possible values of --server-connect-attribute: private_dns_name, private_ip_address, public_dns_name, public_ip_address
-# If --server-connect-attribute is not specified, then EIP is used as External IP
-knife ec2 server create -I ami-173d747e --ssh-key your-public-key-id --ssh-user ubuntu --bootstrap-protocol ssh --subnet your-subnet --security-group-ids your-security-group-id --associate-public-ip --server-connect-attribute public_ip_address
+# If --server-connect-attribute is not specified, knife attempts to determine if connecting to the instance's public or private IP is most appropriate based on other settings
+knife ec2 server create -I ami-173d747e -x ubuntu --server-connect-attribute public_ip_address
 ```
 
 View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](https://docs.chef.io/plugin_knife_windows.html).
