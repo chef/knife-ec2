@@ -1151,8 +1151,8 @@ describe Chef::Knife::Ec2ServerCreate do
   describe "ssh_connect_host" do
     before(:each) do
       allow(@new_ec2_server).to receive_messages(
-        :dns_name => 'public_name',
-        :private_ip_address => 'private_ip',
+        :dns_name => 'public.example.org',
+        :private_ip_address => '192.168.1.100',
         :custom => 'custom',
         :public_ip_address => '111.111.111.111'
       )
@@ -1161,7 +1161,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     describe "by default" do
       it 'should use public dns name' do
-        expect(@knife_ec2_create.ssh_connect_host).to eq('public_name')
+        expect(@knife_ec2_create.ssh_connect_host).to eq('public.example.org')
       end
     end
 
@@ -1172,10 +1172,29 @@ describe Chef::Knife::Ec2ServerCreate do
       end
     end
 
-    describe "with vpc_mode?" do
-      it 'should use private ip' do
+    context "when vpc_mode? is true" do
+      before do
         allow(@knife_ec2_create).to receive_messages(:vpc_mode? => true)
-        expect(@knife_ec2_create.ssh_connect_host).to eq('private_ip')
+      end
+      
+      context "--associate-public-ip is specified" do
+        it "uses the dns_name or public_ip_address" do
+          @knife_ec2_create.config[:associate_public_ip] = true
+          expect(@knife_ec2_create.ssh_connect_host).to eq('public.example.org')
+        end
+      end
+      
+      context "--associate-eip is specified" do
+        it "uses the dns_name or public_ip_address" do
+          @knife_ec2_create.config[:associate_eip] = '111.111.111.111'
+          expect(@knife_ec2_create.ssh_connect_host).to eq('public.example.org')
+        end
+      end
+          
+      context "with no other ip flags" do
+        it 'uses private_ip_address' do
+          expect(@knife_ec2_create.ssh_connect_host).to eq('192.168.1.100')
+        end
       end
     end
 

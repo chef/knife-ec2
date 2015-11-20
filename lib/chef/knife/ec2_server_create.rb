@@ -271,7 +271,7 @@ class Chef
       option :server_connect_attribute,
         :long => "--server-connect-attribute ATTRIBUTE",
         :short => "-a ATTRIBUTE",
-        :description => "The EC2 server attribute to use for SSH connection. Use this attr for creating VPC instances along with --associate-eip",
+        :description => "The EC2 server attribute to use for the SSH connection if necessary, e.g. public_ip_address or private_ip_address.",
         :default => nil
 
       option :associate_public_ip,
@@ -1112,7 +1112,7 @@ EOH
           if config[:server_connect_attribute]
             connect_attribute = config[:server_connect_attribute]
           else
-            if vpc_mode? && !config[:associate_public_ip]
+            if vpc_mode? && !(config[:associate_public_ip] || config[:associate_eip])
               connect_attribute = "private_ip_address"
             else
               connect_attribute = server.dns_name ? "dns_name" : "public_ip_address"
@@ -1122,8 +1122,7 @@ EOH
           @ssh_connect_host = server.send(connect_attribute)
         end
 
-        puts
-        puts "SSH Target Address: #{@ssh_connect_host}(#{connect_attribute})"
+        puts "\nSSH Target Address: #{@ssh_connect_host}(#{connect_attribute})"
         @ssh_connect_host
       end
 
