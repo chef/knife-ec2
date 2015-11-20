@@ -1122,8 +1122,7 @@ EOH
           @ssh_connect_host = server.send(connect_attribute)
         end
 
-        puts
-        puts "SSH Target Address: #{@ssh_connect_host}(#{connect_attribute})"
+        puts "\nSSH Target Address: #{@ssh_connect_host}(#{connect_attribute})"
         @ssh_connect_host
       end
 
