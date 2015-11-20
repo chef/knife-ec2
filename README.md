@@ -161,6 +161,11 @@ knife ec2 server create -I ami-d0f89fb9 --ssh-key your-public-key-id -f m1.mediu
 # A Windows instance via the WinRM protocol -- --ssh-key is still required due to EC2 API operations that need it to grant access to the Windows instance
 # `--spot-price` option lets you specify the spot pricing
 knife ec2 server create -I ami-173d747e -G windows -f m1.medium --user-data ~/your-user-data-file -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --spot-price price-in-USD
+
+# Pass --server-connect-attribute to specify the instance attribute that we will try to connect to via ssh/winrm
+# Possible values of --server-connect-attribute: private_dns_name, private_ip_address, public_dns_name, public_ip_address
+# If --server-connect-attribute is not specified, knife attempts to determine if connecting to the instance's public or private IP is most appropriate based on other settings
+knife ec2 server create -I ami-173d747e -x ubuntu --server-connect-attribute public_ip_address
 ```
 
 View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](https://docs.chef.io/plugin_knife_windows.html).
