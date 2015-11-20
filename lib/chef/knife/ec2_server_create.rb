@@ -1112,7 +1112,7 @@ EOH
           if config[:server_connect_attribute]
             connect_attribute = config[:server_connect_attribute]
           else
-            if vpc_mode? && !config[:associate_public_ip]
+            if vpc_mode? && !(config[:associate_public_ip] || config[:associate_eip])
               connect_attribute = "private_ip_address"
             else
               connect_attribute = server.dns_name ? "dns_name" : "public_ip_address"
