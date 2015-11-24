@@ -1440,6 +1440,7 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 </powershell>
         EOH
         @knife_ec2_create.config[:aws_user_data] = @user_user_data
+        @knife_ec2_create.config[:create_ssl_listener] = true
       end
 
       it "appends ssl config to user supplied user_data after <script> tag section" do
@@ -1450,6 +1451,7 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
       after do
         @knife_ec2_create.config.delete(:aws_user_data)
+        @knife_ec2_create.config.delete(:create_ssl_listener)
         FileUtils.rm_rf @user_user_data
       end
     end
@@ -1487,6 +1489,7 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 </powershell>
         EOH
         @knife_ec2_create.config[:aws_user_data] = @user_user_data
+        @knife_ec2_create.config[:create_ssl_listener] = true
       end
 
       it "appends ssl config to user supplied user_data at the end of <powershell> tag section" do
@@ -1497,6 +1500,7 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
       after do
         @knife_ec2_create.config.delete(:aws_user_data)
+        @knife_ec2_create.config.delete(:create_ssl_listener)
         FileUtils.rm_rf @user_user_data
       end
     end
@@ -1549,6 +1553,7 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 </powershell>
         EOH
         @knife_ec2_create.config[:aws_user_data] = @user_user_data
+        @knife_ec2_create.config[:create_ssl_listener] = true
       end
 
       it "does no modifications and passes user_data as it is to server_def" do
@@ -1559,6 +1564,7 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
       after do
         @knife_ec2_create.config.delete(:aws_user_data)
+        @knife_ec2_create.config.delete(:create_ssl_listener)
         FileUtils.rm_rf @user_user_data
       end
     end
@@ -1580,6 +1586,7 @@ ipconfig > c:\\ipconfig_data.txt
         EOH
         end
         @knife_ec2_create.config[:aws_user_data] = @user_user_data
+        @knife_ec2_create.config[:create_ssl_listener] = true
       end
 
       it "gives error and exits" do
@@ -1589,6 +1596,7 @@ ipconfig > c:\\ipconfig_data.txt
 
       after do
         @knife_ec2_create.config.delete(:aws_user_data)
+        @knife_ec2_create.config.delete(:create_ssl_listener)
         FileUtils.rm_rf @user_user_data
       end
     end
@@ -1638,6 +1646,7 @@ ipconfig > c:\\ipconfig_data.txt
 </script>
         EOH
         @knife_ec2_create.config[:aws_user_data] = @user_user_data
+        @knife_ec2_create.config[:create_ssl_listener] = true
       end
 
       it "appends ssl config to user supplied user_data at the end of <powershell> tag section" do
@@ -1648,6 +1657,7 @@ ipconfig > c:\\ipconfig_data.txt
 
       after do
         @knife_ec2_create.config.delete(:aws_user_data)
+        @knife_ec2_create.config.delete(:create_ssl_listener)
         FileUtils.rm_rf @user_user_data
       end
     end
@@ -1673,6 +1683,7 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
 </powershell>
         EOH
+        @knife_ec2_create.config[:create_ssl_listener] = true
       end
         
       it "creates user_data only with default ssl configuration" do
@@ -1680,11 +1691,15 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
 
         expect(server_def[:user_data]).to eq(@server_def_user_data)
       end
+
+      after do
+        @knife_ec2_create.config.delete(:create_ssl_listener)
+      end
     end
 
-    context "when user has specified --create-no-ssl-listener along with his/her own user_data on cli" do
+    context "when user has specified --no-create-ssl-listener along with his/her own user_data on cli" do
       before do
-        @knife_ec2_create.config[:create_no_ssl_listener] = true
+        @knife_ec2_create.config[:create_ssl_listener] = false
         @user_user_data = 'user_user_data.ps1'
         File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
@@ -1722,15 +1737,15 @@ ipconfig > c:\\ipconfig_data.txt
       end
 
       after do
-        @knife_ec2_create.config.delete(:create_no_ssl_listener)
+        @knife_ec2_create.config.delete(:create_ssl_listener)
         @knife_ec2_create.config.delete(:aws_user_data)
         FileUtils.rm_rf @user_user_data
       end
     end
 
-    context "when user has specified --create-no-ssl-listener with no user_data on cli" do
+    context "when user has specified --no-create-ssl-listener with no user_data on cli" do
       before do
-        @knife_ec2_create.config[:create_no_ssl_listener] = true
+        @knife_ec2_create.config[:create_ssl_listener] = false
         @server_def_user_data = nil
       end
 
@@ -1741,7 +1756,7 @@ ipconfig > c:\\ipconfig_data.txt
       end
 
       after do
-        @knife_ec2_create.config.delete(:create_no_ssl_listener)
+        @knife_ec2_create.config.delete(:create_ssl_listener)
       end
     end
 
