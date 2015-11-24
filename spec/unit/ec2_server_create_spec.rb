@@ -35,10 +35,14 @@ describe Chef::Knife::Ec2ServerCreate do
       :image => 'image',
       :ssh_key_name => 'ssh_key_name',
       :aws_access_key_id => 'aws_access_key_id',
-      :aws_secret_access_key => 'aws_secret_access_key'
+      :aws_secret_access_key => 'aws_secret_access_key',
+      :network_interfaces => ['eni-12345678',
+                              'eni-87654321']
     }.each do |key, value|
       Chef::Config[:knife][key] = value
     end
+
+    @my_vpc = 'vpc-12345678'
 
     @ec2_connection = double(Fog::Compute::AWS)
     allow(@ec2_connection).to receive(:tags).and_return double('create', :create => true)
@@ -49,6 +53,11 @@ describe Chef::Knife::Ec2ServerCreate do
             :server_id => nil,
             :allocation_id => ''})]
 
+    allow(@ec2_connection).to receive(:subnets).and_return [@subnet_1, @subnet_2]
+    allow(@ec2_connection).to receive_message_chain(:network_interfaces, :all).and_return [
+      double('network_interfaces', network_interface_id: 'eni-12345678'),
+      double('network_interfaces', network_interface_id: 'eni-87654321')
+    ]
 
     @ec2_servers = double()
     @new_ec2_server = double()
@@ -269,10 +278,8 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it 'actually writes to the validation key tempfile' do
       expect(@new_ec2_server).to receive(:wait_for).and_return(true)
-      Chef::Config[:knife][:validation_key_url] =
-        @validation_key_url
-      @knife_ec2_create.config[:validation_key_url] =
-        @validation_key_url
+      Chef::Config[:knife][:validation_key_url] = @validation_key_url
+      @knife_ec2_create.config[:validation_key_url] = @validation_key_url
 
       allow(@knife_ec2_create).to receive_message_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
       allow(Chef::Knife::S3Source).to receive(:fetch).with(@validation_key_url).and_return(@validation_key_body)
@@ -464,6 +471,7 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife].delete(:ssh_key_name)
       @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
       allow(@knife_ec2_create).to receive(:ami).and_return(false)
+      allow(@knife_ec2_create).to receive(:validate_nics!).and_return(true)
     end
 
     it "gives warning message and creates the attribute with the required name" do
@@ -478,6 +486,7 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][:aws_ssh_key_id] = "mykey"
       @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
       allow(@knife_ec2_create).to receive(:ami).and_return(false)
+      allow(@knife_ec2_create).to receive(:validate_nics!).and_return(true)
     end
 
     it "gives warning message and gives preference to CLI value over knife config's value" do
@@ -491,6 +500,7 @@ describe Chef::Knife::Ec2ServerCreate do
     before do
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       allow(@knife_ec2_create).to receive(:ami).and_return(false)
+      allow(@knife_ec2_create).to receive(:validate_nics!).and_return(true)
     end
 
     it "does nothing" do
@@ -782,9 +792,32 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "disallows security group names when using a VPC" do
-      @knife_ec2_create.config[:subnet_id] = 'subnet-1a2b3c4d'
+      @knife_ec2_create.config[:subnet_id] = @subnet_1_id
       @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd'
       @knife_ec2_create.config[:security_groups] = 'groupname'
+
+      allow(@ec2_connection).to receive_message_chain(:subnets, :get).with(@subnet_1_id).and_return(@subnet_1)
+
+      expect { @knife_ec2_create.validate! }.to raise_error(SystemExit)
+    end
+
+    it 'disallows invalid network interface ids' do
+      @knife_ec2_create.config[:network_interfaces] = ['INVALID_ID']
+
+      expect { @knife_ec2_create.validate! }.to raise_error(SystemExit)
+    end
+
+    it 'disallows network interfaces not in the right VPC' do
+      @knife_ec2_create.config[:subnet_id] = @subnet_1_id
+      @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd'
+      @knife_ec2_create.config[:security_groups] = 'groupname'
+
+      allow(@ec2_connection).to receive_message_chain(:subnets, :get).with(@subnet_1_id).and_return(@subnet_1)
+
+      allow(@ec2_connection).to receive_message_chain(:network_interfaces, :all).and_return [
+        double('network_interfaces', network_interface_id: 'eni-12345678', vpc_id: 'another_vpc'),
+        double('network_interfaces', network_interface_id: 'eni-87654321', vpc_id: @my_vpc)
+      ]
 
       expect { @knife_ec2_create.validate! }.to raise_error SystemExit
     end
