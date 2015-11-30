@@ -1399,6 +1399,7 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       @knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
       @knife_ec2_create.config[:winrm_transport] = "ssl"
+      @knife_ec2_create.config[:create_ssl_listener] = true
     end
 
     context 'when user_data script provided by user contains only <script> section' do
@@ -1682,9 +1683,9 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
       end
     end
 
-    context "when user has specified --create-no-ssl-listener along with his/her own user_data on cli" do
+    context "when user has specified --no-create-ssl-listener along with his/her own user_data on cli" do
       before do
-        @knife_ec2_create.config[:create_no_ssl_listener] = true
+        @knife_ec2_create.config[:create_ssl_listener] = false
         @user_user_data = 'user_user_data.ps1'
         File.open(@user_user_data,"w+") do |f|
           f.write <<-EOH
@@ -1722,15 +1723,14 @@ ipconfig > c:\\ipconfig_data.txt
       end
 
       after do
-        @knife_ec2_create.config.delete(:create_no_ssl_listener)
         @knife_ec2_create.config.delete(:aws_user_data)
         FileUtils.rm_rf @user_user_data
       end
     end
 
-    context "when user has specified --create-no-ssl-listener with no user_data on cli" do
+    context "when user has specified --no-create-ssl-listener with no user_data on cli" do
       before do
-        @knife_ec2_create.config[:create_no_ssl_listener] = true
+        @knife_ec2_create.config[:create_ssl_listener] = false
         @server_def_user_data = nil
       end
 
@@ -1739,16 +1739,13 @@ ipconfig > c:\\ipconfig_data.txt
 
         expect(server_def[:user_data]).to eq(@server_def_user_data)
       end
-
-      after do
-        @knife_ec2_create.config.delete(:create_no_ssl_listener)
-      end
     end
 
     after(:each) do
       @knife_ec2_create.config.delete(:ssh_key_name)
       Chef::Config[:knife].delete(:ssh_key_name)
       @knife_ec2_create.config.delete(:winrm_transport)
+      @knife_ec2_create.config.delete(:create_ssl_listener)
     end
   end
 

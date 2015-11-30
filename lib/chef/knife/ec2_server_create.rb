@@ -394,10 +394,11 @@ class Chef
         :description => "Enable SSH agent forwarding",
         :boolean => true
 
-      option :create_no_ssl_listener,
-        :long => "--create-no-ssl-listener",
-        :description => "Do not create ssl listener, if this option is not specified ssl listener will be created by default.",
-        :boolean => true
+      option :create_ssl_listener,
+        :long => "--[no-]create-ssl-listener",
+        :description => "Create ssl listener, enabled by default.",
+        :boolean => true,
+        :default => true
 
       option :network_interfaces,
         :short => '-n',
@@ -932,7 +933,7 @@ EOH
           if locate_config_value(:aws_user_data)
             begin
               user_data = File.readlines(locate_config_value(:aws_user_data))
-              if !config[:create_no_ssl_listener]
+              if config[:create_ssl_listener]
                 user_data = process_user_data(user_data)
               end
               user_data = user_data.join
@@ -941,7 +942,7 @@ EOH
               ui.warn("Cannot read #{locate_config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
             end
           else
-            if !config[:create_no_ssl_listener]
+            if config[:create_ssl_listener]
               server_def.merge!(:user_data => "<powershell>\n" + ssl_config_user_data + "</powershell>\n")
             end
           end
