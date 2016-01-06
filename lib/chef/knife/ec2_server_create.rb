@@ -323,7 +323,7 @@ class Chef
           "Whether we should wait for spot request fulfillment. Could be 'wait', 'exit', or " \
           "'prompt' (default). For any of the above mentioned choices, ('wait') - if the " \
           "instance does not get allocated before the command itself times-out or ('exit') the " \
-          "user needs to manually bootstrap the instance in future after it gets allocated.",
+          "user needs to manually bootstrap the instance in the future after it gets allocated.",
         :default => "prompt"
 
       option :aws_connection_timeout,
@@ -421,7 +421,7 @@ class Chef
           msg_pair("Spot Price", spot_request.price)
 
           case config[:spot_wait_mode]
-          when 'prompt', '', nil
+          when 'prompt', '',
             wait_msg = "Do you want to wait for Spot Instance Request fulfillment? (Y/N) \n"
             wait_msg += "Y - Wait for Spot Instance request fulfillment\n"
             wait_msg += "N - Do not wait for Spot Instance request fulfillment. "
