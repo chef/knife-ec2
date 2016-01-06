@@ -406,6 +406,15 @@ class Chef
         :description => 'Attach additional network interfaces during bootstrap',
         :proc => proc { |nics| nics.split(',') }
 
+      option :classic_link_vpc_id,
+        :long => "--classic-link-vpc-id VPC_ID",
+        :description => "Enable ClassicLink connection with a VPC"
+
+      option :classic_link_vpc_security_group_ids,
+        :long => "--classic-link-vpc-security-groups-ids X,Y,Z",
+        :description => "Comma-separated list of security group ids for ClassicLink",
+        :proc => Proc.new { |groups| groups.split(',') }
+
       def run
         $stdout.sync = true
 
@@ -486,6 +495,7 @@ class Chef
         begin
           create_tags(hashed_tags) unless hashed_tags.empty?
           associate_eip(elastic_ip) if config[:associate_eip]
+          enable_classic_link(config[:classic_link_vpc_id], config[:classic_link_vpc_security_group_ids]) if config[:classic_link_vpc_id]
         rescue Fog::Compute::AWS::NotFound, Fog::Errors::Error
           raise if (tries -= 1) <= 0
           ui.warn("server not ready, retrying tag application (retries left: #{tries})")
@@ -808,15 +818,26 @@ class Chef
           exit 1
         end
 
-        if(config[:security_groups] && config[:security_groups].class == String)
+        if config[:security_groups] && config[:security_groups].class == String
           ui.error("Invalid value type for knife[:security_groups] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_groups] = ['sgroup1']")
           exit 1
         end
 
-        if(config[:security_group_ids] && config[:security_group_ids].class == String)
+        if config[:security_group_ids] && config[:security_group_ids].class == String
           ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
           exit 1
         end
+
+        if config[:classic_link_vpc_id].nil? ^ config[:classic_link_vpc_security_group_ids].nil?
+          ui.error("--classic-link-vpc-id and --classic-link-vpc-security-group-ids must be used together")
+          exit 1
+        end
+
+        if vpc_mode? and config[:classic_link_vpc_id]
+          ui.error("You can only use ClassicLink if you are not using a VPC")
+          exit 1
+        end
+
         if locate_config_value(:ebs_encrypted)
           error_message = ""
           errors = []
@@ -1191,6 +1212,10 @@ EOH
         # rubocop:disable Style/RedundantReturn
         return attachments
         # rubocop:enable Style/RedundantReturn
+      end
+
+      def enable_classic_link(vpc_id, security_group_ids)
+        connection.attach_classic_link_vpc(server.id, vpc_id, security_group_ids)
       end
 
       def ssh_override_winrm
