@@ -421,7 +421,7 @@ class Chef
           msg_pair("Spot Price", spot_request.price)
 
           case config[:spot_wait_mode]
-          when 'prompt'
+          when 'prompt', '', nil
             wait_msg = "Do you want to wait for Spot Instance Request fulfillment? (Y/N) \n"
             wait_msg += "Y - Wait for Spot Instance request fulfillment\n"
             wait_msg += "N - Do not wait for Spot Instance request fulfillment. "
