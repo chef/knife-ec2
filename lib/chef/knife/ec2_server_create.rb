@@ -318,6 +318,15 @@ class Chef
         :description => "The Spot Instance request type. Possible values are 'one-time' and 'persistent', default value is 'one-time'",
         :default => "one-time"
 
+      option :spot_wait_mode,
+        :long => "--spot-wait-mode MODE",
+        :description =>
+          "Whether we should wait for spot request fulfillment. Could be 'wait', 'exit', or " \
+          "'prompt' (default). For any of the above mentioned choices, ('wait') - if the " \
+          "instance does not get allocated before the command itself times-out or ('exit') the " \
+          "user needs to manually bootstrap the instance in the future after it gets allocated.",
+        :default => "prompt"
+
       option :aws_connection_timeout,
         :long => "--aws-connection-timeout MINUTES",
         :description => "The maximum time in minutes to wait to for aws connection. Default is 10 min",
@@ -426,17 +435,30 @@ class Chef
         elastic_ip = connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
 
         if locate_config_value(:spot_price)
-          spot_request = connection.spot_requests.create(create_server_def)
+          server_def = create_server_def
+          server_def[:groups] = config[:security_group_ids] if vpc_mode?
+          spot_request = connection.spot_requests.create(server_def)
           msg_pair("Spot Request ID", spot_request.id)
           msg_pair("Spot Request Type", spot_request.request_type)
           msg_pair("Spot Price", spot_request.price)
 
-          wait_msg = "Do you want to wait for Spot Instance Request fulfillment? (Y/N) \n"
-          wait_msg += "Y - Wait for Spot Instance request fulfillment\n"
-          wait_msg += "N - Do not wait for Spot Instance request fulfillment. "
-          wait_msg += ui.color("[WARN :: Request would be alive on AWS ec2 side but execution of Chef Bootstrap on the target instance will get skipped.]\n", :red, :bold)
-          wait_msg += ui.color("\n[WARN :: For any of the above mentioned choices, (Y) - if the instance does not get allocated before the command itself times-out or (N) - user decides to exit, then in both cases user needs to manually bootstrap the instance in future after it gets allocated.]\n\n", :cyan, :bold)
-          confirm(wait_msg)
+          case config[:spot_wait_mode]
+          when 'prompt', '', nil
+            wait_msg = "Do you want to wait for Spot Instance Request fulfillment? (Y/N) \n"
+            wait_msg += "Y - Wait for Spot Instance request fulfillment\n"
+            wait_msg += "N - Do not wait for Spot Instance request fulfillment. "
+            wait_msg += ui.color("[WARN :: Request would be alive on AWS ec2 side but execution of Chef Bootstrap on the target instance will get skipped.]\n", :red, :bold)
+            wait_msg += ui.color("\n[WARN :: For any of the above mentioned choices, (Y) - if the instance does not get allocated before the command itself times-out or (N) - user decides to exit, then in both cases user needs to manually bootstrap the instance in the future after it gets allocated.]\n\n", :cyan, :bold)
+            confirm(wait_msg)
+          when 'wait'
+            # wait for the node and run Chef bootstrap
+          when 'exit'
+            ui.color("The 'exit' option was specified for --spot-wait-mode, exiting.", :cyan)
+            exit
+          else
+            raise "Invalid value for --spot-wait-mode: '#{config[:spot_wait_mode]}', " \
+              "valid values: wait, exit, prompt"
+          end
 
           print ui.color("Waiting for Spot Request fulfillment:  ", :cyan)
           spot_request.wait_for do
