@@ -318,6 +318,15 @@ class Chef
         :description => "The Spot Instance request type. Possible values are 'one-time' and 'persistent', default value is 'one-time'",
         :default => "one-time"
 
+      option :spot_wait_mode,
+        :long => "--spot-wait-mode MODE",
+        :description =>
+          "Whether we should wait for spot request fulfillment. Could be 'wait', 'exit', or " \
+          "'prompt' (default). For any of the above mentioned choices, ('wait') - if the " \
+          "instance does not get allocated before the command itself times-out or ('exit') the " \
+          "user needs to manually bootstrap the instance in the future after it gets allocated.",
+        :default => "prompt"
+
       option :aws_connection_timeout,
         :long => "--aws-connection-timeout MINUTES",
         :description => "The maximum time in minutes to wait to for aws connection. Default is 10 min",
@@ -406,6 +415,15 @@ class Chef
         :description => 'Attach additional network interfaces during bootstrap',
         :proc => proc { |nics| nics.split(',') }
 
+      option :classic_link_vpc_id,
+        :long => "--classic-link-vpc-id VPC_ID",
+        :description => "Enable ClassicLink connection with a VPC"
+
+      option :classic_link_vpc_security_group_ids,
+        :long => "--classic-link-vpc-security-groups-ids X,Y,Z",
+        :description => "Comma-separated list of security group ids for ClassicLink",
+        :proc => Proc.new { |groups| groups.split(',') }
+
       def run
         $stdout.sync = true
 
@@ -417,17 +435,30 @@ class Chef
         elastic_ip = connection.addresses.detect{|addr| addr if addr.public_ip == requested_elastic_ip}
 
         if locate_config_value(:spot_price)
-          spot_request = connection.spot_requests.create(create_server_def)
+          server_def = create_server_def
+          server_def[:groups] = config[:security_group_ids] if vpc_mode?
+          spot_request = connection.spot_requests.create(server_def)
           msg_pair("Spot Request ID", spot_request.id)
           msg_pair("Spot Request Type", spot_request.request_type)
           msg_pair("Spot Price", spot_request.price)
 
-          wait_msg = "Do you want to wait for Spot Instance Request fulfillment? (Y/N) \n"
-          wait_msg += "Y - Wait for Spot Instance request fulfillment\n"
-          wait_msg += "N - Do not wait for Spot Instance request fulfillment. "
-          wait_msg += ui.color("[WARN :: Request would be alive on AWS ec2 side but execution of Chef Bootstrap on the target instance will get skipped.]\n", :red, :bold)
-          wait_msg += ui.color("\n[WARN :: For any of the above mentioned choices, (Y) - if the instance does not get allocated before the command itself times-out or (N) - user decides to exit, then in both cases user needs to manually bootstrap the instance in future after it gets allocated.]\n\n", :cyan, :bold)
-          confirm(wait_msg)
+          case config[:spot_wait_mode]
+          when 'prompt', '', nil
+            wait_msg = "Do you want to wait for Spot Instance Request fulfillment? (Y/N) \n"
+            wait_msg += "Y - Wait for Spot Instance request fulfillment\n"
+            wait_msg += "N - Do not wait for Spot Instance request fulfillment. "
+            wait_msg += ui.color("[WARN :: Request would be alive on AWS ec2 side but execution of Chef Bootstrap on the target instance will get skipped.]\n", :red, :bold)
+            wait_msg += ui.color("\n[WARN :: For any of the above mentioned choices, (Y) - if the instance does not get allocated before the command itself times-out or (N) - user decides to exit, then in both cases user needs to manually bootstrap the instance in the future after it gets allocated.]\n\n", :cyan, :bold)
+            confirm(wait_msg)
+          when 'wait'
+            # wait for the node and run Chef bootstrap
+          when 'exit'
+            ui.color("The 'exit' option was specified for --spot-wait-mode, exiting.", :cyan)
+            exit
+          else
+            raise "Invalid value for --spot-wait-mode: '#{config[:spot_wait_mode]}', " \
+              "valid values: wait, exit, prompt"
+          end
 
           print ui.color("Waiting for Spot Request fulfillment:  ", :cyan)
           spot_request.wait_for do
@@ -486,6 +517,7 @@ class Chef
         begin
           create_tags(hashed_tags) unless hashed_tags.empty?
           associate_eip(elastic_ip) if config[:associate_eip]
+          enable_classic_link(config[:classic_link_vpc_id], config[:classic_link_vpc_security_group_ids]) if config[:classic_link_vpc_id]
         rescue Fog::Compute::AWS::NotFound, Fog::Errors::Error
           raise if (tries -= 1) <= 0
           ui.warn("server not ready, retrying tag application (retries left: #{tries})")
@@ -808,15 +840,26 @@ class Chef
           exit 1
         end
 
-        if(config[:security_groups] && config[:security_groups].class == String)
+        if config[:security_groups] && config[:security_groups].class == String
           ui.error("Invalid value type for knife[:security_groups] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_groups] = ['sgroup1']")
           exit 1
         end
 
-        if(config[:security_group_ids] && config[:security_group_ids].class == String)
+        if config[:security_group_ids] && config[:security_group_ids].class == String
           ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
           exit 1
         end
+
+        if config[:classic_link_vpc_id].nil? ^ config[:classic_link_vpc_security_group_ids].nil?
+          ui.error("--classic-link-vpc-id and --classic-link-vpc-security-group-ids must be used together")
+          exit 1
+        end
+
+        if vpc_mode? and config[:classic_link_vpc_id]
+          ui.error("You can only use ClassicLink if you are not using a VPC")
+          exit 1
+        end
+
         if locate_config_value(:ebs_encrypted)
           error_message = ""
           errors = []
@@ -1191,6 +1234,10 @@ EOH
         # rubocop:disable Style/RedundantReturn
         return attachments
         # rubocop:enable Style/RedundantReturn
+      end
+
+      def enable_classic_link(vpc_id, security_group_ids)
+        connection.attach_classic_link_vpc(server.id, vpc_id, security_group_ids)
       end
 
       def ssh_override_winrm
