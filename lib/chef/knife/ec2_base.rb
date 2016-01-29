@@ -39,6 +39,11 @@ class Chef
             :description => "File containing AWS credentials as used by aws cmdline tools",
             :proc => Proc.new { |key| Chef::Config[:knife][:aws_credential_file] = key }
 
+          option :aws_config_file,
+            :long => "--aws-config-ile FILE",
+            :description => "File containing AWS configurations as used by aws cmdline tools",
+            :proc => Proc.new {|key| Chef::Config[:knife][:aws_config_file] = key}  
+
           option :aws_profile,
             :long => "--aws-profile PROFILE",
             :description => "AWS profile, from credential file, to use",
@@ -81,6 +86,7 @@ class Chef
           :provider => 'AWS',
           :region => locate_config_value(:region)
         }
+         
         if locate_config_value(:use_iam_profile)
           connection_settings[:use_iam_profile] = true
         else
@@ -111,6 +117,15 @@ class Chef
 
       def validate!(keys=[:aws_access_key_id, :aws_secret_access_key])
         errors = []
+
+        unless Chef::Config[:knife][:aws_config_file].nil?
+          aws_config = ini_parse(File.read(Chef::Config[:knife][:aws_config_file]))
+          profile = Chef::Config[:knife][:aws_profile] || 'default'
+          unless aws_config.values.empty? 
+            entries = aws_config.values.first.has_key?("region") ? aws_config.values.first : aws_config[profile] 
+            Chef::Config[:knife][:region] = entries['region']
+          end
+        end
 
         unless locate_config_value(:use_iam_profile)
           unless Chef::Config[:knife][:aws_credential_file].nil?
