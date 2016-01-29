@@ -212,11 +212,18 @@ class Chef
         :description => 'S3 URL (e.g. s3://bucket/file) for the encrypted_data_bag_secret_file',
         :proc => lambda { |url| Chef::Config[:knife][:s3_secret] = url }
 
-      option :json_attributes,
+      option :first_boot_attributes,
         :short => "-j JSON",
         :long => "--json-attributes JSON",
         :description => "A JSON string to be added to the first run of chef-client",
-        :proc => lambda { |o| JSON.parse(o) }
+        :proc => lambda { |o| JSON.parse(o) },
+        :default => nil
+
+      option :first_boot_attributes_from_file,
+        :long => '--json-attribute-file FILE',
+        :description => 'A JSON file to be used to the first run of chef-client',
+        :proc => lambda { |o| Chef::JSONCompat.parse(File.read(o)) },
+        :default => nil
 
       option :subnet_id,
         :long => "--subnet SUBNET-ID",
@@ -636,7 +643,9 @@ class Chef
         msg_pair("Private IP Address", @server.private_ip_address)
         msg_pair("Environment", config[:environment] || '_default')
         msg_pair("Run List", (config[:run_list] || []).join(', '))
-        msg_pair("JSON Attributes",config[:json_attributes]) unless !config[:json_attributes] || config[:json_attributes].empty?
+        if config[:first_boot_attributes] || config[:first_boot_attributes_from_file]
+          msg_pair("JSON Attributes",config[:first_boot_attributes] || config[:first_boot_attributes_from_file])
+        end
       end
 
       def default_bootstrap_template
@@ -689,7 +698,8 @@ class Chef
         bootstrap.config[:template_file] = locate_config_value(:template_file) || locate_config_value(:bootstrap_template)
         bootstrap.config[:environment] = locate_config_value(:environment)
         bootstrap.config[:prerelease] = config[:prerelease]
-        bootstrap.config[:first_boot_attributes] = locate_config_value(:json_attributes) || {}
+        bootstrap.config[:first_boot_attributes] = locate_config_value(:first_boot_attributes)
+        bootstrap.config[:first_boot_attributes_from_file] = locate_config_value(:first_boot_attributes_from_file)
         bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
         bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
