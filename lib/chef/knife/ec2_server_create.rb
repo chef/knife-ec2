@@ -212,19 +212,6 @@ class Chef
         :description => 'S3 URL (e.g. s3://bucket/file) for the encrypted_data_bag_secret_file',
         :proc => lambda { |url| Chef::Config[:knife][:s3_secret] = url }
 
-      option :first_boot_attributes,
-        :short => "-j JSON",
-        :long => "--json-attributes JSON",
-        :description => "A JSON string to be added to the first run of chef-client",
-        :proc => lambda { |o| JSON.parse(o) },
-        :default => nil
-
-      option :first_boot_attributes_from_file,
-        :long => '--json-attribute-file FILE',
-        :description => 'A JSON file to be used to the first run of chef-client',
-        :proc => lambda { |o| Chef::JSONCompat.parse(File.read(o)) },
-        :default => nil
-
       option :subnet_id,
         :long => "--subnet SUBNET-ID",
         :description => "create node in this Virtual Private Cloud Subnet ID (implies VPC mode)",
