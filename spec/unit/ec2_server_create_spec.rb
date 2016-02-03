@@ -544,7 +544,9 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:template_file] = '~/.chef/templates/my-bootstrap.sh.erb'
       @knife_ec2_create.config[:distro] = 'ubuntu-10.04-magic-sparkles'
       @knife_ec2_create.config[:run_list] = ['role[base]']
-      @knife_ec2_create.config[:json_attributes] = "{'my_attributes':{'foo':'bar'}"
+      @knife_ec2_create.config[:first_boot_attributes] = "{'my_attributes':{'foo':'bar'}"
+      @knife_ec2_create.config[:first_boot_attributes_from_file] = "{'my_attributes':{'foo':'bar'}"
+
 
       @bootstrap = @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name)
     end
@@ -560,6 +562,10 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "should set the bootstrap 'first_boot_attributes' correctly" do
       expect(@bootstrap.config[:first_boot_attributes]).to eq("{'my_attributes':{'foo':'bar'}")
+    end
+
+    it "should set the bootstrap 'first_boot_attributes_from_file' correctly" do
+      expect(@bootstrap.config[:first_boot_attributes_from_file]).to eq("{'my_attributes':{'foo':'bar'}")
     end
 
     it "configures sets the bootstrap's run_list" do
@@ -651,7 +657,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:template_file] = '~/.chef/templates/my-bootstrap.sh.erb'
       @knife_ec2_create.config[:distro] = 'ubuntu-10.04-magic-sparkles'
       @knife_ec2_create.config[:run_list] = ['role[base]']
-      @knife_ec2_create.config[:json_attributes] = "{'my_attributes':{'foo':'bar'}"
+      @knife_ec2_create.config[:first_boot_attributes] = "{'my_attributes':{'foo':'bar'}"
       @knife_ec2_create.config[:winrm_ssl_verify_mode] = 'basic'
       @knife_ec2_create.config[:msi_url] = 'https://opscode-omnibus-packages.s3.amazonaws.com/windows/2008r2/x86_64/chef-client-12.3.0-1.msi'
       @knife_ec2_create.config[:install_as_service] = true
