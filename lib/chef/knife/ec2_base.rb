@@ -120,9 +120,10 @@ class Chef
 
         unless Chef::Config[:knife][:aws_config_file].nil?
           aws_config = ini_parse(File.read(Chef::Config[:knife][:aws_config_file]))
-          profile = Chef::Config[:knife][:aws_profile] || 'default'
+          profile = if !Chef::Config[:knife][:aws_profile].nil? then 'profile '+Chef::Config[:knife][:aws_profile] else  'default' end
+          
           unless aws_config.values.empty? 
-            entries = aws_config.values.first.has_key?("region") ? aws_config.values.first : aws_config[profile] 
+            entries = aws_config[profile]
             Chef::Config[:knife][:region] = entries['region']
           end
         end
@@ -142,8 +143,9 @@ class Chef
 
             aws_creds = ini_parse(File.read(Chef::Config[:knife][:aws_credential_file]))
             profile = Chef::Config[:knife][:aws_profile] || 'default'
-            entries = aws_creds.values.first.has_key?("AWSAccessKeyId") ? aws_creds.values.first : aws_creds[profile]
 
+            entries = aws_creds.values.first.has_key?("AWSAccessKeyId") ? aws_creds.values.first : aws_creds[profile]
+ 
             Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId'] || entries['aws_access_key_id']
             Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey'] || entries['aws_secret_access_key']
             Chef::Config[:knife][:aws_session_token] = entries['AWSSessionToken'] || entries['aws_session_token']
