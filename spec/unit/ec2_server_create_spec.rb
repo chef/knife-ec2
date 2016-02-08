@@ -796,6 +796,50 @@ describe Chef::Knife::Ec2ServerCreate do
       end
     end
 
+
+    describe "when reading aws_config_file" do
+      before do
+        Chef::Config[:knife][:aws_config_file] = '/apple/pear'
+        @region = 'region'
+      end
+
+      it "reads UNIX Line endings" do
+        allow(File).to receive(:read).
+          and_return("[default]\r\nregion=#{@region}")
+        @knife_ec2_create.validate!
+        expect(Chef::Config[:knife][:region]).to eq(@region)
+      end
+
+      it "reads DOS Line endings" do
+        allow(File).to receive(:read).
+          and_return("[default]\r\nregion=#{@region}")
+        @knife_ec2_create.validate!
+        expect(Chef::Config[:knife][:region]).to eq(@region)
+      end
+      it "reads UNIX Line endings for new format" do
+         allow(File).to receive(:read).
+          and_return("[default]\nregion=#{@region}")
+        @knife_ec2_create.validate!
+        expect(Chef::Config[:knife][:region]).to eq(@region)
+      end
+
+      it "reads DOS Line endings for new format" do
+         allow(File).to receive(:read).
+          and_return("[default]\nregion=#{@region}")
+        @knife_ec2_create.validate!
+        expect(Chef::Config[:knife][:region]).to eq(@region)
+      end
+
+      it "loads the correct profile" do
+        Chef::Config[:knife][:aws_profile] = 'other'
+        allow(File).to receive(:read).
+          and_return("[default]\nregion=TESTREGION\n\n[profile other]\nregion=#{@region}")
+        @knife_ec2_create.validate!
+        expect(Chef::Config[:knife][:region]).to eq(@region)
+      end
+
+    end
+
     it 'understands that file:// validation key URIs are just paths' do
       Chef::Config[:knife][:validation_key_url] = 'file:///foo/bar'
       expect(@knife_ec2_create.validation_key_path).to eq('/foo/bar')

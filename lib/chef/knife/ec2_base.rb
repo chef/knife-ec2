@@ -39,6 +39,11 @@ class Chef
             :description => "File containing AWS credentials as used by aws cmdline tools",
             :proc => Proc.new { |key| Chef::Config[:knife][:aws_credential_file] = key }
 
+          option :aws_config_file,
+            :long => "--aws-config-ile FILE",
+            :description => "File containing AWS configurations as used by aws cmdline tools",
+            :proc => Proc.new {|key| Chef::Config[:knife][:aws_config_file] = key}  
+
           option :aws_profile,
             :long => "--aws-profile PROFILE",
             :description => "AWS profile, from credential file, to use",
@@ -81,6 +86,7 @@ class Chef
           :provider => 'AWS',
           :region => locate_config_value(:region)
         }
+         
         if locate_config_value(:use_iam_profile)
           connection_settings[:use_iam_profile] = true
         else
@@ -112,6 +118,16 @@ class Chef
       def validate!(keys=[:aws_access_key_id, :aws_secret_access_key])
         errors = []
 
+        unless Chef::Config[:knife][:aws_config_file].nil?
+          aws_config = ini_parse(File.read(Chef::Config[:knife][:aws_config_file]))
+          profile = if !Chef::Config[:knife][:aws_profile].nil? then 'profile '+Chef::Config[:knife][:aws_profile] else  'default' end
+          
+          unless aws_config.values.empty? 
+            entries = aws_config[profile]
+            Chef::Config[:knife][:region] = entries['region']
+          end
+        end
+
         unless locate_config_value(:use_iam_profile)
           unless Chef::Config[:knife][:aws_credential_file].nil?
             unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
@@ -127,8 +143,9 @@ class Chef
 
             aws_creds = ini_parse(File.read(Chef::Config[:knife][:aws_credential_file]))
             profile = Chef::Config[:knife][:aws_profile] || 'default'
-            entries = aws_creds.values.first.has_key?("AWSAccessKeyId") ? aws_creds.values.first : aws_creds[profile]
 
+            entries = aws_creds.values.first.has_key?("AWSAccessKeyId") ? aws_creds.values.first : aws_creds[profile]
+ 
             Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId'] || entries['aws_access_key_id']
             Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey'] || entries['aws_secret_access_key']
             Chef::Config[:knife][:aws_session_token] = entries['AWSSessionToken'] || entries['aws_session_token']
