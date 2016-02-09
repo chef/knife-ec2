@@ -21,6 +21,7 @@ require 'chef/knife/ec2_base'
 require 'chef/knife/s3_source'
 require 'chef/knife/winrm_base'
 require 'chef/knife/bootstrap_windows_base'
+require 'chef/encrypted_data_bag_item'
 
 class Chef
   class Knife
@@ -639,6 +640,21 @@ class Chef
         is_image_windows? ? 'windows-chef-client-msi' : 'chef-full'
       end
 
+      def load_correct_secret
+        knife_secret_file = Chef::Config[:knife][:secret_file]
+        knife_secret = Chef::Config[:knife][:secret]
+        cli_secret_file = config[:secret_file]
+        cli_secret = config[:secret]
+
+        cli_secret_file = nil if cli_secret_file == knife_secret_file
+        cli_secret = nil if cli_secret == knife_secret
+
+        cli_secret_file = Chef::EncryptedDataBagItem.load_secret(cli_secret_file) if cli_secret_file != nil
+        knife_secret_file = Chef::EncryptedDataBagItem.load_secret(knife_secret_file) if knife_secret_file != nil
+
+        s3_secret || cli_secret_file || cli_secret || knife_secret_file || knife_secret
+      end
+
       def validation_key_path
         @validation_key_path ||= begin
           if URI(Chef::Config[:knife][:validation_key_url]).scheme == 'file'
@@ -689,7 +705,7 @@ class Chef
         bootstrap.config[:first_boot_attributes_from_file] = locate_config_value(:first_boot_attributes_from_file)
         bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
-        bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
+        bootstrap.config[:secret] = load_correct_secret
         bootstrap.config[:secret_file] = locate_config_value(:secret_file)
         bootstrap.config[:node_ssl_verify_mode] = locate_config_value(:node_ssl_verify_mode)
         bootstrap.config[:node_verify_api_cert] = locate_config_value(:node_verify_api_cert)
