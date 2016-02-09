@@ -117,7 +117,7 @@ Since the Knife config is just Ruby you can also avoid hardcoding your name dire
 
 ```ruby
 knife[:aws_config_file] = File.join(ENV['HOME'], "/.aws/configuration")
-
+```
 
 
 If you have multiple profiles in your configuration file you can define which profile to use. The `default` profile will be used if not supplied,
