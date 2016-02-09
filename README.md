@@ -87,7 +87,7 @@ In this case, you can point the `aws_credential_file` option to this file in you
 ```ruby
 knife[:aws_credential_file] = "/path/to/credentials/file"
 ```
-Since the Knife config file is just Ruby you can also avoid hardcoding your home directory, which creates a config that can be used for any user:
+Since the Knife config file is just Ruby you can also avoid hardcoding your home directory, which creates a configuration that can be used for any user:
 
 ```ruby
 knife[:aws_credential_file] = File.join(ENV['HOME'], "/.aws/credentials")
@@ -99,6 +99,39 @@ If you have multiple profiles in your credentials file you can define which prof
 ```ruby
 knife[:aws_profile] = "personal"
 ```
+
+### AWS Configuration File
+Amazon's newer configuration file format is also supported by knife:
+
+```
+[default]
+region = "specify_any_supported_region"
+```
+
+In this case you can point the `aws_config_file` option to this file in your `knife.rb` file, like so:
+
+```ruby
+knife[:aws_config_file] = "/path/to/configuration/file"
+```
+Since the Knife config is just Ruby you can also avoid hardcoding your name directory, which creates a config that can be used for any user:
+
+```ruby
+knife[:aws_config_file] = File.join(ENV['HOME'], "/.aws/configuration")
+
+
+
+If you have multiple profiles in your configuration file you can define which profile to use. The `default` profile will be used if not supplied,
+
+```ruby
+knife[:aws_profile] = "personal"
+```
+
+In this case configuration file format is:
+```
+[profile personal]
+region = "specify_any_supported_region"
+```
+
 
 ## Additional knife.rb Configuration Options
 The following configuration options may be set in your `knife.rb`:
