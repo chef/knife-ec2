@@ -687,8 +687,8 @@ class Chef
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:first_boot_attributes] = locate_config_value(:first_boot_attributes)
         bootstrap.config[:first_boot_attributes_from_file] = locate_config_value(:first_boot_attributes_from_file)
-        bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:encrypted_data_bag_secret)
-        bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:encrypted_data_bag_secret_file)
+        bootstrap.config[:encrypted_data_bag_secret] = locate_config_value(:secret)
+        bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:secret_file)
         bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:secret_file] = locate_config_value(:secret_file)
         bootstrap.config[:node_ssl_verify_mode] = locate_config_value(:node_ssl_verify_mode)
