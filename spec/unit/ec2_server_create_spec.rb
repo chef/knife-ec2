@@ -443,6 +443,10 @@ describe Chef::Knife::Ec2ServerCreate do
         expect(bootstrap.config[:secret]).to eql("sys-knife-secret")
       end
 
+      it "sets encrypted_data_bag_secret" do
+        expect(bootstrap.config[:encrypted_data_bag_secret]).to eql("sys-knife-secret")
+      end
+
       it "prefers using a provided value instead of the knife confiuration" do
         subject.config[:secret] = "cli-provided-secret"
         expect(bootstrap.config[:secret]).to eql("cli-provided-secret")
@@ -456,6 +460,10 @@ describe Chef::Knife::Ec2ServerCreate do
 
       it "uses the the knife configuration when no explicit value is provided" do
         expect(bootstrap.config[:secret_file]).to eql("sys-knife-secret-file")
+      end
+
+      it "sets encrypted_data_bag_secret_file" do
+        expect(bootstrap.config[:encrypted_data_bag_secret_file]).to eql("sys-knife-secret-file")
       end
 
       it "prefers using a provided value instead of the knife confiuration" do
