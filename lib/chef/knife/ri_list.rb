@@ -23,16 +23,8 @@ class Chef
             
             include Knife::Ec2Base
             
-            #attr_accessor :hash_map_thing # hash_map_thing
-            
             banner "knife ri list - List all reserved instance leases defined in the aws cloud"
             
-            
-            option :tags,
-            :short => "-t TAG1,TAG2",
-            :long => "--tags TAG1,TAG2",
-            :description => "List of tags to output"
- 
             def build_ec2Map
                 ec2Servers = connection.servers
                 
@@ -134,7 +126,6 @@ class Chef
                                                 color
                                                 )
                             ri_list << ui.color((value.to_i - hash_map[resInst].to_i).to_s, color)
-                            #ri_list << ui.color(resInst["reservedInstancesId"].to_s, color)
                         end
                 
                 puts ui.list(ri_list, :uneven_columns_across, output_column_count)
