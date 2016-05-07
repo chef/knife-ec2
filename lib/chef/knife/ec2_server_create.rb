@@ -1075,10 +1075,19 @@ EOH
           ssh_proxy = Net::SSH::Config.for(hostname)[:proxy]
           if ssh_proxy.respond_to?(:command_line_template)
             # ssh gateway_hostname nc %h %p
-            proxy_pattern = /ssh\s+(\S+)\s+nc/
-            matchdata = proxy_pattern.match(ssh_proxy.command_line_template)
+            nc_proxy_pattern = /ssh\s+(\S+)\s+nc/
+            # ssh ... -W %h:%p ... gateway_hostname
+            builtin_proxy_pattern = %r{
+              ssh \s (?:.*)  # ssh followed by a space and anything else
+              (?<=\s) -W     # -W preceded by at least one space
+              \s+ \S+ \s+    # (probably) %h:%p sandwiched by spaces
+              (?:.*)         # any number of other arguments
+              (?<=\s)(\S+)\z # last argument
+            }x
+            matchdata = nc_proxy_pattern.match(ssh_proxy.command_line_template) ||
+                        builtin_proxy_pattern.match(ssh_proxy.command_line_template)
             if matchdata.nil?
-              Chef::Log.debug("Unable to determine ssh gateway for '#{hostname}' from ssh config template: #{ssh_proxy.command_line_template}")
+              Chef::Log.warn("Unable to determine ssh gateway for '#{hostname}' from ssh config template: #{ssh_proxy.command_line_template}")
               nil
             else
               # Return hostname extracted from command line template
