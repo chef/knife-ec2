@@ -67,8 +67,8 @@ class Chef
         :proc => Proc.new { |groups| groups.split(',') }
 
       option :security_group_ids,
-        :short => "-g X,Y,Z",
-        :long => "--security-group-ids X,Y,Z",
+        :short => "-g 'X,Y,Z'",
+        :long => "--security-group-ids 'X,Y,Z'",
         :description => "The security group ids for this server; required when using VPC,Please provide values in format --security-group-ids 'X,Y,Z'",
         :proc => Proc.new { |security_group_ids| security_group_ids.split(',') }
 
