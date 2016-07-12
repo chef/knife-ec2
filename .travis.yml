@@ -1,7 +1,14 @@
 language: ruby
 cache: bundler
 sudo: false
-rvm:  
+
+# Early warning system to catch if Rubygems breaks something
+before_install:
+  - gem update --system
+  - gem install bundler
+  - rm -f .bundle/config
+
+rvm:
   - 2.1
   - 2.2
 script: bundle exec rspec --color --format progress
