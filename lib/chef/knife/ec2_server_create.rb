@@ -418,6 +418,12 @@ class Chef
         :description => "Comma-separated list of security group ids for ClassicLink",
         :proc => Proc.new { |groups| groups.split(',') }
 
+      option :disable_api_termination,
+        :long => "--disable-api-termination",
+        :description => "Cannot terminate the instance using the Amazon EC2 console, CLI and API.",
+        :boolean => true,
+        :default => false
+
       def run
         $stdout.sync = true
 
@@ -1053,6 +1059,8 @@ EOH
         (config[:ephemeral] || []).each_with_index do |device_name, i|
           server_def[:block_device_mapping] = (server_def[:block_device_mapping] || []) << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
         end
+
+        server_def[:disable_api_termination] = locate_config_value(:disable_api_termination)
 
         server_def
       end

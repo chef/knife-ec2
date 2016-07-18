@@ -131,7 +131,8 @@ describe Chef::Knife::Ec2ServerCreate do
           :request_type => 'persistent',
           :placement_group => nil,
           :iam_instance_profile_name => nil,
-          :ebs_optimized => "false"
+          :ebs_optimized => "false",
+          :disable_api_termination => false
         }
       allow(@bootstrap).to receive(:run)
     end
@@ -1897,6 +1898,43 @@ netstat > c:\\netstat_data.txt
       @knife_ec2_create.config.delete(:ssh_key_name)
       Chef::Config[:knife].delete(:ssh_key_name)
       @knife_ec2_create.config.delete(:winrm_transport)
+    end
+  end
+
+  describe 'disable_api_termination option' do
+    context 'when disable_api_termination option is not passed on the CLI or in the knife config' do
+      before do
+        allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+      end
+
+      it "sets disable_api_termination option in server_def with value as false" do
+        server_def = @knife_ec2_create.create_server_def
+        expect(server_def[:disable_api_termination]).to be == false
+      end
+    end
+
+    context "when disable_api_termination option is passed on the CLI" do
+      before do
+        allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+        @knife_ec2_create.config[:disable_api_termination] = true
+      end
+
+      it "sets disable_api_termination option in server_def with value as true" do
+        server_def = @knife_ec2_create.create_server_def
+        expect(server_def[:disable_api_termination]).to be == true
+      end
+    end
+
+    context "when disable_api_termination option is passed in the knife config" do
+      before do
+        allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+        Chef::Config[:knife][:disable_api_termination] = true
+      end
+
+      it "sets disable_api_termination option in server_def with value as true" do
+        server_def = @knife_ec2_create.create_server_def
+        expect(server_def[:disable_api_termination]).to be == true
+      end
     end
   end
 end
