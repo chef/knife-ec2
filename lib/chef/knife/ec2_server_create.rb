@@ -420,7 +420,7 @@ class Chef
 
       option :disable_api_termination,
         :long => "--disable-api-termination",
-        :description => "Cannot terminate the instance using the Amazon EC2 console, CLI and API.",
+        :description => "Disable termination of the instance using the Amazon EC2 console, CLI and API.",
         :boolean => true,
         :default => false
 
@@ -897,6 +897,11 @@ class Chef
           end
         end
 
+        if locate_config_value(:spot_price) && locate_config_value(:disable_api_termination)
+          ui.error("spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances.")
+          exit 1
+        end
+
       end
 
       def tags
@@ -1060,7 +1065,8 @@ EOH
           server_def[:block_device_mapping] = (server_def[:block_device_mapping] || []) << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
         end
 
-        server_def[:disable_api_termination] = locate_config_value(:disable_api_termination)
+        ## Termination Protection cannot be enabled for spot instances ##
+        server_def[:disable_api_termination] = locate_config_value(:disable_api_termination) if locate_config_value(:spot_price).nil?
 
         server_def
       end

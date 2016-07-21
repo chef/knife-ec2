@@ -131,8 +131,7 @@ describe Chef::Knife::Ec2ServerCreate do
           :request_type => 'persistent',
           :placement_group => nil,
           :iam_instance_profile_name => nil,
-          :ebs_optimized => "false",
-          :disable_api_termination => false
+          :ebs_optimized => "false"
         }
       allow(@bootstrap).to receive(:run)
     end
@@ -1902,38 +1901,112 @@ netstat > c:\\netstat_data.txt
   end
 
   describe 'disable_api_termination option' do
-    context 'when disable_api_termination option is not passed on the CLI or in the knife config' do
-      before do
-        allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+    context 'spot instance' do
+      context 'disable_api_termination is not passed on CLI or in knife config' do
+        before do
+          allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+          @knife_ec2_create.config[:spot_price] = 0.001
+        end
+
+        it "does not set disable_api_termination option in server_def" do
+          server_def = @knife_ec2_create.create_server_def
+          expect(server_def[:disable_api_termination]).to be == nil
+        end
+
+        it "does not raise error" do
+          expect(@knife_ec2_create.ui).to_not receive(:error).with(
+            "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
+          )
+          expect { @knife_ec2_create.validate! }.to_not raise_error
+        end
       end
 
-      it "sets disable_api_termination option in server_def with value as false" do
-        server_def = @knife_ec2_create.create_server_def
-        expect(server_def[:disable_api_termination]).to be == false
+      context 'disable_api_termination is passed on CLI' do
+        before do
+          allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+          @knife_ec2_create.config[:spot_price] = 0.001
+          @knife_ec2_create.config[:disable_api_termination] = true
+        end
+
+        it "raises error" do
+          expect(@knife_ec2_create.ui).to receive(:error).with(
+            "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
+          )
+          expect { @knife_ec2_create.validate! }.to raise_error(SystemExit)
+        end
+      end
+
+      context 'disable_api_termination is passed in knife config' do
+        before do
+          allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+          @knife_ec2_create.config[:spot_price] = 0.001
+          Chef::Config[:knife][:disable_api_termination] = true
+        end
+
+        it "raises error" do
+          expect(@knife_ec2_create.ui).to receive(:error).with(
+            "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
+          )
+          expect { @knife_ec2_create.validate! }.to raise_error(SystemExit)
+        end
       end
     end
 
-    context "when disable_api_termination option is passed on the CLI" do
-      before do
-        allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
-        @knife_ec2_create.config[:disable_api_termination] = true
+    context 'non-spot instance' do
+      context 'when disable_api_termination option is not passed on the CLI or in the knife config' do
+        before do
+          allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+        end
+
+        it "sets disable_api_termination option in server_def with value as false" do
+          server_def = @knife_ec2_create.create_server_def
+          expect(server_def[:disable_api_termination]).to be == false
+        end
+
+        it "does not raise error" do
+          expect(@knife_ec2_create.ui).to_not receive(:error).with(
+            "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
+          )
+          expect { @knife_ec2_create.validate! }.to_not raise_error
+        end
       end
 
-      it "sets disable_api_termination option in server_def with value as true" do
-        server_def = @knife_ec2_create.create_server_def
-        expect(server_def[:disable_api_termination]).to be == true
-      end
-    end
+      context "when disable_api_termination option is passed on the CLI" do
+        before do
+          allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+          @knife_ec2_create.config[:disable_api_termination] = true
+        end
 
-    context "when disable_api_termination option is passed in the knife config" do
-      before do
-        allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
-        Chef::Config[:knife][:disable_api_termination] = true
+        it "sets disable_api_termination option in server_def with value as true" do
+          server_def = @knife_ec2_create.create_server_def
+          expect(server_def[:disable_api_termination]).to be == true
+        end
+
+        it "does not raise error" do
+          expect(@knife_ec2_create.ui).to_not receive(:error).with(
+            "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
+          )
+          expect { @knife_ec2_create.validate! }.to_not raise_error
+        end
       end
 
-      it "sets disable_api_termination option in server_def with value as true" do
-        server_def = @knife_ec2_create.create_server_def
-        expect(server_def[:disable_api_termination]).to be == true
+      context "when disable_api_termination option is passed in the knife config" do
+        before do
+          allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+          Chef::Config[:knife][:disable_api_termination] = true
+        end
+
+        it "sets disable_api_termination option in server_def with value as true" do
+          server_def = @knife_ec2_create.create_server_def
+          expect(server_def[:disable_api_termination]).to be == true
+        end
+
+        it "does not raise error" do
+          expect(@knife_ec2_create.ui).to_not receive(:error).with(
+            "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
+          )
+          expect { @knife_ec2_create.validate! }.to_not raise_error
+        end
       end
     end
   end
