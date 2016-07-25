@@ -173,6 +173,66 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(@new_ec2_server).to receive(:wait_for).and_return(true)
       @knife_ec2_create.run
     end
+
+    context 'spot-wait-mode option' do
+      context 'when spot-price is not given' do
+        context 'spot-wait-mode option is not given' do
+          before do
+            @knife_ec2_create.config.delete(:spot_price)
+          end
+
+          it 'does not raise error' do
+            expect(@knife_ec2_create.ui).to_not receive(:error).with(
+              'spot-wait-mode option works only with the spot-price option.'
+            )
+            expect { @knife_ec2_create.validate! }.to_not raise_error
+          end
+        end
+
+        context 'spot-wait-mode option is given' do
+          before do
+            @knife_ec2_create.config.delete(:spot_price)
+            @knife_ec2_create.config[:spot_wait_mode] = 'wait'
+          end
+
+          it 'raises error' do
+            expect(@knife_ec2_create.ui).to receive(:error).with(
+              'spot-wait-mode option works only with the spot-price option.'
+            )
+            expect { @knife_ec2_create.validate! }.to raise_error(SystemExit)
+          end
+        end
+      end
+
+      context 'when spot-price is given' do
+        context 'spot-wait-mode option is not given' do
+          before do
+            @knife_ec2_create.config[:spot_price] = 0.001
+          end
+
+          it 'does not raise error' do
+            expect(@knife_ec2_create.ui).to_not receive(:error).with(
+              'spot-wait-mode option works only with the spot-price option.'
+            )
+            expect { @knife_ec2_create.validate! }.to_not raise_error
+          end
+        end
+
+        context 'spot-wait-mode option is given' do
+          before do
+            @knife_ec2_create.config[:spot_price] = 0.001
+            @knife_ec2_create.config[:spot_wait_mode] = 'exit'
+          end
+
+          it 'does not raise error' do
+            expect(@knife_ec2_create.ui).to_not receive(:error).with(
+              'spot-wait-mode option works only with the spot-price option.'
+            )
+            expect { @knife_ec2_create.validate! }.to_not raise_error
+          end
+        end
+      end
+    end
   end
 
   describe "run" do
