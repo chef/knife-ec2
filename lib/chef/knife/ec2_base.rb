@@ -42,7 +42,7 @@ class Chef
           option :aws_config_file,
             :long => "--aws-config-ile FILE",
             :description => "File containing AWS configurations as used by aws cmdline tools",
-            :proc => Proc.new {|key| Chef::Config[:knife][:aws_config_file] = key}  
+            :proc => Proc.new {|key| Chef::Config[:knife][:aws_config_file] = key}
 
           option :aws_profile,
             :long => "--aws-profile PROFILE",
@@ -86,7 +86,7 @@ class Chef
           :provider => 'AWS',
           :region => locate_config_value(:region)
         }
-         
+
         if locate_config_value(:use_iam_profile)
           connection_settings[:use_iam_profile] = true
         else
@@ -118,18 +118,22 @@ class Chef
       def validate!(keys=[:aws_access_key_id, :aws_secret_access_key])
         errors = []
 
-        unless Chef::Config[:knife][:aws_config_file].nil?
-          aws_config = ini_parse(File.read(Chef::Config[:knife][:aws_config_file]))
-          profile = if !Chef::Config[:knife][:aws_profile].nil? then 'profile '+Chef::Config[:knife][:aws_profile] else  'default' end
-          
-          unless aws_config.values.empty? 
+        if locate_config_value(:aws_config_file)
+          aws_config = ini_parse(File.read(locate_config_value(:aws_config_file)))
+          profile = (locate_config_value(:aws_profile) == 'default') ? 'default' : 'profile '+locate_config_value(:aws_profile)
+
+          unless aws_config.values.empty?
             entries = aws_config[profile]
-            Chef::Config[:knife][:region] = entries['region']
+            if entries
+              Chef::Config[:knife][:region] = entries['region']
+            else
+              raise "The provided --aws-profile '#{profile}' is invalid."
+            end
           end
         end
 
         unless locate_config_value(:use_iam_profile)
-          unless Chef::Config[:knife][:aws_credential_file].nil?
+          if locate_config_value(:aws_credential_file)
             unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
               errors << "Either provide a credentials file or the access key and secret keys but not both."
             end
@@ -142,10 +146,10 @@ class Chef
             # aws_secret_access_key = somethingsomethingdarkside
 
             aws_creds = ini_parse(File.read(Chef::Config[:knife][:aws_credential_file]))
-            profile = Chef::Config[:knife][:aws_profile] || 'default'
+            profile = locate_config_value(:aws_profile) || 'default'
 
             entries = aws_creds.values.first.has_key?("AWSAccessKeyId") ? aws_creds.values.first : aws_creds[profile]
- 
+
             Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId'] || entries['aws_access_key_id']
             Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey'] || entries['aws_secret_access_key']
             Chef::Config[:knife][:aws_session_token] = entries['AWSSessionToken'] || entries['aws_session_token']
