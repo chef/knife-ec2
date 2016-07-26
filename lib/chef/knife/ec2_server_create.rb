@@ -902,6 +902,11 @@ class Chef
           exit 1
         end
 
+        if locate_config_value(:spot_price).nil? && locate_config_value(:spot_wait_mode).downcase != 'prompt'
+          ui.error('spot-wait-mode option requires that a spot-price option is set.')
+          exit 1
+        end
+
       end
 
       def tags
