@@ -906,6 +906,22 @@ describe Chef::Knife::Ec2ServerCreate do
         expect(Chef::Config[:knife][:region]).to eq(@region)
       end
 
+      context "when invalid --aws-profile is given" do
+        it "raises exception" do
+          Chef::Config[:knife][:aws_profile] = 'xyz'
+          allow(File).to receive(:read).and_return("[default]\nregion=TESTREGION")
+          expect{ @knife_ec2_create.validate! }.to raise_error("The provided --aws-profile 'profile xyz' is invalid.")
+        end
+      end
+
+      context "when aws_profile is passed a 'default' from CLI or knife.rb file" do
+        it 'loads the default profile successfully' do
+          Chef::Config[:knife][:aws_profile] = 'default'
+          allow(File).to receive(:read).and_return("[default]\nregion=#{@region}\n\n[profile other]\nregion=TESTREGION")
+          @knife_ec2_create.validate!
+          expect(Chef::Config[:knife][:region]).to eq(@region)
+        end
+      end
     end
 
     it 'understands that file:// validation key URIs are just paths' do

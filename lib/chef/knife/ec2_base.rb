@@ -120,12 +120,15 @@ class Chef
 
         if locate_config_value(:aws_config_file)
           aws_config = ini_parse(File.read(locate_config_value(:aws_config_file)))
-          profile = (locate_config_value(:aws_profile) == 'default') ? 'default' : 'profile '+locate_config_value(:aws_profile)
+          profile = if locate_config_value(:aws_profile) == 'default'
+                      'default'
+                    else
+                      "profile #{locate_config_value(:aws_profile)}"
+                    end
 
           unless aws_config.values.empty?
-            entries = aws_config[profile]
-            if entries
-              Chef::Config[:knife][:region] = entries['region']
+            if aws_config[profile]
+               Chef::Config[:knife][:region] = aws_config[profile]['region']
             else
               raise "The provided --aws-profile '#{profile}' is invalid."
             end
@@ -145,7 +148,7 @@ class Chef
             # aws_access_key_id = somethingsomethingdarkside
             # aws_secret_access_key = somethingsomethingdarkside
 
-            aws_creds = ini_parse(File.read(Chef::Config[:knife][:aws_credential_file]))
+            aws_creds = ini_parse(File.read(locate_config_value(:aws_credential_file)))
             profile = locate_config_value(:aws_profile) || 'default'
 
             entries = aws_creds.values.first.has_key?("AWSAccessKeyId") ? aws_creds.values.first : aws_creds[profile]
