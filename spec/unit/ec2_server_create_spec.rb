@@ -546,6 +546,30 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
+  description 'S3 secret test cases' do
+    before do
+      Chef::Config[:knife][:s3_secret] =
+        's3://test.bucket/folder/encrypted_data_bag_secret'
+      @knife_ec2_create.config[:distro] = 'ubuntu-10.04-magic-sparkles'
+      @secret_content = "TEST DATA BAG SECRET\n"
+      allow(@knife_ec2_create).to receive(:s3_secret).and_return(@secret_content)
+      allow(Chef::Knife).to receive(:Bootstrap)
+      @bootstrap = @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name)
+    end
+
+    it 'sets the s3 secret to cl_secret key' do
+      @knife_ec2_create.bootstrap_common_params(@bootstrap)
+      expect(Chef::Config[:knife][:cl_secret]).to eql(@secret_content)
+    end
+
+    it 'should set the cl_secret key to nil' do
+      Chef::Config[:knife].delete(:s3_secret)
+      Chef::Config[:knife].delete(:cl_secret)
+      @knife_ec2_create.bootstrap_common_params(@bootstrap)
+      expect(Chef::Config[:knife][:cl_secret]).to eql(nil)
+    end
+  end
+
   context "when deprecated aws_ssh_key_id option is used in knife config and no ssh-key is supplied on the CLI" do
     before do
       Chef::Config[:knife][:aws_ssh_key_id] = "mykey"
