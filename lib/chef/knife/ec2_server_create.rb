@@ -418,6 +418,12 @@ class Chef
         :description => "Comma-separated list of security group ids for ClassicLink",
         :proc => Proc.new { |groups| groups.split(',') }
 
+      option :disable_api_termination,
+        :long => "--disable-api-termination",
+        :description => "Disable termination of the instance using the Amazon EC2 console, CLI and API.",
+        :boolean => true,
+        :default => false
+
       def run
         $stdout.sync = true
 
@@ -891,6 +897,11 @@ class Chef
           end
         end
 
+        if locate_config_value(:spot_price) && locate_config_value(:disable_api_termination)
+          ui.error("spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances.")
+          exit 1
+        end
+
       end
 
       def tags
@@ -1053,6 +1064,9 @@ EOH
         (config[:ephemeral] || []).each_with_index do |device_name, i|
           server_def[:block_device_mapping] = (server_def[:block_device_mapping] || []) << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
         end
+
+        ## cannot pass disable_api_termination option to the API when using spot instances ##
+        server_def[:disable_api_termination] = locate_config_value(:disable_api_termination) if locate_config_value(:spot_price).nil?
 
         server_def
       end
