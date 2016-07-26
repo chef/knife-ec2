@@ -183,7 +183,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
           it 'does not raise error' do
             expect(@knife_ec2_create.ui).to_not receive(:error).with(
-              'spot-wait-mode option works only with the spot-price option.'
+              'spot-wait-mode option requires that a spot-price option is set.'
             )
             expect { @knife_ec2_create.validate! }.to_not raise_error
           end
@@ -197,7 +197,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
           it 'raises error' do
             expect(@knife_ec2_create.ui).to receive(:error).with(
-              'spot-wait-mode option works only with the spot-price option.'
+              'spot-wait-mode option requires that a spot-price option is set.'
             )
             expect { @knife_ec2_create.validate! }.to raise_error(SystemExit)
           end
@@ -212,7 +212,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
           it 'does not raise error' do
             expect(@knife_ec2_create.ui).to_not receive(:error).with(
-              'spot-wait-mode option works only with the spot-price option.'
+              'spot-wait-mode option requires that a spot-price option is set.'
             )
             expect { @knife_ec2_create.validate! }.to_not raise_error
           end
@@ -226,7 +226,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
           it 'does not raise error' do
             expect(@knife_ec2_create.ui).to_not receive(:error).with(
-              'spot-wait-mode option works only with the spot-price option.'
+              'spot-wait-mode option requires that a spot-price option is set.'
             )
             expect { @knife_ec2_create.validate! }.to_not raise_error
           end
