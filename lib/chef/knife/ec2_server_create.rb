@@ -695,8 +695,10 @@ class Chef
         bootstrap.config[:first_boot_attributes_from_file] = locate_config_value(:first_boot_attributes_from_file)
         bootstrap.config[:encrypted_data_bag_secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:secret_file)
-        #cl_secret needs to be set as chef checks for this key
-        Chef::Config[:knife][:cl_secret] = s3_secret if locate_config_value(:s3_secret)
+        # retrieving the secret from S3 is unique to knife-ec2, so we need to set "command line secret" to the value fetched from S3
+        # When linux vm is spawned, the chef's secret option proc function sets the value "command line secret" and this value is used by 
+        # chef's code to check if secret option is passed through command line or not
+        Chef::Knife::DataBagSecretOptions.set_cl_secret(s3_secret) if locate_config_value(:s3_secret)
         bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:secret_file] = locate_config_value(:secret_file)
         bootstrap.config[:node_ssl_verify_mode] = locate_config_value(:node_ssl_verify_mode)

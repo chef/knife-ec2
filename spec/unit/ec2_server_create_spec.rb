@@ -546,7 +546,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
-  description 'S3 secret test cases' do
+  describe 'S3 secret test cases' do
     before do
       Chef::Config[:knife][:s3_secret] =
         's3://test.bucket/folder/encrypted_data_bag_secret'
