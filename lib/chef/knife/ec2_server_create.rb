@@ -1065,7 +1065,7 @@ EOH
           server_def[:block_device_mapping] = (server_def[:block_device_mapping] || []) << {'VirtualName' => "ephemeral#{i}", 'DeviceName' => device_name}
         end
 
-        ## Termination Protection cannot be enabled for spot instances ##
+        ## cannot pass disable_api_termination option to the API when using spot instances ##
         server_def[:disable_api_termination] = locate_config_value(:disable_api_termination) if locate_config_value(:spot_price).nil?
 
         server_def
