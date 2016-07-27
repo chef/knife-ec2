@@ -4,58 +4,33 @@ This file is reset everytime when a new release is done. Contents of this file i
 
 # knife-ec2 doc changes
 
-Documentation changes are given below for **knife-ec2 version 0.12.0**.
+Documentation changes are given below for **kn9fe-ec2 version 0.13.0**.
+
+## `--aws-config-file` option for all commands
+
+The `--aws-config-file` option allows users to reuse configuration settings from the AWS command line tools so that `knife` can access EC2 resources.
 
 ## `knife ec2 server create` subcommand changes
 
-### SSH agent forwarding with --forward-agent option
-The `--forward-agent` option has been added to the `knife ec2 server
-create` subcommand. This enables SSH agent forwarding, and has the
-same behavior during bootstrap of the created node as the
-`--forward-agent` option of the [`knife bootstrap` subcommand](https://docs.chef.io/knife_bootstrap.html).
+### `--spot-wait-mode` option
 
-### WinRM security `--winrm-authentication-protocol` option
-`knife-ec2`'s `server create` subcommand supports bootstrap via
-the `WinRM` remote command protocol. The
-`--winrm-authentication-protocol` option controls authentication to
-the remote system (the bootstrapped node). This option's behavior is
-covered in the
-[knife-windows](https://github.com/chef/knife-windows/blob/v1.0.0/DOC_CHANGES.md)
-subcommand documentation which has identically named option.
+The `--spot-wait-mode` option allows knife to respond in different ways when the `server create` subcommand is used to create a spot instance that is not immediately created when the subcommand is executed. Possible options are:
 
-Note that with this change, the default authentication used for WinRM
-communication specified by the `--winrm-authentication-protocol`
-option is the `negotiate` protocol, which is different than that used
-by previous versions of `knife-ec2`. This may lead to some
-compatibility issues when using WinRM's plaintext transport
-(`--winrm-transport` set to the default of `plaintext`) running from `knife ec2 server create`
-from an operating system other than Windows.
+* `wait` -- waits indefinitely for the instance to be created
+* `exit` -- exits if the instance is not yet created (it may be bootstrapped via the `knife bootstrap` command at a later time).
+* `prompt` (default) -- interactively prompts the user for one of the above options.
 
-To avoid problems with the `negotiate` protocol on a non-Windows
-system, configure `--winrm-transport` to `ssl` to use SSL which also
-improves the robustness against information disclosure or tampering
-attacks.
+### `create-ssl-listener`
+The `create-ssl-listener` option is applicable only when creating a Windows instance. When specified, the subcommand will create a `WinRM` listener on the new instance that uses the SSL transport, and will attempt to bootstrap the node using that listener. The default behavior is to use the SSL transport, the `--no-create-ssl-listener` option can be used to override the default and instead use a less secure plaintext listener.
 
-You may also revert to previous authentication behavior by specifying `basic` for the
-`--winrm-authentication-protocol` option. More details on this change
-can be found in [documentation](https://github.com/chef/knife-windows/blob/v1.0.0/DOC_CHANGES.md#winrm-authentication-protocol-defaults-to-negotiate-regardless-of-name-formats) for `knife-windows`.
+### `network-interfaces`
+The `network-interfaces` option allows the user to specify a list of network interfaces in the form `ENI1,ENI2,...` as additional interfaces to attach to the instance when it is created.
 
-### Chef Client installation options on Windows
-The following options are available for Windows systems:
+### `classic_link_vpc_id`
+The `classic_link_vpc_id` option allows the user to specify a VPC that is [ClassicLink](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/vpc-classiclink.html)-enabled by specifying the VPC's ID as an argument. The created instance will be linked to that VPC.
 
-* `--msi-url URL`: Optional. Used to override the location from which Chef
-  Client is downloaded. If not specified, Chef Client is downloaded
-  from the Internet -- this option allows downloading from a private network
-  location for instance.
-* `--install-as-service`: Install chef-client as a service on Windows
-  systems
-* `--bootstrap-install-command`: Optional. Instead of downloading Chef
-  Client and installing it using a default installation command,
-  bootstrap will invoke this command. If an image already has
-  Chef Client installed, this command can be specified as empty
-  (`''`), in which case no installation will be done and the rest of
-  bootstrap will proceed as if it's already installed.
+### `classic-link-vpc-security-group-ids`
+The `classic-link-vpc-security-group-ids` option allows the user to specify AWS security groups for the VPC specified with the `classic_link_vpd_id` option.
 
-For more detail, see the [knife-windows documentation](https://docs.chef.io/plugin_knife_windows.html).
 
 
