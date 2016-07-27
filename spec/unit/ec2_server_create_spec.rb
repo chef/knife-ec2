@@ -726,7 +726,7 @@ describe Chef::Knife::Ec2ServerCreate do
       @knife_ec2_create.config[:distro] = 'ubuntu-10.04-magic-sparkles'
       @knife_ec2_create.config[:run_list] = ['role[base]']
       @knife_ec2_create.config[:first_boot_attributes] = "{'my_attributes':{'foo':'bar'}"
-      @knife_ec2_create.config[:winrm_ssl_verify_mode] = 'basic'
+      @knife_ec2_create.config[:winrm_ssl_verify_mode] = 'verify_peer'
       @knife_ec2_create.config[:msi_url] = 'https://opscode-omnibus-packages.s3.amazonaws.com/windows/2008r2/x86_64/chef-client-12.3.0-1.msi'
       @knife_ec2_create.config[:install_as_service] = true
       @knife_ec2_create.config[:session_timeout] = "90"
@@ -776,7 +776,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "should set the bootstrap 'winrm_ssl_verify_mode' correctly" do
-      expect(@bootstrap.config[:winrm_ssl_verify_mode]).to eq("basic")
+      expect(@bootstrap.config[:winrm_ssl_verify_mode]).to eq("verify_peer")
     end
 
     it "should set the bootstrap 'msi_url' correctly" do
