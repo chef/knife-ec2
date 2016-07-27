@@ -206,51 +206,15 @@ View additional information on configuring Windows images for bootstrap in the d
 
 #### Bootstrap Windows instance without user-data through winrm ssl transport
 
-Users can bootstrap the Windows instance without the need to provide the user-data. `knife-ec2` has the ability to bootstrap the Windows instance through `winrm protocol` using the `ssl` transport. This require users to set `--winrm-transport` option as `ssl`, `--winrm-authentication-protocol` option as `negotiate` and `--winrm-ssl-verify-mode` option as `verify_none`. This will reduce the users overhead as they would not be required to pass any user-data to configure the winrm for bootstrapping the instance.
+Users can bootstrap the Windows instance without the need to provide the user-data. `knife-ec2` has the ability to bootstrap the Windows instance through `winrm protocol` using the `ssl` transport. This require users to set `--winrm-transport` option as `ssl`, `--winrm-authentication-protocol` option as `negotiate` and `--winrm-ssl-verify-mode` option as `verify_none`. This will do the necessary `winrm ssl transport` configurations on the target node and the bootstrap will just work.
 
-***Note***: Users also need to pass the `security_group` with having the required ports opened like `5986` for `winrm ssl transport`.
+***Note***: Users also need to pass the `security_group` with having the required ports opened like `5986` for `winrm ssl transport`. In case if `security-group` option is not passed then make sure that the `default security-group` in your account has the required ports opened.
 
 Below is the sample command to create a Windows instance and bootstrap it through `ssl` transport without passing any user-data:
 
 ```
 knife ec2 server create -N chef-node-name -I your-windows-image -f flavor-of-server -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --winrm-transport ssl --winrm-authentication-protocol negotiate --winrm-ssl-verify-mode verify_none --security-group-ids your-security-groups -VV
 ```
-
-#### Bootstrap Windows instance with user-data through winrm plaintext transport
-
-Users can bootstrap the Windows instance through `winrm plaintext transport` as well. But for this users need to pass the user-data along with `--winrm-transport` option as `plaintext` and `--winrm-authentication-protocol` option as `basic`.
-
-***Note***: Users also need to pass the `security_group` with having the required ports opened like `5985` for `winrm plaintext transport`.
-
-Below is the sample user-data that users can use for `plaintext` transport:
-
-```
-<powershell>
-
-$user=<user_name>
-$password=<password>
-
-net user /add $user $password;
-net localgroup Administrators /add $user;
-
-winrm quickconfig -q
-winrm create winrm/config/Listener?Address=*+Transport=HTTP
-winrm set winrm/config/service '@{AllowUnencrypted="true"}'
-winrm set winrm/config/service/auth '@{Basic="true"}'
-winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="300"}'
-winrm set winrm/config '@{MaxTimeoutms="1800000"}'
-
-netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any
-
-</powershell>
-```
-
-Below is the sample command to create a Windows instance and bootstrap it through `plaintext` transport by passing the user-data:
-
-```
-knife ec2 server create -N chef-node-name -I your-windows-image -f flavor-of-server -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --winrm-transport plaintext --winrm-authentication-protocol basic --security-group-ids your-security-groups -VV
-```
-
 
 #### Options for bootstrapping Windows
 The `knife ec2 server create` command also supports the following options for bootstrapping a Windows node after the VM s created:
