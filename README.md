@@ -206,9 +206,9 @@ View additional information on configuring Windows images for bootstrap in the d
 
 #### Bootstrap Windows instance without user-data through winrm ssl transport
 
-Users can bootstrap the Windows instance without the need to provide the user-data. `knife-ec2` has the ability to bootstrap the Windows instance through `winrm protocol` using the `ssl` transport. This require users to set `--winrm-transport` option as `ssl`, `--winrm-authentication-protocol` option as `negotiate` and `--winrm-ssl-verify-mode` option as `verify_none`. This will do the necessary `winrm ssl transport` configurations on the target node and the bootstrap will just work.
+Users can bootstrap the Windows instance without the need to provide the user-data. `knife-ec2` has the ability to bootstrap the Windows instance through `winrm protocol` using the `ssl` transport. This requires users to set `--winrm-transport` option as `ssl`, `--winrm-authentication-protocol` option as `negotiate` and `--winrm-ssl-verify-mode` option as `verify_none`. This will do the necessary `winrm ssl transport` configurations on the target node and the bootstrap will just work.
 
-***Note***: Users also need to pass the `security_group` with having the required ports opened like `5986` for `winrm ssl transport`. In case if `security-group` option is not passed then make sure that the `default security-group` in your account has the required ports opened.
+***Note***: Users also need to pass the `--security-group-ids` option with IDs of the security group(s) having the required ports opened like `5986` for `winrm ssl transport`. In case if `--security-group-ids` option is not passed then make sure that the `default security group` in your account has the required ports opened.
 
 Below is the sample command to create a Windows instance and bootstrap it through `ssl` transport without passing any user-data:
 

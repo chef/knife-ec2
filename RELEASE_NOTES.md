@@ -19,4 +19,15 @@ This release of `knife-ec2` adds feature to bootstrap the `Windows` instance wit
 * Support for `m4`, `d2`, `t2` and `g2` ebs encryption flavors.
 * Use `--format json` option to list the `ec2 servers` in the json format. Default output format is `summary` though.
 * Use `--attach-network-interface` option to attach additional `network interfaces` to the instance.
+* Added `--disable-api-termination` option to allow users to disable the termination of the instance using the Amazon EC2 console, CLI and API. However, this option won't work for `spot instances` as `termination protection` cannot be enabled for `spot instances`.
+* Added `--spot-wait-mode` option to enable users to give their decision on CLI whether to `wait` for the `spot request fulfillment` or to `exit` before the `spot request fulfillment`. Default value for this option is `prompt` which will prompt the user to give their choice.
 
+## Acknowledgements
+
+Our thanks go to contributor **Quentin de Metz** for adding
+[knife-ec2:#322](https://github.com/chef/knife-ec2/pull/322). This
+enables the support for `Classic Link` in the `knife ec2 server create` command.
+
+Our thanks go to contributor **Eric Herot** for adding
+[knife-ec2:#375](https://github.com/chef/knife-ec2/pull/375). This
+enables the users to add additional `Network Interfaces` to the instance before the bootstrap process.

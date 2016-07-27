@@ -5,6 +5,7 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
 ## Latest Release 0.13.0 (2016-06-23)
+* [knife-ec2:#427](https://github.com/chef/knife-ec2/pull/427) Addedd disable_api_termination option along with RSpecs.
 * [knife-ec2:#416](https://github.com/chef/knife-ec2/pull/416) Modified help for option --security-group-ids
 * [knife-ec2:#409](https://github.com/chef/knife-ec2/pull/409) Passing encrypted\_data\_bag\_secret and encrypted\_databag\_secret\_file
 * [knife-ec2:#405](https://github.com/chef/knife-ec2/pull/405) Updated README file - added description of aws\_config\_file option
