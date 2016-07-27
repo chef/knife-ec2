@@ -32,5 +32,5 @@ The `classic_link_vpc_id` option allows the user to specify a VPC that is [Class
 ### `classic-link-vpc-security-group-ids`
 The `classic-link-vpc-security-group-ids` option allows the user to specify AWS security groups for the VPC specified with the `classic_link_vpd_id` option.
 
-
-
+### `--disable-api-termination`
+The `--disable-api-termination` option allows the user to disable the termination of the instance using the Amazon EC2 console, CLI and API. However, this option won't work for `spot instances` as `termination protection` cannot be enabled for `spot instances`.
