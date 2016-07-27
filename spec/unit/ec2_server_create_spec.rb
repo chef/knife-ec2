@@ -557,16 +557,20 @@ describe Chef::Knife::Ec2ServerCreate do
       @bootstrap = @knife_ec2_create.bootstrap_for_linux_node(@new_ec2_server, @new_ec2_server.dns_name)
     end
 
-    it 'sets the s3 secret to cl_secret key' do
-      @knife_ec2_create.bootstrap_common_params(@bootstrap)
-      expect(Chef::Config[:knife][:cl_secret]).to eql(@secret_content)
+    context 'when s3 secret option is passed' do
+      it 'sets the s3 secret value to cl_secret key' do
+        @knife_ec2_create.bootstrap_common_params(@bootstrap)
+        expect(Chef::Config[:knife][:cl_secret]).to eql(@secret_content)
+      end
     end
 
-    it 'should set the cl_secret key to nil' do
-      Chef::Config[:knife].delete(:s3_secret)
-      Chef::Config[:knife].delete(:cl_secret)
-      @knife_ec2_create.bootstrap_common_params(@bootstrap)
-      expect(Chef::Config[:knife][:cl_secret]).to eql(nil)
+    context 'when s3 secret option is not passed' do
+      it 'sets the cl_secret value to nil' do
+        Chef::Config[:knife].delete(:s3_secret)
+        Chef::Config[:knife].delete(:cl_secret)
+        @knife_ec2_create.bootstrap_common_params(@bootstrap)
+        expect(Chef::Config[:knife][:cl_secret]).to eql(nil)
+      end
     end
   end
 
