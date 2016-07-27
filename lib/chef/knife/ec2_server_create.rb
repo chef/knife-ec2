@@ -931,8 +931,10 @@ class Chef
       end
 
       def ssl_config_user_data
-<<-EOH
 
+<<-EOH
+net user /add #{locate_config_value(:winrm_user).delete('.\\')} #{windows_password};
+net localgroup Administrators /add #{locate_config_value(:winrm_user).delete('.\\')};
 If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
   winrm quickconfig -q
 }
