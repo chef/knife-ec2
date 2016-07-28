@@ -8,7 +8,7 @@ Details about the thing that changed that needs to get included in the Release N
 -->
 # knife-ec2 0.13.0 release notes:
 
-This release of `knife-ec2` adds feature to bootstrap the `Windows` instance without the need for users to provide the `user-data`. Also, it adds support for users to pass `AWS config file` option on the `CLI` containing the `AWS configurations` to read the config like `region` information.
+This release of `knife-ec2` adds feature to bootstrap Windows instances over SSL without the need for users to provide the `user-data`. Also, it adds support for users to pass `AWS config file` option on the `CLI` containing the `AWS configurations` to read the config like `region` information.
 
 ## Features added in knife-ec2 0.13.0
 
