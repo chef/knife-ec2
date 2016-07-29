@@ -46,7 +46,7 @@ class Chef
 
           option :aws_profile,
             :long => "--aws-profile PROFILE",
-            :description => "AWS profile, from credential file, to use",
+            :description => "AWS profile, from AWS credential file and AWS config file, to use",
             :default => 'default',
             :proc => Proc.new { |key| Chef::Config[:knife][:aws_profile] = key }
 
@@ -149,13 +149,17 @@ class Chef
             # aws_secret_access_key = somethingsomethingdarkside
 
             aws_creds = ini_parse(File.read(locate_config_value(:aws_credential_file)))
-            profile = locate_config_value(:aws_profile) || 'default'
+            profile = locate_config_value(:aws_profile)
 
             entries = aws_creds.values.first.has_key?("AWSAccessKeyId") ? aws_creds.values.first : aws_creds[profile]
 
-            Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId'] || entries['aws_access_key_id']
-            Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey'] || entries['aws_secret_access_key']
-            Chef::Config[:knife][:aws_session_token] = entries['AWSSessionToken'] || entries['aws_session_token']
+            if entries
+              Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId'] || entries['aws_access_key_id']
+              Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey'] || entries['aws_secret_access_key']
+              Chef::Config[:knife][:aws_session_token] = entries['AWSSessionToken'] || entries['aws_session_token']
+            else
+              raise "The provided --aws-profile '#{profile}' is invalid."
+            end
           end
 
           keys.each do |k|
