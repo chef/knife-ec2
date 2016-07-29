@@ -151,7 +151,11 @@ class Chef
             aws_creds = ini_parse(File.read(locate_config_value(:aws_credential_file)))
             profile = locate_config_value(:aws_profile)
 
-            entries = aws_creds.values.first.has_key?("AWSAccessKeyId") ? aws_creds.values.first : aws_creds[profile]
+            entries = if aws_creds.values.first.has_key?("AWSAccessKeyId")
+                        aws_creds.values.first
+                      else
+                        aws_creds[profile]
+                      end
 
             if entries
               Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId'] || entries['aws_access_key_id']
