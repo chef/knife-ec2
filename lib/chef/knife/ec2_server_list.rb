@@ -61,22 +61,6 @@ class Chef
         end
       end
 
-      def groups_with_ids(groups)
-        groups.map{|g|
-          "#{g} (#{@group_id_hash[g]})"
-        }
-      end
-
-      def vpc_with_name(vpc_id)
-        this_vpc = @vpcs.select{|v| v.id == vpc_id }.first
-        if this_vpc.tags["Name"]
-          vpc_name = this_vpc.tags["Name"]
-          "#{vpc_name} (#{vpc_id})"
-        else
-          vpc_id
-        end
-      end
-
       def run
         $stdout.sync = true
 

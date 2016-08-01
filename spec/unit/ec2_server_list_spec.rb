@@ -44,5 +44,88 @@ describe Chef::Knife::Ec2ServerList do
         @knife_ec2_list.run
       end
     end
+
+    context '--format option' do
+      context 'when format=summary' do
+        before do
+          @output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
+            "Image", "SSH Key", "Security Groups", "IAM Profile", "State"]
+          @output_column_count = @output_column.length
+          @knife_ec2_list.config[:format] = 'summary'
+          allow(@knife_ec2_list.ui).to receive(:warn)
+        end
+
+        it 'shows the output without Tags and Availability Zone in summary format' do
+          allow(@ec2_connection).to receive(:servers).and_return([])
+          allow(@knife_ec2_list).to receive(:validate!)
+          expect(@knife_ec2_list.ui).to receive(:list).with(@output_column,:uneven_columns_across, @output_column_count)
+          @knife_ec2_list.run
+        end
+      end
+
+      context 'when format=json' do
+        before do
+          @knife_ec2_list.config[:format] = 'json'
+          allow(@knife_ec2_list.ui).to receive(:warn)
+        end
+
+        it 'shows the output without Tags and Availability Zone in summary format' do
+          allow(@ec2_connection).to receive(:servers).and_return([])
+          allow(@knife_ec2_list).to receive(:validate!)
+          allow(@knife_ec2_list).to receive(:format_for_display)
+          expect(@knife_ec2_list).to receive(:output)
+          @knife_ec2_list.run
+        end
+      end
+    end
+
+    context 'when --tags option is passed' do
+      before do
+        @knife_ec2_list.config[:format] = 'summary'
+        allow(@knife_ec2_list.ui).to receive(:warn)
+        allow(@ec2_connection).to receive(:servers).and_return([])
+        allow(@knife_ec2_list).to receive(:validate!)
+      end
+
+      context 'when single tag is passed' do
+        it 'shows single tag field in the output' do
+          @knife_ec2_list.config[:tags] = 'tag1'
+          output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
+            "Image", "SSH Key", "Security Groups", "Tag:tag1", "IAM Profile", "State"]
+          output_column_count = output_column.length
+          expect(@knife_ec2_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
+          @knife_ec2_list.run
+        end
+      end
+
+      context 'when multiple tags are passed' do
+        it 'shows multiple tags fields in the output' do
+          @knife_ec2_list.config[:tags] = 'tag1,tag2'
+          output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
+            "Image", "SSH Key", "Security Groups", "Tag:tag1", "Tag:tag2", "IAM Profile", "State"]
+          output_column_count = output_column.length
+          expect(@knife_ec2_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
+          @knife_ec2_list.run
+        end
+      end
+    end
+
+    context 'when --availability-zone is passed' do
+      before do
+        @knife_ec2_list.config[:format] = 'summary'
+        allow(@knife_ec2_list.ui).to receive(:warn)
+        allow(@ec2_connection).to receive(:servers).and_return([])
+        allow(@knife_ec2_list).to receive(:validate!)
+      end
+
+      it 'shows the availability zones in the output' do
+        @knife_ec2_list.config[:az] = true
+        output_column = ["Instance ID", "Public IP", "Private IP", "Flavor", "AZ",
+            "Image", "SSH Key", "Security Groups", "IAM Profile", "State"]
+        output_column_count = output_column.length
+        expect(@knife_ec2_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
+        @knife_ec2_list.run
+      end
+    end
   end
 end
