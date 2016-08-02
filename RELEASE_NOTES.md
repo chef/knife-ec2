@@ -10,6 +10,9 @@ Details about the thing that changed that needs to get included in the Release N
 
 This release of `knife-ec2` adds feature to bootstrap Windows instances over SSL without the need for users to provide the `user-data`. Also, it adds support for users to pass `AWS config file` option on the `CLI` containing the `AWS configurations` to read the config like `region` information.
 
+***Note:*** The bootstrap (over SSL without the `user-data`) feature for Windows is available only for Windows 2012 R2 and above platform.
+
+
 ## Features added in knife-ec2 0.13.0
 
 * `--[no-]create-ssl-listener` option to add `ssl listener` on Windows instance to bootstrap the instance through `winrm ssl transport` without the need for users to pass the `user-data`. Default value of this option is `true`.

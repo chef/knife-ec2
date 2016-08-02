@@ -204,7 +204,7 @@ knife ec2 server create -I ami-173d747e -x ubuntu --server-connect-attribute pub
 View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](https://docs.chef.io/plugin_knife_windows.html).
 
 
-#### Bootstrap Windows instance without user-data through winrm ssl transport
+#### Bootstrap Windows (2012 R2 and above platform) instance without user-data through winrm ssl transport
 
 Users can bootstrap the Windows instance without the need to provide the user-data. `knife-ec2` has the ability to bootstrap the Windows instance through `winrm protocol` using the `ssl` transport. This requires users to set `--winrm-transport` option as `ssl` and `--winrm-ssl-verify-mode` option as `verify_none`. This will do the necessary winrm ssl transport configurations on the target node and the bootstrap will just work.
 
