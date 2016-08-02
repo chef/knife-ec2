@@ -70,7 +70,6 @@ class Chef
         :short => "-g 'X,Y,Z'",
         :long => "--security-group-ids 'X,Y,Z'",
         :description => "The security group ids for this server; required when using VPC,Please provide values in format --security-group-ids 'X,Y,Z'"
-        # :proc => Proc.new { |key| Chef::Config[:knife][:security_group_ids] = key.gsub(' ', '').split(',') }
 
       option :associate_eip,
         :long => "--associate-eip IP_ADDRESS",
