@@ -36,11 +36,11 @@ class Chef
 
           option :aws_credential_file,
             :long => "--aws-credential-file FILE",
-            :description => "File containing AWS credentials as used by aws cmdline tools",
+            :description => "File containing AWS credentials as used by AWS command line tools",
             :proc => Proc.new { |key| Chef::Config[:knife][:aws_credential_file] = key }
 
           option :aws_config_file,
-            :long => "--aws-config-ile FILE",
+            :long => "--aws-config-file FILE",
             :description => "File containing AWS configurations as used by aws cmdline tools",
             :proc => Proc.new {|key| Chef::Config[:knife][:aws_config_file] = key}
 

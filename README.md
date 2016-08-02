@@ -196,12 +196,25 @@ knife ec2 server create -I ami-d0f89fb9 --ssh-key your-public-key-id -f m1.mediu
 knife ec2 server create -I ami-173d747e -G windows -f m1.medium --user-data ~/your-user-data-file -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --spot-price price-in-USD
 
 # Pass --server-connect-attribute to specify the instance attribute that we will try to connect to via ssh/winrm
-# Possible values of --server-connect-attribute: private_dns_name, private_ip_address, public_dns_name, public_ip_address
+# Possible values of --server-connect-attribute: private_dns_name, private_ip_address, dns_name, public_ip_address
 # If --server-connect-attribute is not specified, knife attempts to determine if connecting to the instance's public or private IP is most appropriate based on other settings
 knife ec2 server create -I ami-173d747e -x ubuntu --server-connect-attribute public_ip_address
 ```
 
 View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](https://docs.chef.io/plugin_knife_windows.html).
+
+
+#### Bootstrap Windows (2012 R2 and above platform) instance without user-data through winrm ssl transport
+
+Users can bootstrap the Windows instance without the need to provide the user-data. `knife-ec2` has the ability to bootstrap the Windows instance through `winrm protocol` using the `ssl` transport. This requires users to set `--winrm-transport` option as `ssl` and `--winrm-ssl-verify-mode` option as `verify_none`. This will do the necessary winrm ssl transport configurations on the target node and the bootstrap will just work.
+
+***Note***: Users also need to pass the `--security-group-ids` option with IDs of the security group(s) having the required ports opened like `5986` for winrm ssl transport. In case if `--security-group-ids` option is not passed then make sure that the default security group in your account has the required ports opened.
+
+Below is the sample command to create a Windows instance and bootstrap it through `ssl` transport without passing any user-data:
+
+```
+knife ec2 server create -N chef-node-name -I your-windows-image -f flavor-of-server -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --winrm-transport ssl --winrm-ssl-verify-mode verify_none --security-group-ids your-security-groups -VV
+```
 
 #### Options for bootstrapping Windows
 The `knife ec2 server create` command also supports the following options for bootstrapping a Windows node after the VM s created:

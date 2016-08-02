@@ -6,47 +6,31 @@ Example Note:
 ## Example Heading
 Details about the thing that changed that needs to get included in the Release Notes in markdown.
 -->
-# knife-ec2 0.12.0 release notes:
+# knife-ec2 0.13.0 release notes:
 
-This release of `knife-ec2` adds features like spot pricing, EBS volume encryption support and some bug fixes. There is also a dependency update for the `fog` gem and 'em-winrm' dependency is removed.
+This release of `knife-ec2` adds feature to bootstrap Windows instances over SSL without the need for users to provide the `user-data`. Also, it adds support for users to pass `AWS config file` option on the `CLI` containing the `AWS configurations` to read the config like `region` information.
 
-## Compatibility note for Windows nodes: `--winrm-authentication-protocol basic`
-In this version of `knife-ec2`, the default authentication protocol
-for Windows nodes is now `negotiate`for the `server create` subcommand. This can
-cause bootstraps to fail if the remote Windows node is not configured
-for `negotiate`. To work around this and retain the behavior of
-previous releases, you can specify use `basic` authentication in your
-`knife` configuration file or on the command line  as in
-this example:
+***Note:*** The bootstrap (over SSL without the `user-data`) feature for Windows is available only for Windows 2012 R2 and above platform.
 
-        knife ec2 server create -I ami-173d747e -G windows -f m1.medium --user-data ~/your-user-data-file -x 'a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --winrm-authentication-protocol basic
+
+## Features added in knife-ec2 0.13.0
+
+* `--[no-]create-ssl-listener` option to add `ssl listener` on Windows instance to bootstrap the instance through `winrm ssl transport` without the need for users to pass the `user-data`. Default value of this option is `true`.
+* Support for `~/.aws/config` file for reading aws configurations. Use `--aws-config-file` option for the same.
+* Support to read `aws_session_token` from `~/.aws/credentials` file.
+* Support for `ec2 classic link`, options are `--classic-link-vpc-id` and `--classic-link-vpc-security-groups-ids`.
+* Support for `m4`, `d2`, `t2` and `g2` ebs encryption flavors.
+* Use `--format json` option to list the `ec2 servers` in the json format. Default output format is `summary` though.
+* Use `--attach-network-interface` option to attach additional `network interfaces` to the instance.
+* Added `--disable-api-termination` option to allow users to disable the termination of the instance using the Amazon EC2 console, CLI and API. However, this option won't work for `spot instances` as `termination protection` cannot be enabled for `spot instances`.
+* Added `--spot-wait-mode` option to enable users to give their decision on CLI whether to `wait` for the `spot request fulfillment` or to `exit` before the `spot request fulfillment`. Default value for this option is `prompt` which will prompt the user to give their choice.
 
 ## Acknowledgements
-Our thanks go to contributor **Peer Allan** for adding
-[knife-ec2:#305](https://github.com/chef/knife-ec2/pull/305). This
-enables the use of standard AWS credential configuration from `~/.aws/credentials`.
 
-## Release information
+Our thanks go to contributor **Quentin de Metz** for adding
+[knife-ec2:#322](https://github.com/chef/knife-ec2/pull/322). This
+enables the support for `Classic Link` in the `knife ec2 server create` command.
 
-See the [CHANGELOG](https://github.com/chef/knife-ec2/blob/0.12.0/CHANGELOG.md) for a list of all changes in this release, and review
-[DOC_CHANGES.md](https://github.com/chef/knife-ec2/blob/0.12.0/DOC_CHANGES.md) for relevant documentation updates.
-
-Issues with `knife-ec2` should be reported in the issue system at
-https://github.com/chef/knife-ec2/issues. Learn more about how you can
-contribute features and bug fixes to `knife-ec2` at https://github.com/chef/knife-ec2/blob/master/CONTRIBUTING.md.
-
-## Features added in knife-ec2 0.12.0
-
-* Support for `~/.aws/credentials` credential configuration (Peer Allan)
-* Validatorless bootstrap for Windows nodes
-* --forward-agent ssh agent forwarding support
-* `--msi-url`, `--install-as-service`, `--bootstrap-install-command`
-  for Windows nodes
-
-## knife-ec2 on RubyGems and Github
-https://rubygems.org/gems/knife-ec2
-https://github.com/chef/knife-ec2
-
-## Issues fixed in knife-ec2 0.11.0
-See the [0.12.0 CHANGELOG](https://github.com/chef/knife-ec2/blob/0.12.0/CHANGELOG.md)
-for the complete list of issues fixed in this release.
+Our thanks go to contributor **Eric Herot** for adding
+[knife-ec2:#375](https://github.com/chef/knife-ec2/pull/375). This
+enables the users to add additional `Network Interfaces` to the instance before the bootstrap process.
