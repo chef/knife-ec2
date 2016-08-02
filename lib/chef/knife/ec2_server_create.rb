@@ -69,8 +69,8 @@ class Chef
       option :security_group_ids,
         :short => "-g 'X,Y,Z'",
         :long => "--security-group-ids 'X,Y,Z'",
-        :description => "The security group ids for this server; required when using VPC,Please provide values in format --security-group-ids 'X,Y,Z'",
-        :proc => Proc.new { |security_group_ids| security_group_ids.split(',') }
+        :description => "The security group ids for this server; required when using VPC,Please provide values in format --security-group-ids 'X,Y,Z'"
+        # :proc => Proc.new { |key| Chef::Config[:knife][:security_group_ids] = key.gsub(' ', '').split(',') }
 
       option :associate_eip,
         :long => "--associate-eip IP_ADDRESS",
@@ -436,7 +436,7 @@ class Chef
 
         if locate_config_value(:spot_price)
           server_def = create_server_def
-          server_def[:groups] = config[:security_group_ids] if vpc_mode?
+          server_def[:groups] = server_def[:security_group_ids] if vpc_mode?
           spot_request = connection.spot_requests.create(server_def)
           msg_pair("Spot Request ID", spot_request.id)
           msg_pair("Spot Request Type", spot_request.request_type)
@@ -469,7 +469,13 @@ class Chef
           puts("\n")
           @server = connection.servers.get(spot_request.instance_id)
         else
-          @server = connection.servers.create(create_server_def)
+          begin
+            @server = connection.servers.create(create_server_def)
+          rescue => error
+            ui.error error.message
+            Chef::Log.debug("#{error.backtrace.join("\n")}")
+            exit
+          end
         end
 
         hashed_tags={}
@@ -696,7 +702,7 @@ class Chef
         bootstrap.config[:encrypted_data_bag_secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:secret_file)
         # retrieving the secret from S3 is unique to knife-ec2, so we need to set "command line secret" to the value fetched from S3
-        # When linux vm is spawned, the chef's secret option proc function sets the value "command line secret" and this value is used by 
+        # When linux vm is spawned, the chef's secret option proc function sets the value "command line secret" and this value is used by
         # chef's code to check if secret option is passed through command line or not
         Chef::Knife::DataBagSecretOptions.set_cl_secret(s3_secret) if locate_config_value(:s3_secret)
         bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
@@ -852,8 +858,13 @@ class Chef
           exit 1
         end
 
-        if config[:security_group_ids] && config[:security_group_ids].class == String
-          ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
+        if locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class == String
+          if !locate_config_value(:security_group_ids).index(/[~$;@#'*&!.=^%\[\]\{\}\(\)\|\/\\]/).nil?
+            ui.error("Invalid input for --security-group-ids. --security_group_ids must be comma separated values. e.g 'x,y,z'")
+            exit 1
+          end
+        elsif locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class != String
+          ui.error("Invalid input for --security-group-ids. --security_group_ids must be comma separated values. e.g 'x,y,z'")
           exit 1
         end
 
@@ -985,13 +996,14 @@ EOH
         server_def = {
           :image_id => locate_config_value(:image),
           :groups => config[:security_groups],
-          :security_group_ids => locate_config_value(:security_group_ids),
           :flavor_id => locate_config_value(:flavor),
           :key_name => locate_config_value(:ssh_key_name),
           :availability_zone => locate_config_value(:availability_zone),
           :price => locate_config_value(:spot_price),
           :request_type => locate_config_value(:spot_request_type)
         }
+
+        server_def[:security_group_ids] = locate_config_value(:security_group_ids).gsub(' ', '').split(',') unless locate_config_value(:security_group_ids).nil?
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
         server_def[:placement_group] = locate_config_value(:placement_group)

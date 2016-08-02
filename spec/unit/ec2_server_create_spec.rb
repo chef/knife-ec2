@@ -123,7 +123,6 @@ describe Chef::Knife::Ec2ServerCreate do
       @spot_instance_server_def = {
           :image_id => "image",
           :groups => nil,
-          :security_group_ids => nil,
           :flavor_id => nil,
           :key_name => "ssh_key_name",
           :availability_zone => nil,
@@ -1160,10 +1159,10 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "sets the specified security group ids" do
-      @knife_ec2_create.config[:security_group_ids] = ['sg-aabbccdd']
+      @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd, sg-3764sdss,  sg-aab343ytre'
       server_def = @knife_ec2_create.create_server_def
 
-      expect(server_def[:security_group_ids]).to eq(['sg-aabbccdd'])
+      expect(server_def[:security_group_ids]).to eq(['sg-aabbccdd', 'sg-3764sdss', 'sg-aab343ytre'])
     end
 
     it "sets the image id from CLI arguments over knife config" do
@@ -2187,6 +2186,41 @@ netstat > c:\\netstat_data.txt
           expect { @knife_ec2_create.validate! }.to_not raise_error
         end
       end
+    end
+
+    describe "--security-group-ids option" do
+      before do
+        allow(Fog::Compute::AWS).to receive(:new).and_return(@ec2_connection)
+      end
+
+      context "when invalid input is given for --security-group-ids from cli" do
+        it "raises error" do
+          @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd; sg-3764sdss ; sg-00aa11bb'
+          expect { @knife_ec2_create.validate! }.to raise_error(SystemExit)
+        end
+      end
+
+      context "when valid input is given --security-group-ids from cli" do
+        it "does not raise error" do
+          @knife_ec2_create.config[:security_group_ids] = 'sg-aabbccdd, sg-3764sdss, sg-00aa11bb'
+          expect { @knife_ec2_create.validate! }.to_not raise_error
+        end
+      end
+
+      context "when invalid input is given for --security-group-ids from knife.rb" do
+        it "raises error" do
+          Chef::Config[:knife][:security_group_ids] = ['sg-aabbccdd', 'sg-3764sdss', 'sg-00aa11bb']
+          expect { @knife_ec2_create.validate! }.to raise_error(SystemExit)
+        end
+      end
+
+      context "when valid input is given for --security-group-ids from knife.rb" do
+        it "raises error" do
+          Chef::Config[:knife][:security_group_ids] = 'sg-aabbccdd, sg-3764sdss, sg-00aa11bb'
+          expect { @knife_ec2_create.validate! }.to_not raise_error
+        end
+      end
+
     end
   end
 end
