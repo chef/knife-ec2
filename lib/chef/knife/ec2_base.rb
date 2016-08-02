@@ -130,7 +130,7 @@ class Chef
             if aws_config[profile]
                Chef::Config[:knife][:region] = aws_config[profile]['region']
             else
-              raise "The provided --aws-profile '#{profile}' is invalid."
+              raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
             end
           end
         end
@@ -162,7 +162,7 @@ class Chef
               Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey'] || entries['aws_secret_access_key']
               Chef::Config[:knife][:aws_session_token] = entries['AWSSessionToken'] || entries['aws_session_token']
             else
-              raise "The provided --aws-profile '#{profile}' is invalid."
+              raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
             end
           end
 
