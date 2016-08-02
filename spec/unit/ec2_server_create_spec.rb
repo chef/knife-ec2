@@ -890,6 +890,14 @@ describe Chef::Knife::Ec2ServerCreate do
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
       end
+
+      context "when invalid --aws-profile is given" do
+        it "raises exception" do
+          Chef::Config[:knife][:aws_profile] = 'xyz'
+          allow(File).to receive(:read).and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET")
+          expect{ @knife_ec2_create.validate! }.to raise_error("The provided --aws-profile 'xyz' is invalid.")
+        end
+      end
     end
 
 
