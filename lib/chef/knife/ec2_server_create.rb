@@ -931,8 +931,16 @@ class Chef
       end
 
       def ssl_config_user_data
+      user_related_commands = ""
+      winrm_user = locate_config_value(:winrm_user).split("\\") 
+      if (winrm_user[0] == ".") || (winrm_user[0] == "") ||(winrm_user.length == 1)
+        user_related_commands = <<-EOH
+net user /add #{locate_config_value(:winrm_user).delete('.\\')} #{windows_password}; 
+net localgroup Administrators /add #{locate_config_value(:winrm_user).delete('.\\')};
+        EOH
+      end
 <<-EOH
-
+#{user_related_commands}
 If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
   winrm quickconfig -q
 }
@@ -945,7 +953,7 @@ $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Su
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $create_listener_cmd
 
-netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
 
 EOH
       end

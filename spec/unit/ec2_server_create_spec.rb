@@ -1523,10 +1523,75 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
+  describe 'ssl_config_user_data' do
+    before do
+      @knife_ec2_create.config[:winrm_password] = "ec2@123"
+    end
+
+    context 'For domain user' do 
+      before do
+        @knife_ec2_create.config[:winrm_user] = "domain\\ec2"
+        @ssl_config_data = <<-EOH
+
+If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
+  winrm quickconfig -q
+}
+If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b" -Quiet) {
+  winrm delete winrm/config/listener?Address=*+Transport=HTTP
+}
+$vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+$create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $create_listener_cmd
+
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
+
+        EOH
+      end
+
+      it 'gets ssl config user data' do
+        expect(@knife_ec2_create.ssl_config_user_data).to be == @ssl_config_data
+      end
+    end
+
+    context 'For local user' do
+      before do
+        @knife_ec2_create.config[:winrm_user] = ".\\ec2"
+        @ssl_config_data = <<-EOH
+net user /add ec2 ec2@123; 
+net localgroup Administrators /add ec2;
+
+If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
+  winrm quickconfig -q
+}
+If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b" -Quiet) {
+  winrm delete winrm/config/listener?Address=*+Transport=HTTP
+}
+$vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+$thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
+$create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
+iex $create_listener_cmd
+
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
+
+        EOH
+
+      end
+
+      it 'gets ssl config user data' do
+        expect(@knife_ec2_create.ssl_config_user_data).to be == @ssl_config_data
+      end
+    end
+  end
+
   describe 'ssl_config_data_already_exist?' do
 
     before(:each) do
       @user_user_data = 'user_user_data.ps1'
+      @knife_ec2_create.config[:winrm_user] = "domain\\ec2"
+      @knife_ec2_create.config[:winrm_password] = "ec2@123"
       @knife_ec2_create.config[:aws_user_data] = @user_user_data
     end
 
@@ -1566,7 +1631,7 @@ $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Su
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $create_listener_cmd
 
-netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
 
 </powershell>
 
@@ -1592,6 +1657,8 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
       @knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
       @knife_ec2_create.config[:winrm_transport] = "ssl"
       @knife_ec2_create.config[:create_ssl_listener] = true
+      @knife_ec2_create.config[:winrm_user] = "domain\\ec2"
+      @knife_ec2_create.config[:winrm_password] = "ec2@123"
     end
 
     context 'when user_data script provided by user contains only <script> section' do
@@ -1628,7 +1695,7 @@ $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Su
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $create_listener_cmd
 
-netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
 
 </powershell>
         EOH
@@ -1675,7 +1742,7 @@ $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Su
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $create_listener_cmd
 
-netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
 
 </powershell>
         EOH
@@ -1715,7 +1782,7 @@ $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Su
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $create_listener_cmd
 
-netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
 
 </powershell>
         EOH
@@ -1737,7 +1804,7 @@ $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Su
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $create_listener_cmd
 
-netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
 
 </powershell>
         EOH
@@ -1821,7 +1888,7 @@ $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Su
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $create_listener_cmd
 
-netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
 
 </powershell>
 <script>
@@ -1862,7 +1929,7 @@ $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Su
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $create_listener_cmd
 
-netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=public enable=yes
+netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
 
 </powershell>
         EOH
