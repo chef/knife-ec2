@@ -2215,12 +2215,11 @@ netstat > c:\\netstat_data.txt
       end
 
       context "when valid input is given for --security-group-ids from knife.rb" do
-        it "raises error" do
+        it "does not raise error" do
           Chef::Config[:knife][:security_group_ids] = 'sg-aabbccdd, sg-3764sdss, sg-00aa11bb'
           expect { @knife_ec2_create.validate! }.to_not raise_error
         end
       end
-
     end
   end
 end

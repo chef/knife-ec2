@@ -857,13 +857,16 @@ class Chef
           exit 1
         end
 
+        # Validation for security_group_ids. It will raise error if security_group_ids provided by user are not
+        # comma seprated values, if it includes any special character other than '-', and if the values are provided
+        # in other than string format.
         if locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class == String
           if !locate_config_value(:security_group_ids).index(/[~$;@#'*&!.=^%\[\]\{\}\(\)\|\/\\]/).nil?
-            ui.error("Invalid input for --security-group-ids. --security_group_ids must be comma separated values. e.g 'x,y,z'")
+            ui.error("Invalid input for --security-group-ids. --security-group-ids must be comma separated values. e.g 'x,y,z'")
             exit 1
           end
         elsif locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class != String
-          ui.error("Invalid input for --security-group-ids. --security_group_ids must be comma separated values. e.g 'x,y,z'")
+          ui.error("Invalid input for --security-group-ids. --security-group-ids must be comma separated values. e.g 'x,y,z'")
           exit 1
         end
 
