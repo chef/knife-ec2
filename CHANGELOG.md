@@ -4,7 +4,16 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-## Latest Release 0.13.0 (2016-06-23)
+## Latest Release 0.13.0 (2016-08-05)
+* [knife-ec2:#438](https://github.com/chef/knife-ec2/pull/438) Specs for ec2 server list
+* [knife-ec2:#437](https://github.com/chef/knife-ec2/pull/437) Fix --aws-credential-file issues
+* [knife-ec2:#436](https://github.com/chef/knife-ec2/pull/436) basic is not a valid setting for winrm_ssl_verify_mode
+* [knife-ec2:#435](https://github.com/chef/knife-ec2/pull/435) Fix for Winrm Authentication Failure issue during bootstrap
+* [knife-ec2:#434](https://github.com/chef/knife-ec2/pull/434) Removed ruby2.0.0 from travis
+* [knife-ec2:#431](https://github.com/chef/knife-ec2/pull/431) Pinned rack and ffi-yajl gem to older versions.
+* [knife-ec2:#430](https://github.com/chef/knife-ec2/pull/430) Fixing --aws-config-file issues
+* [knife-ec2:#429](https://github.com/chef/knife-ec2/pull/429) Added validation when spot-wait-mode option is given by user on CLI and spot-price option is not given.
+* [knife-ec2:#428](https://github.com/chef/knife-ec2/pull/428) Fix for s3 secret not getting copied on target vm
 * [knife-ec2:#427](https://github.com/chef/knife-ec2/pull/427) Addedd disable_api_termination option along with RSpecs.
 * [knife-ec2:#416](https://github.com/chef/knife-ec2/pull/416) Modified help for option --security-group-ids
 * [knife-ec2:#409](https://github.com/chef/knife-ec2/pull/409) Passing encrypted\_data\_bag\_secret and encrypted\_databag\_secret\_file
