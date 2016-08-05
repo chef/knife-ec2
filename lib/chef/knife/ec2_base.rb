@@ -161,6 +161,10 @@ class Chef
               Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId'] || entries['aws_access_key_id']
               Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey'] || entries['aws_secret_access_key']
               Chef::Config[:knife][:aws_session_token] = entries['AWSSessionToken'] || entries['aws_session_token']
+              Chef::Config[:knife][:region] = entries['region']
+              if !Chef::Config[:knife][:region]
+                ui.warn "No region was specified in knife.rb or as an argument. The default region, us-east-1, will be used:"
+              end
             else
               raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
             end
