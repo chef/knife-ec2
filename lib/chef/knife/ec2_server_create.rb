@@ -67,9 +67,20 @@ class Chef
         :proc => Proc.new { |groups| groups.split(',') }
 
       option :security_group_ids,
-        :short => "-g 'X,Y,Z'",
-        :long => "--security-group-ids 'X,Y,Z'",
-        :description => "The security group ids for this server; required when using VPC,Please provide values in format --security-group-ids 'X,Y,Z'"
+        :short => "-g SECURITY_GROUP_IDS",
+        :long => "--security-group-ids",
+        :description => "The security group ids for this server; required when using VPC. Mulitple values can be provide as -g sg-e985168d -g sg-e858768d",
+        :proc => Proc.new { |security_group_ids|
+          require 'pry'
+          binding.pry
+          if security_group_ids.split(',').size > 1
+            Chef::Log.error("[DEPRECATED] Comma separated values for --security-group-ids is deprecated. Provide --security-group-ids option multiple times if mulitple values has to be provided. for e.g. --security-group-ids sg-e985168d --security-group-ids sg-e7f06383 --security-group-ids sg-ec1b7e88 .")
+            exit 1
+          end
+          Chef::Config[:knife][:security_group_ids] ||= []
+          Chef::Config[:knife][:security_group_ids].push(security_group_ids)
+          Chef::Config[:knife][:security_group_ids]
+        }
 
       option :associate_eip,
         :long => "--associate-eip IP_ADDRESS",
@@ -857,16 +868,9 @@ class Chef
           exit 1
         end
 
-        # Validation for security_group_ids. It will raise error if security_group_ids provided by user are not
-        # comma seprated values, if it includes any special character other than '-', and if the values are provided
-        # in other than string format.
+        # Validation for security_group_ids passed through knife.rb. It will raise error if values are not provided in Array.
         if locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class == String
-          if !locate_config_value(:security_group_ids).index(/[~$;@#'*&!.=^%\[\]\{\}\(\)\|\/\\]/).nil?
-            ui.error("Invalid input for --security-group-ids. --security-group-ids must be comma separated values. e.g 'x,y,z'")
-            exit 1
-          end
-        elsif locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class != String
-          ui.error("Invalid input for --security-group-ids. --security-group-ids must be comma separated values. e.g 'x,y,z'")
+          ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
           exit 1
         end
 
@@ -1005,7 +1009,7 @@ EOH
           :request_type => locate_config_value(:spot_request_type)
         }
 
-        server_def[:security_group_ids] = locate_config_value(:security_group_ids).gsub(' ', '').split(',') unless locate_config_value(:security_group_ids).nil?
+        server_def[:security_group_ids] = locate_config_value(:security_group_ids)
         server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
         server_def[:placement_group] = locate_config_value(:placement_group)
