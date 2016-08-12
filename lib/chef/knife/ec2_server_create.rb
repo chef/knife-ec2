@@ -71,8 +71,6 @@ class Chef
         :long => "--security-group-ids",
         :description => "The security group ids for this server; required when using VPC. Mulitple values can be provide as -g sg-e985168d -g sg-e858768d",
         :proc => Proc.new { |security_group_ids|
-          require 'pry'
-          binding.pry
           if security_group_ids.split(',').size > 1
             Chef::Log.error("[DEPRECATED] Comma separated values for --security-group-ids is deprecated. Provide --security-group-ids option multiple times if mulitple values has to be provided. for e.g. --security-group-ids sg-e985168d --security-group-ids sg-e7f06383 --security-group-ids sg-ec1b7e88 .")
             exit 1
@@ -949,10 +947,10 @@ class Chef
 
       def ssl_config_user_data
       user_related_commands = ""
-      winrm_user = locate_config_value(:winrm_user).split("\\") 
+      winrm_user = locate_config_value(:winrm_user).split("\\")
       if (winrm_user[0] == ".") || (winrm_user[0] == "") ||(winrm_user.length == 1)
         user_related_commands = <<-EOH
-net user /add #{locate_config_value(:winrm_user).delete('.\\')} #{windows_password}; 
+net user /add #{locate_config_value(:winrm_user).delete('.\\')} #{windows_password};
 net localgroup Administrators /add #{locate_config_value(:winrm_user).delete('.\\')};
         EOH
       end
