@@ -73,7 +73,7 @@ class Chef
         :proc => Proc.new { |security_group_ids|
           if security_group_ids.split(',').size > 1
             Chef::Log.error("[DEPRECATED] Comma separated values for --security-group-ids is deprecated. Provide --security-group-ids option multiple times if mulitple values has to be provided. for e.g. --security-group-ids sg-e985168d --security-group-ids sg-e7f06383 --security-group-ids sg-ec1b7e88 .")
-            exit 1
+            exit
           end
           Chef::Config[:knife][:security_group_ids] ||= []
           Chef::Config[:knife][:security_group_ids].push(security_group_ids)
