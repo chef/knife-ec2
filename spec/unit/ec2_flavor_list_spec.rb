@@ -24,6 +24,10 @@ describe Chef::Knife::Ec2FlavorList do
     let(:ec2_connection) { double(Fog::Compute::AWS) }
     before do
       allow(knife_flavor_list).to receive(:connection).and_return(ec2_connection)
+      @flavor1 = double("flavor1", :name => "High-CPU Medium", :architecture => "32-bit-bit", :id => "c1.medium", :bits => "32-bit", :cores => "5", :disk => "1740.8 GB", :ram => "350 GB", :ebs_optimized_available => "false", :instance_store_volumes => "0")
+
+      allow(ec2_connection).to receive(:flavors).and_return([@flavor1])
+
     end
 
     it 'invokes validate!' do
@@ -35,28 +39,18 @@ describe Chef::Knife::Ec2FlavorList do
       knife_flavor_list.run
     end
 
-    before do
-      @flavor1 = double("flavor1", :name => "Micro Instance", :id => "t1.micro", :bits => "0", :cores => "2", :disk => "0", :ram => "613", :ebs_optimized_available => "false", :instance_store_volumes => "0")
-      @flavor2 = double("flavor2", :name => "Micro Instance", :id => "t2.micro", :bits => "64", :cores => "1", :disk => "0", :ram => "1024", :ebs_optimized_available => "false", :instance_store_volumes => "0")
-      @flavor3 = double("flavor3", :name => "Micro Instance", :id => "t2.small", :bits => "64", :cores => "1", :disk => "0", :ram => "2048", :ebs_optimized_available => "false", :instance_store_volumes => "0")
-
-      allow(ec2_connection).to receive(:flavors).and_return([@flavor1, @flavor2, @flavor3])
-    end
-
 
     context '--format option' do
       context 'when format=summary' do
         before do
+	  @output_s=["ID", "Name", "Architecture", "RAM", "Disk", "Cores", "c1.medium", "High-CPU Medium", "32-bit-bit", "350 GB", "1740.8 GB GB", "5"]
           knife_flavor_list.config[:format] = 'summary'
           allow(knife_flavor_list.ui).to receive(:warn)
+          allow(knife_flavor_list).to receive(:validate!)
         end
 
         it 'shows the output in summary format' do
-          output_column = ["ID", "Name", "Architecture", "RAM", "Disk", "Cores"]
-          output_column_count = output_column.length
-	  allow(ec2_connection).to receive(:flavors).and_return([])
-          allow(knife_flavor_list).to receive(:validate!)
-          expect(knife_flavor_list.ui).to receive(:list).with(output_column,:columns_across, output_column_count)
+          expect(knife_flavor_list.ui).to receive(:list).with(@output_s,:columns_across,6)
           knife_flavor_list.run
         end
       end
