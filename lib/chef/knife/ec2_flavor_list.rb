@@ -38,15 +38,20 @@ class Chef
           ui.color('Disk', :bold),
           ui.color('Cores', :bold)
         ]
-        connection.flavors.sort_by(&:id).each do |flavor|
-          flavor_list << flavor.id.to_s
-          flavor_list << flavor.name
-          flavor_list << "#{flavor.bits.to_s}-bit"
-          flavor_list << "#{flavor.ram.to_s}"
-          flavor_list << "#{flavor.disk.to_s} GB"
-          flavor_list << flavor.cores.to_s
-        end
-        puts ui.list(flavor_list, :columns_across, 6)
+        flavors = connection.flavors.sort_by(&:id)
+        if (config[:format] == 'summary')
+          flavors.each do |flavor|
+            flavor_list << flavor.id.to_s
+            flavor_list << flavor.name
+            flavor_list << "#{flavor.bits.to_s}-bit"
+            flavor_list << "#{flavor.ram.to_s}"
+            flavor_list << "#{flavor.disk.to_s} GB"
+            flavor_list << flavor.cores.to_s
+          end
+          puts ui.list(flavor_list, :columns_across, 6)
+	else
+          output(format_for_display(flavors))
+	end
       end
     end
   end
