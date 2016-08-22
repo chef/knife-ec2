@@ -2193,31 +2193,55 @@ netstat > c:\\netstat_data.txt
       allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
     end
 
-    context 'when invalid input provided from cli' do
-      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['-g', 'sg-aabbccdd,sg-3764sdss,sg-00aa11bb'])}
-      it 'raises error' do
-        expect(ec2_server_create).to raise_error(SystemExit)
+    context 'when comma seprated values are provided from cli' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--security-group-ids', 'sg-aabbccdd,sg-3764sdss,sg-00aa11bb'])}
+      it 'creates array of security group ids' do
+        server_def = ec2_server_create.create_server_def
+        expect(server_def[:security_group_ids]).to eq(['sg-aabbccdd', 'sg-3764sdss', 'sg-00aa11bb'])
       end
     end
 
-    context 'when valid input provided from cli' do
-      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['-g', 'sg-aabbccdd', '-g', 'sg-aabbccdd'])}
-      it 'does not raise error' do
-         expect(ec2_server_create).to_not raise_error
+    context 'when mulitple values provided from cli for e.g. --security-group-ids sg-aab343ytr --security-group-ids sg-3764sdss' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--security-group-ids', 'sg-aab343ytr', '--security-group-ids', 'sg-3764sdss'])}
+      it 'creates array of security group ids' do
+        server_def = ec2_server_create.create_server_def
+        expect(server_def[:security_group_ids]).to eq(['sg-aab343ytr', 'sg-3764sdss'])
       end
     end
 
     context 'when comma seprated input is provided from knife.rb' do
-      it 'raises error with deprecation message' do
+      it 'raises error' do
         Chef::Config[:knife][:security_group_ids] = 'sg-aabbccdd, sg-3764sdss, sg-00aa11bb'
         expect(knife_ec2_create.validate!).to raise_error(SystemExit)
       end
     end
 
-    context 'when valid input is provided from knife.rb' do
-      it 'does not raise error' do
+    context 'when security group ids array is provided from knife.rb' do
+      it 'allows --security-group-ids set from an array in knife.rb' do
         Chef::Config[:knife][:security_group_ids] = ['sg-aabbccdd', 'sg-3764sdss', 'sg-00aa11bb']
         expect (knife_ec2_create.validate!).to_not raise_error
+      end
+    end
+  end
+
+  describe '--security-group-id option' do
+    before do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
+    end
+
+    context 'when mulitple values provided from cli for e.g. -g sg-aab343ytr -g sg-3764sdss' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['-g', 'sg-aab343ytr', '-g', 'sg-3764sdss'])}
+      it 'creates array of security group ids' do
+        server_def = ec2_server_create.create_server_def
+        expect(server_def[:security_group_ids]).to eq(['sg-aab343ytr', 'sg-3764sdss'])
+      end
+    end
+
+    context 'when single value provided from cli for e.g. --security-group-id 3764sdss' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--security-group-id', 'sg-aab343ytr'])}
+      it 'creates array of security group ids' do
+        server_def = ec2_server_create.create_server_def
+        expect(server_def[:security_group_ids]).to eq(['sg-aab343ytr'])
       end
     end
   end

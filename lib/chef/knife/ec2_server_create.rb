@@ -67,16 +67,26 @@ class Chef
         :proc => Proc.new { |groups| groups.split(',') }
 
       option :security_group_ids,
-        :short => "-g SECURITY_GROUP_IDS",
-        :long => "--security-group-ids",
-        :description => "The security group ids for this server; required when using VPC. Mulitple values can be provide as -g sg-e985168d -g sg-e858768d",
+        :long => "--security-group-ids IDS",
+        :description => "The security group ids for this server; required when using VPC. Provide values in format --security-group-ids 'X,Y,Z'. [DEPRECATED] This option will be removed in future release. Use the new --security-group-id option. ",
         :proc => Proc.new { |security_group_ids|
-          if security_group_ids.split(',').size > 1
-            Chef::Log.error("[DEPRECATED] Comma separated values for --security-group-ids is deprecated. Provide --security-group-ids option multiple times if mulitple values has to be provided. for e.g. --security-group-ids sg-e985168d --security-group-ids sg-e7f06383 --security-group-ids sg-ec1b7e88 .")
-            exit
+          ui.warn('[DEPRECATED] This option will be removed in future release. Use the new --security-group-id option multiple times when specifying multiple groups for e.g. -g sg-e985168d -g sg-e7f06383 -g sg-ec1b7e88.')
+          if security_group_ids.gsub(' ', '').split(',').size > 1
+            Chef::Config[:knife][:security_group_ids] = security_group_ids.gsub(' ', '').split(',')
+          else
+            Chef::Config[:knife][:security_group_ids] ||= []
+            Chef::Config[:knife][:security_group_ids].push(security_group_ids)
+            Chef::Config[:knife][:security_group_ids]
           end
+        }
+
+      option :security_group_id,
+        :short => "-g SECURITY_GROUP_ID",
+        :long => "--security-group-id ID",
+        :description => "The security group id for this server; required when using VPC. Use the --security-group-id option multiple times when specifying multiple groups for e.g. -g sg-e985168d -g sg-e7f06383 -g sg-ec1b7e88.",
+        :proc => Proc.new { |security_group_id|
           Chef::Config[:knife][:security_group_ids] ||= []
-          Chef::Config[:knife][:security_group_ids].push(security_group_ids)
+          Chef::Config[:knife][:security_group_ids].push(security_group_id)
           Chef::Config[:knife][:security_group_ids]
         }
 
@@ -434,7 +444,6 @@ class Chef
 
       def run
         $stdout.sync = true
-
         validate!
 
         requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
