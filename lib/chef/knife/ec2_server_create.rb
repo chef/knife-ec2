@@ -878,7 +878,7 @@ class Chef
         # Validation for security_group_ids passed through knife.rb. It will raise error if values are not provided in Array.
         if locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class == String
           ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
-          exit 1
+          exit
         end
 
         if config[:classic_link_vpc_id].nil? ^ config[:classic_link_vpc_security_group_ids].nil?
