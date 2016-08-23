@@ -2212,14 +2212,14 @@ netstat > c:\\netstat_data.txt
     context 'when comma seprated input is provided from knife.rb' do
       it 'raises error' do
         Chef::Config[:knife][:security_group_ids] = 'sg-aabbccdd, sg-3764sdss, sg-00aa11bb'
-        expect(knife_ec2_create.validate!).to raise_error(SystemExit)
+        expect { knife_ec2_create.validate! }.to raise_error(SystemExit)
       end
     end
 
     context 'when security group ids array is provided from knife.rb' do
       it 'allows --security-group-ids set from an array in knife.rb' do
         Chef::Config[:knife][:security_group_ids] = ['sg-aabbccdd', 'sg-3764sdss', 'sg-00aa11bb']
-        expect (knife_ec2_create.validate!).to_not raise_error
+        expect { knife_ec2_create.validate! }.to_not raise_error(SystemExit)
       end
     end
   end

@@ -67,7 +67,7 @@ class Chef
         :proc => Proc.new { |groups| groups.split(',') }
 
       option :security_group_ids,
-        :long => "--security-group-ids IDS",
+        :long => "--security-group-ids 'X,Y,Z'",
         :description => "The security group ids for this server; required when using VPC. Provide values in format --security-group-ids 'X,Y,Z'. [DEPRECATED] This option will be removed in future release. Use the new --security-group-id option. ",
         :proc => Proc.new { |security_group_ids|
           ui.warn('[DEPRECATED] This option will be removed in future release. Use the new --security-group-id option multiple times when specifying multiple groups for e.g. -g sg-e985168d -g sg-e7f06383 -g sg-ec1b7e88.')
@@ -878,7 +878,7 @@ class Chef
         # Validation for security_group_ids passed through knife.rb. It will raise error if values are not provided in Array.
         if locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class == String
           ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
-          exit
+          exit 1
         end
 
         if config[:classic_link_vpc_id].nil? ^ config[:classic_link_vpc_security_group_ids].nil?
