@@ -103,6 +103,10 @@ class Chef
         :description => "The placement group to place a cluster compute instance",
         :proc => Proc.new { |pg| Chef::Config[:knife][:placement_group] = pg }
 
+      option :primary_eni,
+        :long => "--primary-eni ENI_ID",
+        :description => "Specify a pre-existing eni to use when building the instance."
+
       option :tags,
         :short => "-T T=V[,T=V,...]",
         :long => "--tags Tag=Value[,Tag=Value...]",
@@ -636,6 +640,7 @@ class Chef
         msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (@server.groups.nil? and @server.security_group_ids)
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or @server.security_group_ids
         msg_pair("IAM Profile", locate_config_value(:iam_instance_profile)) if locate_config_value(:iam_instance_profile)
+        msg_pair("Primary ENI", locate_config_value(:primary_eni)) if locate_config_value(:primary_eni)
         msg_pair("Tags", printed_tags)
         msg_pair("SSH Key", @server.key_name)
         msg_pair("Root Device Type", @server.root_device_type)
@@ -1114,6 +1119,7 @@ EOH
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
         server_def[:placement_group] = locate_config_value(:placement_group)
         server_def[:iam_instance_profile_name] = locate_config_value(:iam_instance_profile)
+        server_def[:network_interfaces] = [ { :NetworkInterfaceId => locate_config_value(:primary_eni), :DeviceIndex => "0" } ]
         server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
         server_def[:associate_public_ip] = locate_config_value(:associate_public_ip) if vpc_mode? and config[:associate_public_ip]
 
