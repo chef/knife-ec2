@@ -1114,12 +1114,21 @@ EOH
           :request_type => locate_config_value(:spot_request_type)
         }
 
-        server_def[:security_group_ids] = locate_config_value(:security_group_ids)
-        server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
+        if primary_eni = locate_config_value(:primary_eni)
+          server_def[:network_interfaces] = [
+            {
+              :NetworkInterfaceId => primary_eni,
+              :DeviceIndex => "0"
+            }
+          ]
+        else
+          server_def[:security_group_ids] = locate_config_value(:security_group_ids)
+          server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
+        end
+
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
         server_def[:placement_group] = locate_config_value(:placement_group)
         server_def[:iam_instance_profile_name] = locate_config_value(:iam_instance_profile)
-        server_def[:network_interfaces] = [ { :NetworkInterfaceId => locate_config_value(:primary_eni), :DeviceIndex => "0" } ]
         server_def[:tenancy] = "dedicated" if vpc_mode? and locate_config_value(:dedicated_instance)
         server_def[:associate_public_ip] = locate_config_value(:associate_public_ip) if vpc_mode? and config[:associate_public_ip]
 
