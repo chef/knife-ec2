@@ -735,6 +735,7 @@ class Chef
         bootstrap.config[:bootstrap_vault_json] = locate_config_value(:bootstrap_vault_json)
         bootstrap.config[:bootstrap_vault_item] = locate_config_value(:bootstrap_vault_item)
         bootstrap.config[:use_sudo_password] = locate_config_value(:use_sudo_password)
+        bootstrap.config[:yes] = locate_config_value(:yes)
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
