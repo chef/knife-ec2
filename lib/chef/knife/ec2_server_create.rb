@@ -294,9 +294,9 @@ class Chef
 
       option :ebs_volume_type,
         :long => "--ebs-volume-type TYPE",
-        :description => "Standard or Provisioned (io1) IOPS or General Purpose (gp2)",
+        :description => "Possible values are standard (magnetic) | io1 | gp2 | sc1 | st1. Default is gp2",
         :proc => Proc.new { |key| Chef::Config[:knife][:ebs_volume_type] = key },
-        :default => "standard"
+        :default => "gp2"
 
       option :ebs_provisioned_iops,
         :long => "--provisioned-iops IOPS",
