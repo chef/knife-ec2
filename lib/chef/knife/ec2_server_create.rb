@@ -254,7 +254,7 @@ class Chef
 
       option :fqdn,
         :long => "--fqdn FQDN",
-        :description => "Pre-defined FQDN",
+        :description => "Pre-defined FQDN. This is used for Kerberos Authentication purpose only",
         :proc => Proc.new { |key| Chef::Config[:knife][:fqdn] = key },
         :default => nil
 
