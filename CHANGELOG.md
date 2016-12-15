@@ -5,6 +5,7 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
 ## Latest Release 0.14.0 (2016-12-02)
+* `knife-ec2` requires `chef-client 12.14` or newer.
 * [knife-ec2:#442](https://github.com/chef/knife-ec2/pull/442) Added support to show flavor list in json format.
 * [knife-ec2:#439](https://github.com/chef/knife-ec2/pull/439) Allow to accept multiple security group ids using --security-group-id option multiple times and added deprecated message for comma seprated --security-group-ids option.
 
