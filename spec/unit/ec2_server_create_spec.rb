@@ -1379,15 +1379,39 @@ describe Chef::Knife::Ec2ServerCreate do
 
   end
 
+  describe "#subnet_public_ip_on_launch?" do
+    before do
+      allow(new_ec2_server).to receive_messages(:subnet_id => 'subnet-1a2b3c4d')
+      allow(knife_ec2_create).to receive_messages(:server => new_ec2_server)
+      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
+    end
+
+    context "when auto_assign_public_ip is enabled" do
+      it "returns true" do
+        allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( :map_public_ip_on_launch => true )
+        expect(knife_ec2_create.subnet_public_ip_on_launch?).to eq(true)
+      end
+    end
+
+    context "when auto_assign_public_ip is disabled" do
+      it "returns false" do
+        allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( :map_public_ip_on_launch => false )
+        expect(knife_ec2_create.subnet_public_ip_on_launch?).to eq(false)
+      end
+    end
+  end
+
   describe "ssh_connect_host" do
     before(:each) do
       allow(new_ec2_server).to receive_messages(
         :dns_name => 'public.example.org',
         :private_ip_address => '192.168.1.100',
         :custom => 'custom',
-        :public_ip_address => '111.111.111.111'
+        :public_ip_address => '111.111.111.111',
+        :subnet_id => 'subnet-1a2b3c4d'
       )
       allow(knife_ec2_create).to receive_messages(:server => new_ec2_server)
+      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
     end
 
     describe "by default" do
@@ -1408,9 +1432,18 @@ describe Chef::Knife::Ec2ServerCreate do
         allow(knife_ec2_create).to receive_messages(:vpc_mode? => true)
       end
 
+      context "subnet_public_ip_on_launch? is true" do
+        it "uses the dns_name or public_ip_address" do
+          allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( :map_public_ip_on_launch => true )
+          expect(knife_ec2_create.subnet_public_ip_on_launch?).to eq(true)
+          expect(knife_ec2_create.ssh_connect_host).to eq('public.example.org')
+        end
+      end
+
       context "--associate-public-ip is specified" do
         it "uses the dns_name or public_ip_address" do
           knife_ec2_create.config[:associate_public_ip] = true
+          allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( :map_public_ip_on_launch => false )
           expect(knife_ec2_create.ssh_connect_host).to eq('public.example.org')
         end
       end
@@ -1418,12 +1451,14 @@ describe Chef::Knife::Ec2ServerCreate do
       context "--associate-eip is specified" do
         it "uses the dns_name or public_ip_address" do
           knife_ec2_create.config[:associate_eip] = '111.111.111.111'
+          allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( :map_public_ip_on_launch => false )
           expect(knife_ec2_create.ssh_connect_host).to eq('public.example.org')
         end
       end
 
       context "with no other ip flags" do
         it 'uses private_ip_address' do
+          allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( :map_public_ip_on_launch => false )
           expect(knife_ec2_create.ssh_connect_host).to eq('192.168.1.100')
         end
       end
