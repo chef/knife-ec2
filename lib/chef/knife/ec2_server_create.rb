@@ -1216,18 +1216,22 @@ EOH
         }
       end
 
+      def subnet_public_ip_on_launch?
+        connection.subnets.get(server.subnet_id).map_public_ip_on_launch
+      end
+
       def ssh_connect_host
         unless @ssh_connect_host
           if config[:server_connect_attribute]
             connect_attribute = config[:server_connect_attribute]
+            server.send(config[:server_connect_attribute])
+          elsif vpc_mode? && !(subnet_public_ip_on_launch? || config[:associate_public_ip] || config[:associate_eip])
+            connect_attribute = "private_ip_address"
+            server.private_ip_address
           else
-            if vpc_mode? && !(config[:associate_public_ip] || config[:associate_eip])
-              connect_attribute = "private_ip_address"
-            else
-              connect_attribute = server.dns_name ? "dns_name" : "public_ip_address"
-            end
+            connect_attribute = server.dns_name ? "dns_name" : "public_ip_address"
+            server.send(connect_attribute)
           end
-
           @ssh_connect_host = server.send(connect_attribute)
         end
 
