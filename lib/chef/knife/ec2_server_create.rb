@@ -500,7 +500,11 @@ class Chef
 
         # Always set the Name tag
         unless hashed_tags.keys.include? "Name"
-          hashed_tags["Name"] = locate_config_value(:chef_node_name) || @server.id
+          if locate_config_value(:chef_node_name)
+            hashed_tags["Name"] = evaluate_node_name(locate_config_value(:chef_node_name))
+          else
+            hashed_tags["Name"] = server.id
+          end
         end
 
         printed_tags = hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")
@@ -781,8 +785,12 @@ class Chef
         bootstrap.config[:msi_url] = locate_config_value(:msi_url)
         bootstrap.config[:install_as_service] = locate_config_value(:install_as_service)
         bootstrap.config[:session_timeout] = locate_config_value(:session_timeout)
-        bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
         bootstrap.config[:tags] = config[:tags]
+        if locate_config_value(:chef_node_name)
+          bootstrap.config[:chef_node_name] = evaluate_node_name(locate_config_value(:chef_node_name))
+        else
+          bootstrap.config[:chef_node_name] = server.id
+        end
         bootstrap_common_params(bootstrap)
       end
 
@@ -794,8 +802,12 @@ class Chef
         bootstrap.config[:ssh_port] = config[:ssh_port]
         bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
         bootstrap.config[:identity_file] = config[:identity_file]
-        bootstrap.config[:chef_node_name] = locate_config_value(:chef_node_name) || server.id
         bootstrap.config[:tags] = config[:tags]
+        if locate_config_value(:chef_node_name)
+          bootstrap.config[:chef_node_name] = evaluate_node_name(locate_config_value(:chef_node_name))
+        else
+          bootstrap.config[:chef_node_name] = server.id
+        end
         bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
         # may be needed for vpc_mode
         bootstrap.config[:host_key_verify] = config[:host_key_verify]
@@ -1422,6 +1434,24 @@ EOH
         require 'chef/knife/bootstrap_windows_ssh'
         require 'chef/knife/core/windows_bootstrap_context'
       end
+
+      #Returns the name of node after evaluation of server attributes if any.
+      #Eg: "Test-#{server.id}" will return "Test-i-123test"  in case the instance id is i-123test
+      def evaluate_node_name(node_name)
+        parsed_node_name = []
+        if node_name.include?("\#{server")
+          node_name_split = node_name.split("#\{")
+          node_name_split.each do |node_name_part|
+            if node_name_part.include?("}")
+              parsed_node_name << eval("\"\#\{#{node_name_part}\"")
+            else
+              parsed_node_name << node_name_part
+            end
+          end
+        end
+        return parsed_node_name.join
+      end
+
     end
   end
 end
