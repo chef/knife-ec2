@@ -1448,6 +1448,8 @@ EOH
               parsed_node_name << node_name_part
             end
           end
+        else
+          return node_name
         end
         return parsed_node_name.join
       end
