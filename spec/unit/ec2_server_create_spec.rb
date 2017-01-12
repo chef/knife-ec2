@@ -2280,4 +2280,19 @@ netstat > c:\\netstat_data.txt
       end
     end
   end
+
+  describe 'evaluate_node_name' do
+    context 'when ec2 server attributes are not passed in node name' do
+      it 'Returns the node name unchanged' do
+        expect(knife_ec2_create.evaluate_node_name("Test")).to eq("Test")
+      end
+    end
+
+    context 'when ec2 server attributes are passed in node name' do
+      it 'Returns evaluated node name' do
+        expect(knife_ec2_create.evaluate_node_name("Test#{ec2_server_attribs[:id]}")).to eq("Testi-39382318")
+      end
+    end
+  end
+
 end
