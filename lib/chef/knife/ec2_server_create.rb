@@ -568,12 +568,20 @@ class Chef
             }
             ssh_override_winrm
           end
-          bootstrap_for_windows_node(@server, ssh_connect_host).run
+
+          # Don't trigger bootstrap if in solo mode
+          if Chef::Config[:knife][:chef_mode] != "solo"
+            bootstrap_for_windows_node(@server, ssh_connect_host).run
+          end
         else
           print "\n#{ui.color("Waiting for sshd access to become available", :magenta)}"
           wait_for_sshd(ssh_connect_host)
           ssh_override_winrm
-          bootstrap_for_linux_node(@server, ssh_connect_host).run
+
+          # Don't trigger bootstrap if in solo mode
+          if Chef::Config[:knife][:chef_mode] != "solo"
+            bootstrap_for_linux_node(@server, ssh_connect_host).run
+          end
         end
 
         puts "\n"
@@ -696,7 +704,7 @@ class Chef
         bootstrap.config[:encrypted_data_bag_secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:secret_file)
         # retrieving the secret from S3 is unique to knife-ec2, so we need to set "command line secret" to the value fetched from S3
-        # When linux vm is spawned, the chef's secret option proc function sets the value "command line secret" and this value is used by 
+        # When linux vm is spawned, the chef's secret option proc function sets the value "command line secret" and this value is used by
         # chef's code to check if secret option is passed through command line or not
         Chef::Knife::DataBagSecretOptions.set_cl_secret(s3_secret) if locate_config_value(:s3_secret)
         bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
@@ -932,10 +940,10 @@ class Chef
 
       def ssl_config_user_data
       user_related_commands = ""
-      winrm_user = locate_config_value(:winrm_user).split("\\") 
+      winrm_user = locate_config_value(:winrm_user).split("\\")
       if (winrm_user[0] == ".") || (winrm_user[0] == "") ||(winrm_user.length == 1)
         user_related_commands = <<-EOH
-net user /add #{locate_config_value(:winrm_user).delete('.\\')} #{windows_password}; 
+net user /add #{locate_config_value(:winrm_user).delete('.\\')} #{windows_password};
 net localgroup Administrators /add #{locate_config_value(:winrm_user).delete('.\\')};
         EOH
       end
