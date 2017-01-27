@@ -782,6 +782,7 @@ class Chef
         bootstrap.config[:install_as_service] = locate_config_value(:install_as_service)
         bootstrap.config[:session_timeout] = locate_config_value(:session_timeout)
         bootstrap.config[:chef_node_name] = config[:chef_node_name] || server.id
+        bootstrap.config[:tags] = config[:tags]
         bootstrap_common_params(bootstrap)
       end
 
@@ -794,6 +795,7 @@ class Chef
         bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
         bootstrap.config[:identity_file] = config[:identity_file]
         bootstrap.config[:chef_node_name] = locate_config_value(:chef_node_name) || server.id
+        bootstrap.config[:tags] = config[:tags]
         bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
         # may be needed for vpc_mode
         bootstrap.config[:host_key_verify] = config[:host_key_verify]
@@ -973,6 +975,9 @@ If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b
   winrm delete winrm/config/listener?Address=*+Transport=HTTP
 }
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+If (-Not $vm_name) {
+  $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/local-ipv4
+}
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"

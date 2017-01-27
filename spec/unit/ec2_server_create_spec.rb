@@ -1581,6 +1581,9 @@ If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b
   winrm delete winrm/config/listener?Address=*+Transport=HTTP
 }
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+If (-Not $vm_name) {
+  $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/local-ipv4
+}
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1610,6 +1613,9 @@ If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b
   winrm delete winrm/config/listener?Address=*+Transport=HTTP
 }
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+If (-Not $vm_name) {
+  $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/local-ipv4
+}
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1667,6 +1673,9 @@ If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b
   winrm delete winrm/config/listener?Address=*+Transport=HTTP
 }
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+If (-Not $vm_name) {
+  $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/local-ipv4
+}
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1731,6 +1740,9 @@ If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b
   winrm delete winrm/config/listener?Address=*+Transport=HTTP
 }
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+If (-Not $vm_name) {
+  $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/local-ipv4
+}
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1778,6 +1790,9 @@ If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b
   winrm delete winrm/config/listener?Address=*+Transport=HTTP
 }
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+If (-Not $vm_name) {
+  $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/local-ipv4
+}
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1818,6 +1833,9 @@ If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b
   winrm delete winrm/config/listener?Address=*+Transport=HTTP
 }
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+If (-Not $vm_name) {
+  $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/local-ipv4
+}
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1840,6 +1858,9 @@ If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b
   winrm delete winrm/config/listener?Address=*+Transport=HTTP
 }
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+If (-Not $vm_name) {
+  $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/local-ipv4
+}
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1924,6 +1945,9 @@ If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b
   winrm delete winrm/config/listener?Address=*+Transport=HTTP
 }
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+If (-Not $vm_name) {
+  $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/local-ipv4
+}
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
@@ -1965,6 +1989,9 @@ If (winrm e winrm/config/listener | Select-String -Pattern " Transport = HTTP\\b
   winrm delete winrm/config/listener?Address=*+Transport=HTTP
 }
 $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public-ipv4
+If (-Not $vm_name) {
+  $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/local-ipv4
+}
 New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
