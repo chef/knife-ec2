@@ -48,6 +48,8 @@ describe Chef::Knife::Ec2ServerCreate do
                            :private_ip_address => '10.251.75.20',
                            :root_device_type => 'not_ebs' } }
 
+  let (:server) { double(:id => "i-123" ) }
+
   let(:spot_request_attribs) { { :id => 'test_spot_request_id',
                            :price => 0.001,
                            :request_type => 'persistent',
@@ -630,6 +632,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "when configuring the bootstrap process" do
     before do
+      allow(knife_ec2_create).to receive(:evaluate_node_name).and_return('blarf')
       knife_ec2_create.config[:ssh_user] = "ubuntu"
       knife_ec2_create.config[:identity_file] = "~/.ssh/aws-key.pem"
       knife_ec2_create.config[:ssh_port] = 22
@@ -740,6 +743,7 @@ describe Chef::Knife::Ec2ServerCreate do
   describe "when configuring the winrm bootstrap process for windows" do
     before do
       allow(knife_ec2_create).to receive(:fetch_server_fqdn).and_return("SERVERNAME")
+      allow(knife_ec2_create).to receive(:evaluate_node_name).and_return(server)
       knife_ec2_create.config[:winrm_user] = "Administrator"
       knife_ec2_create.config[:winrm_password] = "password"
       knife_ec2_create.config[:winrm_port] = 12345
@@ -2282,15 +2286,19 @@ netstat > c:\\netstat_data.txt
   end
 
   describe 'evaluate_node_name' do
+    before do
+      knife_ec2_create.instance_variable_set(:@server, server)
+    end
+
     context 'when ec2 server attributes are not passed in node name' do
-      it 'Returns the node name unchanged' do
+      it 'returns the node name unchanged' do
         expect(knife_ec2_create.evaluate_node_name("Test")).to eq("Test")
       end
     end
 
-    context 'when ec2 server attributes are passed in node name' do
-      it 'Returns evaluated node name' do
-        expect(knife_ec2_create.evaluate_node_name("Test#{ec2_server_attribs[:id]}")).to eq("Testi-39382318")
+     context 'when %s is passed in the node name' do
+      it 'returns evaluated node name' do
+        expect(knife_ec2_create.evaluate_node_name("Test-%s")).to eq("Test-i-123")
       end
     end
   end

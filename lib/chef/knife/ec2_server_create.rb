@@ -1435,23 +1435,10 @@ EOH
         require 'chef/knife/core/windows_bootstrap_context'
       end
 
-      #Returns the name of node after evaluation of server attributes if any.
-      #Eg: "Test-#{server.id}" will return "Test-i-123test"  in case the instance id is i-123test
+      #Returns the name of node after evaluation of server id if %s is present.
+      #Eg: "Test-%s" will return "Test-i-12345"  in case the instance id is i-12345
       def evaluate_node_name(node_name)
-        parsed_node_name = []
-        if node_name.include?("\#{server")
-          node_name_split = node_name.split("#\{")
-          node_name_split.each do |node_name_part|
-            if node_name_part.include?("}")
-              parsed_node_name << eval("\"\#\{#{node_name_part}\"")
-            else
-              parsed_node_name << node_name_part
-            end
-          end
-        else
-          return node_name
-        end
-        return parsed_node_name.join
+        return node_name%server.id
       end
 
     end
