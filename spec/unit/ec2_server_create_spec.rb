@@ -2307,4 +2307,19 @@ netstat > c:\\netstat_data.txt
       end
     end
   end
+
+  describe '--primary_eni option' do
+    before do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
+    end
+
+    context 'when a preexisting eni is specified eg. eni-12345678 use that eni for device index 0' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--primary-eni', 'eni-12345678']) }
+      it 'provides a network_interfaces list of hashes with on element for the primary interface' do
+        server_def = ec2_server_create.create_server_def
+        expect(server_def[:network_interfaces]).to eq([{:NetworkInterfaceId => 'eni-12345678', :DeviceIndex => '0'}])
+      end
+    end
+
+  end
 end

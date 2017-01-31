@@ -103,6 +103,10 @@ class Chef
         :description => "The placement group to place a cluster compute instance",
         :proc => Proc.new { |pg| Chef::Config[:knife][:placement_group] = pg }
 
+      option :primary_eni,
+        :long => "--primary-eni ENI_ID",
+        :description => "Specify a pre-existing eni to use when building the instance."
+
       option :tags,
         :short => "-T T=V[,T=V,...]",
         :long => "--tags Tag=Value[,Tag=Value...]",
@@ -609,6 +613,7 @@ class Chef
         msg_pair("Security Groups", printed_security_groups) unless vpc_mode? or (@server.groups.nil? and @server.security_group_ids)
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or @server.security_group_ids
         msg_pair("IAM Profile", locate_config_value(:iam_instance_profile)) if locate_config_value(:iam_instance_profile)
+        msg_pair("Primary ENI", locate_config_value(:primary_eni)) if locate_config_value(:primary_eni)
         msg_pair("Tags", printed_tags)
         msg_pair("SSH Key", @server.key_name)
         msg_pair("Root Device Type", @server.root_device_type)
@@ -1022,8 +1027,18 @@ EOH
           :request_type => locate_config_value(:spot_request_type)
         }
 
-        server_def[:security_group_ids] = locate_config_value(:security_group_ids)
-        server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
+        if primary_eni = locate_config_value(:primary_eni)
+          server_def[:network_interfaces] = [
+            {
+              :NetworkInterfaceId => primary_eni,
+              :DeviceIndex => "0"
+            }
+          ]
+        else
+          server_def[:security_group_ids] = locate_config_value(:security_group_ids)
+          server_def[:subnet_id] = locate_config_value(:subnet_id) if vpc_mode?
+        end
+
         server_def[:private_ip_address] = locate_config_value(:private_ip_address) if vpc_mode?
         server_def[:placement_group] = locate_config_value(:placement_group)
         server_def[:iam_instance_profile_name] = locate_config_value(:iam_instance_profile)
