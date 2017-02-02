@@ -177,6 +177,18 @@ class Chef
             exit 1
           end
         end
+
+        if locate_config_value(:platform)
+          unless valid_platform.include? (locate_config_value(:platform))
+            raise ArgumentError, "The platform should be #{valid_platform.join(", ")}."
+          end
+        end
+
+        if locate_config_value(:owner)
+          unless ["self", "aws-marketplace", "microsoft"].include? (locate_config_value(:owner))
+            raise ArgumentError, "The owner should be self, aws-marketplace or microsoft."
+          end
+        end
       end
 
     end
@@ -206,6 +218,26 @@ class Chef
         end
       end
       map
+    end
+
+    # All valid platform
+    def valid_platform
+      ["ubuntu", "debian", "centos", "fedora", "rhel", "nginx", "turnkey", "jumpbox", "coreos", "cisco"]
+    end
+
+    # Get the platform from server name
+    def find_server_platform(server_name)
+      available_platform = valid_platform
+      get_platform = available_platform.select { |name| server_name.downcase.include?(name) }
+      return get_platform.first
+    end
+
+
+    # Custom Warning
+    def custom_warnings!
+      if !config[:region] && Chef::Config[:knife][:region].nil?
+        ui.warn "No region was specified in knife.rb or as an argument. The default region, us-east-1, will be used:"
+      end
     end
   end
 end
