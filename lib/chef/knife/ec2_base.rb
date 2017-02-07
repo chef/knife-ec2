@@ -222,7 +222,7 @@ class Chef
 
     # All valid platform
     def valid_platform
-      ["ubuntu", "debian", "centos", "fedora", "rhel", "nginx", "turnkey", "jumpbox", "coreos", "cisco"]
+      ["ubuntu", "debian", "centos", "fedora", "rhel", "nginx", "turnkey", "jumpbox", "coreos", "cisco", "amazon", "nessus"]
     end
 
     # Get the platform from server name
