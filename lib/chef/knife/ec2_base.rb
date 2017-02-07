@@ -179,14 +179,14 @@ class Chef
         end
 
         if locate_config_value(:platform)
-          unless valid_platform.include? (locate_config_value(:platform))
-            raise ArgumentError, "The platform should be #{valid_platform.join(", ")}."
+          unless valid_platforms.include? (locate_config_value(:platform))
+            raise ArgumentError, "Invalid platform: #{locate_config_value(:platform)}. Allowed platforms are: #{valid_platforms.join(", ")}."
           end
         end
 
         if locate_config_value(:owner)
           unless ["self", "aws-marketplace", "microsoft"].include? (locate_config_value(:owner))
-            raise ArgumentError, "The owner should be self, aws-marketplace or microsoft."
+            raise ArgumentError, "Invalid owner: #{locate_config_value(:owner)}. Allowed owners are self, aws-marketplace or microsoft."
           end
         end
       end
@@ -220,15 +220,15 @@ class Chef
       map
     end
 
-    # All valid platform
-    def valid_platform
+    # All valid platforms
+    def valid_platforms
       ["ubuntu", "debian", "centos", "fedora", "rhel", "nginx", "turnkey", "jumpbox", "coreos", "cisco", "amazon", "nessus"]
     end
 
     # Get the platform from server name
     def find_server_platform(server_name)
-      available_platform = valid_platform
-      get_platform = available_platform.select { |name| server_name.downcase.include?(name) }
+      available_platforms = valid_platforms
+      get_platform = available_platforms.select { |name| server_name.downcase.include?(name) }
       return get_platform.first
     end
 

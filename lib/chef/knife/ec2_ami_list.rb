@@ -46,7 +46,7 @@ class Chef
       option :platform,
         :short => "-p PLATFORM",
         :long => "--platform PLATFORM",
-        :description => "The server valid platform (ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco)"
+        :description => "Platform of the server. Allowed values are ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco, amazon, nessus"
 
        option :owner,
         :short => "-o OWNER",
