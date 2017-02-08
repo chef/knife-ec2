@@ -230,12 +230,38 @@ The `knife ec2 server create` command also supports the following options for bo
 :kerberos_realm                The Kerberos realm used for authentication
 :kerberos_service              The Kerberos service used for authentication
 ```
+### `knife ec2 ami list`
+This command provides the feature to list all EC2 AMIs. It also provides the feature to filter the AMIs based on owner and platform.
 
-### `knife ec2 server delete`
-Deletes an existing server in the currently configured AWS account. **By default, this does not delete the associated node and client objects from the Chef server. To do so, add the `--purge` flag**
+```
+knife ec2 ami list
+```
+
+#### Options for AMIs list
+- **Owner:**
+  By default owner is aws-marketplace but you can specify following owner with the help of -o or --owner:
+
+  **command:** knife ec2 ami list -o (options)
+
+  ```
+  :self                         Displays the list of AMIs created by the user.
+  :aws-marketplace              Displays all AMIs form trusted vendors like Ubuntu, Microsoft, SAP, Zend as well as many open source offering.
+  :micosoft                     Displays only Microsoft vendor AMIs.
+  ```
+- **Platform:**
+  By default all platform AMIs are displayed, but you can filter your response by specifying the platform using -p or --platform:
+
+  **command:** knife ec2 ami list -p (options)
+
+  ```
+  :Allowed platform             windows, ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco, amazon, nessus
+  ```  
 
 ### `knife ec2 server list`
 Outputs a list of all servers in the currently configured AWS account. **Note, this shows all instances associated with the account, some of which may not be currently managed by the Chef server.**
+
+### `knife ec2 server delete`
+Deletes an existing server in the currently configured AWS account. **By default, this does not delete the associated node and client objects from the Chef server. To do so, add the `--purge` flag**
 
 ## License and Authors
 - Author:: Adam Jacob ([adam@chef.io](mailto:adam@chef.io))
