@@ -29,6 +29,7 @@ class Chef
       def run
 
         validate!
+        custom_warnings!
 
         flavor_list = [
           ui.color('ID', :bold),
@@ -37,8 +38,16 @@ class Chef
           ui.color('RAM', :bold),
           ui.color('Disk', :bold),
           ui.color('Cores', :bold)
-        ]
-        flavors = connection.flavors.sort_by(&:id)
+        ].flatten.compact
+
+        output_column_count = flavor_list.length
+
+        begin
+          flavors = connection.flavors.sort_by(&:id)
+        rescue Exception => api_error
+          raise api_error
+        end
+
         if (config[:format] == 'summary')
           flavors.each do |flavor|
             flavor_list << flavor.id.to_s
@@ -48,10 +57,11 @@ class Chef
             flavor_list << "#{flavor.disk.to_s} GB"
             flavor_list << flavor.cores.to_s
           end
-          puts ui.list(flavor_list, :columns_across, 6)
-	else
+          puts ui.list(flavor_list, :uneven_columns_across, output_column_count)
+	      else
           output(format_for_display(flavors))
-	end
+	      end
+
       end
     end
   end
