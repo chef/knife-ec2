@@ -1403,6 +1403,7 @@ EOH
       end
 
       def check_windows_password_available(server_id)
+        sleep 10
         response = connection.get_password_data(server_id)
         if not response.body["passwordData"]
           return false
@@ -1415,7 +1416,6 @@ EOH
           if locate_config_value(:identity_file)
             print "\n#{ui.color("Waiting for Windows Admin password to be available", :magenta)}"
             print(".") until check_windows_password_available(@server.id) {
-              sleep 1000 #typically is available after 30 mins
               puts("done")
             }
             response = connection.get_password_data(@server.id)
