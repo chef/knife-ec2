@@ -442,6 +442,11 @@ class Chef
         :boolean => true,
         :default => false
 
+      option :volume_tags,
+        :long => "--volume-tags Tag=Value[,Tag=Value...]",
+        :description => "Tag the Root volume",
+        :proc => Proc.new { |volume_tags| volume_tags.split(',') }
+
       def run
         $stdout.sync = true
         validate!
@@ -509,6 +514,10 @@ class Chef
 
         printed_tags = hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")
 
+        hashed_volume_tags={}
+        volume_tags.map{ |t| key,val=t.split('='); hashed_volume_tags[key]=val} unless volume_tags.nil?
+        printed_volume_tags = hashed_volume_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")
+
         msg_pair("Instance ID", @server.id)
         msg_pair("Flavor", @server.flavor_id)
         msg_pair("Image", @server.image_id)
@@ -530,6 +539,7 @@ class Chef
         msg_pair("IAM Profile", locate_config_value(:iam_instance_profile))
 
         msg_pair("Tags", printed_tags)
+        msg_pair("Volume Tags", printed_volume_tags)
         msg_pair("SSH Key", @server.key_name)
 
         print "\n#{ui.color("Waiting for EC2 to create the instance", :magenta)}"
@@ -543,6 +553,7 @@ class Chef
         tries = 6
         begin
           create_tags(hashed_tags) unless hashed_tags.empty?
+          create_volume_tags(hashed_volume_tags) unless hashed_volume_tags.empty?
           associate_eip(elastic_ip) if config[:associate_eip]
           enable_classic_link(config[:classic_link_vpc_id], config[:classic_link_vpc_security_group_ids]) if config[:classic_link_vpc_id]
         rescue Fog::Compute::AWS::NotFound, Fog::Errors::Error
@@ -620,6 +631,7 @@ class Chef
           device_map = @server.block_device_mapping.first
           msg_pair("Root Volume ID", device_map['volumeId'])
           msg_pair("Root Device Name", device_map['deviceName'])
+          msg_pair("Root Volume Tags", printed_volume_tags)
           msg_pair("Root Device Delete on Terminate", device_map['deleteOnTermination'])
           msg_pair("Standard or Provisioned IOPS", device_map['volumeType'])
           msg_pair("IOPS rate", device_map['iops'])
@@ -994,9 +1006,7 @@ New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $v
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $create_listener_cmd
-
 netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
-
 EOH
       end
 
@@ -1442,6 +1452,21 @@ EOH
       #Eg: "Test-%s" will return "Test-i-12345"  in case the instance id is i-12345
       def evaluate_node_name(node_name)
         return node_name%server.id
+      end
+
+      def volume_tags
+       volume_tags = locate_config_value(:volume_tags)
+        if !volume_tags.nil? and volume_tags.length != volume_tags.to_s.count('=')
+          ui.error("Volume Tags should be entered in a key = value pair")
+          exit 1
+        end
+       volume_tags
+      end
+
+      def create_volume_tags(hashed_volume_tags)
+        hashed_volume_tags.each_pair do |key,val|
+          connection.tags.create :key => key, :value => val, :resource_id => @server.block_device_mapping.first['volumeId']
+        end
       end
 
     end
