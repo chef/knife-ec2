@@ -4,6 +4,19 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
+
+## Latest Release 0.15.0 (2017-02-03)
+* `knife-ec2` requires `chef-client 12.14` or newer.
+* [knife-ec2:#484](https://github.com/chef/knife-ec2/pull/484) sleep for collecting windows password
+* [knife-ec2:#481](https://github.com/chef/knife-ec2/pull/481) Updated readme forEC2 AMI list
+* [knife-ec2:#482](https://github.com/chef/knife-ec2/pull/482) Allow search for EC2 AMIs
+* [knife-ec2:#471](https://github.com/chef/knife-ec2/pull/471) Added support to append ec2 server id into node name using `-N "<Node Name>%s" or  --chef-node-name "<Node Name>%s"`
+* [knife-ec2:#478](https://github.com/chef/knife-ec2/pull/478) Allow for hosts without public ip addresses
+* [knife-ec2:#476](https://github.com/chef/knife-ec2/pull/476) Tag node in chef
+* [knife-ec2:#458](https://github.com/chef/knife-ec2/pull/458) Fix where yes option wasn’t being passed to bootstrap
+* [knife-ec2:#468](https://github.com/chef/knife-ec2/pull/468) In VPC mode use private IP when public IP and DNS not available 
+* [knife-ec2:#464](https://github.com/chef/knife-ec2/pull/464) default value and desription is changed for --ebs-volume-type 
+
 ## Latest Release 0.14.0 (2016-12-02)
 * `knife-ec2` requires `chef-client 12.14` or newer.
 * [knife-ec2:#442](https://github.com/chef/knife-ec2/pull/442) Added support to show flavor list in json format.

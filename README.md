@@ -203,12 +203,18 @@ knife ec2 server create -I ami-173d747e -x ubuntu --server-connect-attribute pub
 
 View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](https://docs.chef.io/plugin_knife_windows.html).
 
+#### Appending server_id to the node name
+
+Users can also append ec2 server_id to the node name by appending `%s` into `--chef-node-name` option. The %s is replaced by the ec2 server id dynamically. 
+e.g. `-N "<Node Name>%s" or  --chef-node-name "<Node Name>%s"`
+
 
 #### Bootstrap Windows (2012 R2 and above platform) instance without user-data through winrm ssl transport
 
 Users can bootstrap the Windows instance without the need to provide the user-data. `knife-ec2` has the ability to bootstrap the Windows instance through `winrm protocol` using the `ssl` transport. This requires users to set `--winrm-transport` option as `ssl` and `--winrm-ssl-verify-mode` option as `verify_none`. This will do the necessary winrm ssl transport configurations on the target node and the bootstrap will just work.
 
 ***Note***: Users also need to pass the `--security-group-ids` option with IDs of the security group(s) having the required ports opened like `5986` for winrm ssl transport. In case if `--security-group-ids` option is not passed then make sure that the default security group in your account has the required ports opened.
+
 
 Below is the sample command to create a Windows instance and bootstrap it through `ssl` transport without passing any user-data:
 
