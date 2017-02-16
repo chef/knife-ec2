@@ -46,7 +46,8 @@ describe Chef::Knife::Ec2ServerCreate do
                            :public_ip_address => '75.101.253.10',
                            :private_dns_name => 'ip-10-251-75-20.ec2.internal',
                            :private_ip_address => '10.251.75.20',
-                           :root_device_type => 'not_ebs' } }
+                           :root_device_type => 'not_ebs',
+                           :block_device_mapping => [{'volumeId' => "456"}]  } }
 
   let (:server) { double(:id => "i-123" ) }
 
@@ -80,6 +81,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     allow(ec2_connection).to receive(:tags).and_return double('create', :create => true)
+    allow(ec2_connection).to receive(:volume_tags).and_return double('create', :create => true)
     allow(ec2_connection).to receive_message_chain(:images, :get).and_return double('ami', :root_device_type => 'not_ebs', :platform => 'linux')
     allow(ec2_connection).to receive(:addresses).and_return [double('addesses', {
             :domain => 'standard',
@@ -281,7 +283,6 @@ describe Chef::Knife::Ec2ServerCreate do
       # default value of config[:ssh_password] is nil
       knife_ec2_create.config[:winrm_password] = "winrm_password"
       knife_ec2_create.config[:ssh_password] = nil
-
       expect(new_ec2_server).to receive(:wait_for).and_return(true)
       knife_ec2_create.run
       expect(knife_ec2_create.config[:ssh_password]).to eq("winrm_password")
@@ -455,6 +456,8 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(ec2_servers).to receive(:create).and_return(new_ec2_server)
       allow(knife_ec2_create).to receive(:puts)
       allow(knife_ec2_create).to receive(:print)
+      allow(knife_ec2_create.ui).to receive(:error)
+      allow(knife_ec2_create.ui).to receive(:msg)
     end
 
     it "sets the Name tag to the instance id by default" do
@@ -488,6 +491,25 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.run
     end
 
+  end
+
+  describe "when setting volume tags" do
+    before do
+      expect(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
+      allow(knife_ec2_create).to receive(:bootstrap_for_linux_node).and_return double("bootstrap", :run => true)
+      allow(ec2_connection).to receive(:servers).and_return(ec2_servers)
+      allow(ec2_servers).to receive(:create).and_return(new_ec2_server)
+      allow(new_ec2_server).to receive(:wait_for).and_return(true)
+      allow(knife_ec2_create.ui).to receive(:error)
+    end
+
+    it "sets the volume tags as specified when given --volume-tags Key=Value" do
+      knife_ec2_create.config[:volume_tags] = ["VolumeTagKey=TestVolumeTagValue"]
+      expect(ec2_connection.tags).to receive(:create).with(:key => "VolumeTagKey",
+                                                        :value => "TestVolumeTagValue",
+                                                        :resource_id => new_ec2_server.block_device_mapping.first['volumeId'])
+      knife_ec2_create.run
+    end
   end
 
   # This shared examples group can be used to house specifications that

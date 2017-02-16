@@ -515,6 +515,7 @@ class Chef
         printed_tags = hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")
 
         hashed_volume_tags={}
+        volume_tags = locate_config_value(:volume_tags)
         volume_tags.map{ |t| key,val=t.split('='); hashed_volume_tags[key]=val} unless volume_tags.nil?
         printed_volume_tags = hashed_volume_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")
 
@@ -627,11 +628,11 @@ class Chef
         msg_pair("Tags", printed_tags)
         msg_pair("SSH Key", @server.key_name)
         msg_pair("Root Device Type", @server.root_device_type)
+        msg_pair("Root Volume Tags", printed_volume_tags)
         if @server.root_device_type == "ebs"
           device_map = @server.block_device_mapping.first
           msg_pair("Root Volume ID", device_map['volumeId'])
           msg_pair("Root Device Name", device_map['deviceName'])
-          msg_pair("Root Volume Tags", printed_volume_tags)
           msg_pair("Root Device Delete on Terminate", device_map['deleteOnTermination'])
           msg_pair("Standard or Provisioned IOPS", device_map['volumeType'])
           msg_pair("IOPS rate", device_map['iops'])
@@ -959,6 +960,12 @@ class Chef
 
         if locate_config_value(:spot_price).nil? && locate_config_value(:spot_wait_mode).downcase != 'prompt'
           ui.error('spot-wait-mode option requires that a spot-price option is set.')
+          exit 1
+        end
+
+        volume_tags = locate_config_value(:volume_tags)
+        if !volume_tags.nil? and volume_tags.length != volume_tags.to_s.count('=')
+          ui.error("Volume Tags should be entered in a key = value pair")
           exit 1
         end
 
@@ -1452,15 +1459,6 @@ EOH
       #Eg: "Test-%s" will return "Test-i-12345"  in case the instance id is i-12345
       def evaluate_node_name(node_name)
         return node_name%server.id
-      end
-
-      def volume_tags
-       volume_tags = locate_config_value(:volume_tags)
-        if !volume_tags.nil? and volume_tags.length != volume_tags.to_s.count('=')
-          ui.error("Volume Tags should be entered in a key = value pair")
-          exit 1
-        end
-       volume_tags
       end
 
       def create_volume_tags(hashed_volume_tags)
