@@ -222,13 +222,12 @@ class Chef
 
     # All valid platforms
     def valid_platforms
-      ["ubuntu", "debian", "centos", "fedora", "rhel", "nginx", "turnkey", "jumpbox", "coreos", "cisco", "amazon", "nessus"]
+      ["windows", "ubuntu", "debian", "centos", "fedora", "rhel", "nginx", "turnkey", "jumpbox", "coreos", "cisco", "amazon", "nessus"]
     end
 
     # Get the platform from server name
     def find_server_platform(server_name)
-      available_platforms = valid_platforms
-      get_platform = available_platforms.select { |name| server_name.downcase.include?(name) }
+      get_platform = valid_platforms.select { |name| server_name.downcase.include?(name) }
       return get_platform.first
     end
 

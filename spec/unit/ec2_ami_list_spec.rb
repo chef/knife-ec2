@@ -32,7 +32,7 @@
                                          "deleteOnTermination"=>"true",
                                          "volumeType"=>"standard",
                                          "encrypted"=>"false"}],
-              'description'         => "DC for Quan",
+              'description'         => "window winrm",
               'hypervisor'          => "xen",
               'imageId'             => "ami-4ace6d23",
               'imageLocation'       => "microsoft/Windows_Server-2008-R2-SP1-English-64Bit-WebMatrix_Hosting-2012.06.12",
@@ -80,7 +80,7 @@
                                          "deleteOnTermination"=>"true",
                                          "volumeType"=>"standard",
                                          "encrypted"=>"false"}],
-              'description'         => "DC for Quan",
+              'description'         => "ubuntu 14.04",
               'hypervisor'          => "xen",
               'imageId'             => "ami-4ace6d29",
               'imageOwnerAlias'     => "aws-marketplace",
@@ -133,7 +133,7 @@
             allow(ec2_connection).to receive(:describe_images).and_return(@describe_images_format)
             expect(knife_ec2_ami_list).to receive(:validate!)
             images = ec2_connection.describe_images.body['imagesSet']
-            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name"]
+            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name", "Description"]
             output_column_count = output_column.length
             images.each do |image|
               output_column << image["imageId"].to_s
@@ -141,6 +141,7 @@
               output_column << image["architecture"].to_s
               output_column << image["blockDeviceMapping"].first["volumeSize"].to_s
               output_column << image["name"].split(/\W+/).first
+              output_column << image["description"]
             end
             expect(knife_ec2_ami_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
             knife_ec2_ami_list.run
@@ -192,7 +193,7 @@
             allow(ec2_connection).to receive(:describe_images).and_return(@describe_images_format)
             images = ec2_connection.describe_images.body['imagesSet']
             expect(knife_ec2_ami_list).to receive(:validate!)
-            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name"]
+            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name", "Description"]
             output_column_count = output_column.length
             images.each do |image|
               output_column << image["imageId"].to_s
@@ -200,6 +201,7 @@
               output_column << image["architecture"].to_s
               output_column << image["blockDeviceMapping"].first["volumeSize"].to_s
               output_column << image["name"].split(/\W+/).first
+              output_column << image["description"]
             end
             expect(knife_ec2_ami_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
             knife_ec2_ami_list.run
@@ -212,13 +214,14 @@
             allow(ec2_connection).to receive(:describe_images).and_return(@describe_images_format)
             window_image = ec2_connection.describe_images.body['imagesSet'].first
             expect(knife_ec2_ami_list).to receive(:validate!)
-            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name"]
+            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name", "Description"]
             output_column_count = output_column.length
             output_column << window_image["imageId"]
             output_column << window_image["platform"]
             output_column << window_image["architecture"]
             output_column << window_image["blockDeviceMapping"].first["volumeSize"].to_s
             output_column << window_image["name"].split(/\W+/).first
+            output_column << window_image["description"]
             expect(knife_ec2_ami_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
             knife_ec2_ami_list.run
           end
@@ -230,13 +233,14 @@
             allow(ec2_connection).to receive(:describe_images).and_return(@describe_images_format)
             ubuntu_image = ec2_connection.describe_images.body['imagesSet'][1]
             expect(knife_ec2_ami_list).to receive(:validate!)
-            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name"]
+            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name", "Description"]
             output_column_count = output_column.length
             output_column << ubuntu_image["imageId"]
             output_column << ubuntu_image["name"].split(/\W+/).first
             output_column << ubuntu_image["architecture"]
             output_column << ubuntu_image["blockDeviceMapping"].first["volumeSize"].to_s
             output_column << ubuntu_image["name"].split(/\W+/).first
+            output_column << ubuntu_image["description"]
             expect(knife_ec2_ami_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
             knife_ec2_ami_list.run
           end
@@ -248,13 +252,14 @@
             allow(ec2_connection).to receive(:describe_images).and_return(@describe_images_format)
             expect(knife_ec2_ami_list).to receive(:validate!)
             fedora_image = ec2_connection.describe_images.body['imagesSet'].last
-            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name"]
+            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name", "Description"]
             output_column_count = output_column.length
             output_column << fedora_image["imageId"]
             output_column << fedora_image["name"].split(/\W+/).first
             output_column << fedora_image["architecture"]
             output_column << fedora_image["blockDeviceMapping"].first["volumeSize"].to_s
             output_column << fedora_image["name"].split(/\W+/).first
+            output_column << fedora_image["description"]
             expect(knife_ec2_ami_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
             knife_ec2_ami_list.run
           end
@@ -265,7 +270,86 @@
             knife_ec2_ami_list.config[:platform] = 'xyz'
             knife_ec2_ami_list.config[:use_iam_profile] = true
             knife_ec2_ami_list.config[:owner] = true
-            expect{ knife_ec2_ami_list.validate! }.to raise_error "Invalid platform: #{knife_ec2_ami_list.config[:platform]}. Allowed platforms are: ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco, amazon, nessus."
+            expect{ knife_ec2_ami_list.validate! }.to raise_error "Invalid platform: #{knife_ec2_ami_list.config[:platform]}. Allowed platforms are: windows, ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco, amazon, nessus."
+          end
+        end
+      end
+
+      context 'when --search is passed' do
+        before do
+          allow(knife_ec2_ami_list.ui).to receive(:warn)
+          allow(knife_ec2_ami_list).to receive(:custom_warnings!)
+        end
+
+        context 'When search key word is present in description' do
+          it 'shows only AMIs List that have 14.04 in description' do
+            knife_ec2_ami_list.config[:search] = '14.04'
+            allow(ec2_connection).to receive(:describe_images).and_return(@describe_images_format)
+            image = ec2_connection.describe_images.body['imagesSet'][2]
+            expect(knife_ec2_ami_list).to receive(:validate!)
+            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name", "Description"]
+            output_column_count = output_column.length
+            output_column << image["imageId"]
+            output_column << image["name"].split(/\W+/).first
+            output_column << image["architecture"]
+            output_column << image["blockDeviceMapping"].first["volumeSize"].to_s
+            output_column << image["name"].split(/\W+/).first
+            output_column << image["description"]
+            expect(knife_ec2_ami_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
+            knife_ec2_ami_list.run
+          end
+        end
+
+        context 'When user pass platform and search keyword' do
+          it 'shows only AMIs List that have 14.04 in description and platform is ubuntu' do
+            knife_ec2_ami_list.config[:platform] = 'ubuntu'
+            knife_ec2_ami_list.config[:search] = 'Quan'
+            allow(ec2_connection).to receive(:describe_images).and_return(@describe_images_format)
+            ubuntu_image = ec2_connection.describe_images.body['imagesSet'][1]
+            expect(knife_ec2_ami_list).to receive(:validate!)
+            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name", "Description"]
+            output_column_count = output_column.length
+            output_column << ubuntu_image["imageId"]
+            output_column << ubuntu_image["name"].split(/\W+/).first
+            output_column << ubuntu_image["architecture"]
+            output_column << ubuntu_image["blockDeviceMapping"].first["volumeSize"].to_s
+            output_column << ubuntu_image["name"].split(/\W+/).first
+            output_column << ubuntu_image["description"]
+            expect(knife_ec2_ami_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
+            knife_ec2_ami_list.run
+          end
+        end
+
+        context 'When user pass owner, platform and search keyword' do
+          it 'shows only AMIs List that owner microsoft platform windows and search keyword is winrm' do
+            knife_ec2_ami_list.config[:owner] = 'microsoft'
+            knife_ec2_ami_list.config[:platform] = 'windows'
+            knife_ec2_ami_list.config[:search] = 'winrm'
+            allow(ec2_connection).to receive(:describe_images).and_return(@describe_images_format)
+            ubuntu_image = ec2_connection.describe_images.body['imagesSet'].first
+            expect(knife_ec2_ami_list).to receive(:validate!)
+            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name", "Description"]
+            output_column_count = output_column.length
+            output_column << ubuntu_image["imageId"]
+            output_column << ubuntu_image["platform"]
+            output_column << ubuntu_image["architecture"]
+            output_column << ubuntu_image["blockDeviceMapping"].first["volumeSize"].to_s
+            output_column << ubuntu_image["name"].split(/\W+/).first
+            output_column << ubuntu_image["description"]
+            expect(knife_ec2_ami_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
+            knife_ec2_ami_list.run
+          end
+        end
+
+        context 'When search key word is not present in description' do
+          it 'Fetch no AMI' do
+            knife_ec2_ami_list.config[:search] = 'Not present'
+            allow(ec2_connection).to receive(:describe_images).and_return(@describe_images_format)
+            expect(knife_ec2_ami_list).to receive(:validate!)
+            output_column = ["AMI ID", "Platform", "Architecture", "Size", "Name", "Description"]
+            output_column_count = output_column.length
+            expect(knife_ec2_ami_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
+            knife_ec2_ami_list.run
           end
         end
       end
