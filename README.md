@@ -203,6 +203,10 @@ knife ec2 server create -I ami-173d747e -x ubuntu --server-connect-attribute pub
 
 View additional information on configuring Windows images for bootstrap in the documentation for [knife-windows](https://docs.chef.io/plugin_knife_windows.html).
 
+#### Adding server_id to the node name
+
+Users can also include the ec2 server id in the node name by placing `%s` in the string passed to the `--chef-node-name` option. The %s is replaced by the ec2 server id dynamically. 
+e.g. `-N "www-server-%s" or  --chef-node-name "www-server-%s"`
 
 #### Bootstrap Windows (2012 R2 and above platform) instance without user-data through winrm ssl transport
 
