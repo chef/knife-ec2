@@ -1627,7 +1627,7 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
       before do
         knife_ec2_create.config[:winrm_user] = ".\\ec2"
         @ssl_config_data = <<-EOH
-net user /add ec2 ec2@123;
+net user /add ec2 ec2@123 ;
 net localgroup Administrators /add ec2;
 
 If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
