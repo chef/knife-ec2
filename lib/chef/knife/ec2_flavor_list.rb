@@ -58,10 +58,9 @@ class Chef
             flavor_list << flavor.cores.to_s
           end
           puts ui.list(flavor_list, :uneven_columns_across, output_column_count)
-	      else
+        else
           output(format_for_display(flavors))
-	      end
-
+        end
       end
     end
   end

@@ -272,6 +272,9 @@ knife ec2 ami list
 ### `knife ec2 server list`
 Outputs a list of all servers in the currently configured AWS account. **Note, this shows all instances associated with the account, some of which may not be currently managed by the Chef server.**
 
+### `knife ec2 flavor list`
+Outputs a list of all instance types comprising varying combinations of CPU, memory, storage, and architecture capacity of the currently configured AWS account. **Note, this shows all instances type associated with the account.**
+
 ### `knife ec2 server delete`
 Deletes an existing server in the currently configured AWS account. **By default, this does not delete the associated node and client objects from the Chef server. To do so, add the `--purge` flag**
 

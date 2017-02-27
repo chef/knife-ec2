@@ -54,7 +54,7 @@ describe Chef::Knife::Ec2FlavorList do
     context '--format option' do
       context 'when format=summary' do
         before do
-	        @output_s=["ID", "Name", "Architecture", "RAM", "Disk", "Cores", "c1.medium", "High-CPU Medium", "32-bit", "1740.8", "350 GB", "5"]
+          @output_s=["ID", "Name", "Architecture", "RAM", "Disk", "Cores", "c1.medium", "High-CPU Medium", "32-bit", "1740.8", "350 GB", "5"]
           knife_flavor_list.config[:format] = 'summary'
           allow(knife_flavor_list.ui).to receive(:warn)
           allow(knife_flavor_list).to receive(:validate!)
