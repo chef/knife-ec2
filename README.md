@@ -260,6 +260,14 @@ knife ec2 ami list
   ```
   :Allowed platform             windows, ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco, amazon, nessus
   ```  
+- **Search:**
+  User can search any string into the description column by using -s or --search:
+
+  **command:** knife ec2 ami list -s (search_keyword)
+
+  ```
+  :search_keyword             Any String or number
+  ```  
 
 ### `knife ec2 server list`
 Outputs a list of all servers in the currently configured AWS account. **Note, this shows all instances associated with the account, some of which may not be currently managed by the Chef server.**
