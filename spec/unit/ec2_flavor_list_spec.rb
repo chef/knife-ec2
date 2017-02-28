@@ -24,7 +24,7 @@ describe Chef::Knife::Ec2FlavorList do
     let(:ec2_connection) { double(Fog::Compute::AWS) }
     before do
       allow(knife_flavor_list).to receive(:connection).and_return(ec2_connection)
-      @flavor1 = double("flavor1", :name => "High-CPU Medium", :architecture => "32-bit-bit", :id => "c1.medium", :bits => "32-bit", :cores => "5", :disk => "1740.8 GB", :ram => "350 GB", :ebs_optimized_available => "false", :instance_store_volumes => "0")
+      @flavor1 = double("flavor1", :name => "High-CPU Medium", :architecture => "32", :id => "c1.medium", :bits => "32", :cores => "5", :ram => "1740.8", :disk => "350", :ebs_optimized_available => "false", :instance_store_volumes => "0")
 
       allow(ec2_connection).to receive(:flavors).and_return([@flavor1])
 
@@ -39,18 +39,29 @@ describe Chef::Knife::Ec2FlavorList do
       knife_flavor_list.run
     end
 
+    context 'when region is not specified' do
+      it 'shows warning that default region will be will be used' do
+        knife_flavor_list.config.delete(:region)
+        Chef::Config[:knife].delete(:region)
+        ec2_flavors = double(:sort_by => [])
+        allow(ec2_connection).to receive(:flavors).and_return(ec2_flavors)
+        allow(knife_flavor_list).to receive(:validate!)
+        expect(knife_flavor_list.ui).to receive(:warn).with("No region was specified in knife.rb or as an argument. The default region, us-east-1, will be used:")
+        knife_flavor_list.run
+      end
+    end
 
     context '--format option' do
       context 'when format=summary' do
         before do
-	  @output_s=["ID", "Name", "Architecture", "RAM", "Disk", "Cores", "c1.medium", "High-CPU Medium", "32-bit-bit", "350 GB", "1740.8 GB GB", "5"]
+          @output_s=["ID", "Name", "Architecture", "RAM", "Disk", "Cores", "c1.medium", "High-CPU Medium", "32-bit", "1740.8", "350 GB", "5"]
           knife_flavor_list.config[:format] = 'summary'
           allow(knife_flavor_list.ui).to receive(:warn)
           allow(knife_flavor_list).to receive(:validate!)
         end
 
         it 'shows the output in summary format' do
-          expect(knife_flavor_list.ui).to receive(:list).with(@output_s,:columns_across,6)
+          expect(knife_flavor_list.ui).to receive(:list).with(@output_s, :uneven_columns_across, 6)
           knife_flavor_list.run
         end
       end
