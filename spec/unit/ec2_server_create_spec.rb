@@ -1627,7 +1627,7 @@ netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Local
       before do
         knife_ec2_create.config[:winrm_user] = ".\\ec2"
         @ssl_config_data = <<-EOH
-net user /add ec2 ec2@123;
+net user /add ec2 ec2@123 ;
 net localgroup Administrators /add ec2;
 
 If (-Not (Get-Service WinRM | Where-Object {$_.status -eq "Running"})) {
@@ -2334,6 +2334,46 @@ netstat > c:\\netstat_data.txt
         expect(knife_ec2_create.evaluate_node_name("Test-%s")).to eq("Test-i-123")
       end
     end
+  end
+
+  describe 'Handle password greater than 14 characters' do
+    before do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
+      knife_ec2_create.config[:winrm_user] = "domain\\ec2"
+      knife_ec2_create.config[:winrm_password] = "LongPassword@123"
+    end
+
+     context 'when user enters Y after prompt' do
+      before do
+        allow(STDIN).to receive_message_chain(:gets, :chomp => "Y")
+      end
+      it 'user addition command is executed forcefully' do
+        expect(knife_ec2_create.ui).to receive(:warn).with('The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):')
+        knife_ec2_create.validate!
+        expect(knife_ec2_create.instance_variable_get(:@allow_long_password)).to eq ("/yes")
+      end
+    end
+
+    context 'when user enters n after prompt' do
+      before do
+        allow(STDIN).to receive_message_chain(:gets, :chomp => "N")
+      end
+      it 'operation exits' do
+        expect(knife_ec2_create.ui).to receive(:warn).with('The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):')
+        expect{ knife_ec2_create.validate! }.to raise_error("Exiting as operation with password greater than 14 characters not accepted")
+      end
+    end
+
+    context 'when user enters xyz instead of (Y/N) after prompt' do
+      before do
+        allow(STDIN).to receive_message_chain(:gets, :chomp => "xyz")
+      end
+      it 'operation exits' do
+        expect(knife_ec2_create.ui).to receive(:warn).with('The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):')
+        expect{ knife_ec2_create.validate! }.to raise_error("The input provided is incorrect.")
+      end
+    end
+
   end
 
 end
