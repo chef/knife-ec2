@@ -447,6 +447,12 @@ class Chef
         :description => "Tag the Root volume",
         :proc => Proc.new { |volume_tags| volume_tags.split(',') }
 
+      option :tag_ec2_to_chef,
+        :long => "--tag-ec2-to-chef",
+        :description => "Flag for tagging node in ec2 and chef both",
+        :boolean => true,
+        :default => false
+
       def run
         $stdout.sync = true
         validate!
@@ -798,7 +804,8 @@ class Chef
         bootstrap.config[:msi_url] = locate_config_value(:msi_url)
         bootstrap.config[:install_as_service] = locate_config_value(:install_as_service)
         bootstrap.config[:session_timeout] = locate_config_value(:session_timeout)
-        bootstrap.config[:tags] = config[:tags]
+        bootstrap.config[:tags] = config[:tags] if locate_config_value(:tag_ec2_to_chef)
+
         if locate_config_value(:chef_node_name)
           bootstrap.config[:chef_node_name] = evaluate_node_name(locate_config_value(:chef_node_name))
         else
@@ -815,7 +822,8 @@ class Chef
         bootstrap.config[:ssh_port] = config[:ssh_port]
         bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
         bootstrap.config[:identity_file] = config[:identity_file]
-        bootstrap.config[:tags] = config[:tags]
+        bootstrap.config[:tags] = config[:tags] if locate_config_value(:tag_ec2_to_chef)
+
         if locate_config_value(:chef_node_name)
           bootstrap.config[:chef_node_name] = evaluate_node_name(locate_config_value(:chef_node_name))
         else
