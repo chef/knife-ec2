@@ -1011,7 +1011,7 @@ class Chef
       def ssl_config_user_data
       user_related_commands = ""
       winrm_user = locate_config_value(:winrm_user).split("\\")
-      if (winrm_user[0] == ".") || (winrm_user[0] == "") ||(winrm_user.length == 1)
+      if (winrm_user[0] == ".") || (winrm_user[0] == "") ||(winrm_user.length == 1) && locate_config_value(:winrm_password)
         user_related_commands = <<-EOH
 net user /add #{locate_config_value(:winrm_user).delete('.\\')} #{windows_password} #{@allow_long_password};
 net localgroup Administrators /add #{locate_config_value(:winrm_user).delete('.\\')};
