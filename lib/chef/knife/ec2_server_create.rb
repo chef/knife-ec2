@@ -285,6 +285,10 @@ class Chef
         :short => "-a ATTRIBUTE",
         :description => "The EC2 server attribute to use for the SSH connection if necessary, e.g. public_ip_address or private_ip_address.",
         :default => nil
+      
+      option :forward_agent,
+        :long => "--forward-agent",
+        :description => "Forward agent when using an SSH gateway"
 
       option :associate_public_ip,
         :long => "--associate-public-ip",
@@ -832,6 +836,7 @@ class Chef
         bootstrap.config[:use_sudo] = true unless config[:ssh_user] == 'root'
         # may be needed for vpc_mode
         bootstrap.config[:host_key_verify] = config[:host_key_verify]
+        bootstrap.config[:forward_agent] = config[:forward_agent]
         bootstrap_common_params(bootstrap)
       end
 
