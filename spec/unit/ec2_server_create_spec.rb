@@ -1381,11 +1381,18 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(knife_ec2_create.get_ssh_gateway_for(hostname)).to eq(gateway)
     end
 
-    it "should return the ssh gateway specified in the ssh configuration even if the config option is not set" do
+    it "should return the ssh gateway specified in an ssh nc configuration even if the config option is not set" do
       # This should already be false, but test this explicitly for regression
       knife_ec2_create.config[:ssh_gateway] = false
       allow(Net::SSH::Config).to receive(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("ssh #{gateway} nc %h %p"))
       expect(knife_ec2_create.get_ssh_gateway_for(hostname)).to eq(gateway)
+    end
+
+    it "should return the ssh gateway specified in an ssh built-in forwarding configuration even if the config option is not set" do
+      # This should already be false, but test this explicitly for regression
+      @knife_ec2_create.config[:ssh_gateway] = false
+      allow(Net::SSH::Config).to receive(:for).and_return(:proxy => Net::SSH::Proxy::Command.new("ssh -options -W %h:%p -moreoptions #{gateway}"))
+      expect(@knife_ec2_create.get_ssh_gateway_for(hostname)).to eq(gateway)
     end
 
     it "should return nil if the ssh gateway cannot be parsed from the ssh proxy command" do
