@@ -1610,7 +1610,35 @@ $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/public
 If (-Not $vm_name) {
   $vm_name = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/local-ipv4
 }
-New-SelfSignedCertificate -certstorelocation cert:\\localmachine\\my -dnsname $vm_name
+
+$name = new-object -com "X509Enrollment.CX500DistinguishedName.1"
+$name.Encode("CN=$vm_name", 0)
+$key = new-object -com "X509Enrollment.CX509PrivateKey.1"
+$key.ProviderName = "Microsoft RSA SChannel Cryptographic Provider"
+$key.KeySpec = 1
+$key.Length = 2048
+$key.SecurityDescriptor = "D:PAI(A;;0xd01f01ff;;;SY)(A;;0xd01f01ff;;;BA)(A;;0x80120089;;;NS)"
+$key.MachineContext = 1
+$key.Create()
+$serverauthoid = new-object -com "X509Enrollment.CObjectId.1"
+$serverauthoid.InitializeFromValue("1.3.6.1.5.5.7.3.1")
+$ekuoids = new-object -com "X509Enrollment.CObjectIds.1"
+$ekuoids.add($serverauthoid)
+$ekuext = new-object -com "X509Enrollment.CX509ExtensionEnhancedKeyUsage.1"
+$ekuext.InitializeEncode($ekuoids)
+$cert = new-object -com "X509Enrollment.CX509CertificateRequestCertificate.1"
+$cert.InitializeFromPrivateKey(2, $key, "")
+$cert.Subject = $name
+$cert.Issuer = $cert.Subject
+$cert.NotBefore = get-date
+$cert.NotAfter = $cert.NotBefore.AddYears(10)
+$cert.X509Extensions.Add($ekuext)
+$cert.Encode()
+$enrollment = new-object -com "X509Enrollment.CX509Enrollment.1"
+$enrollment.InitializeFromRequest($cert)
+$certdata = $enrollment.CreateRequest(0)
+$enrollment.InstallResponse(2, $certdata, 0, "")
+
 $thumbprint = (Get-ChildItem -Path cert:\\localmachine\\my | Where-Object {$_.Subject -match "$vm_name"}).Thumbprint;
 $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
 iex $create_listener_cmd
