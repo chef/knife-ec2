@@ -500,6 +500,7 @@ class Chef
           begin
             @server = connection.servers.create(create_server_def)
           rescue => error
+            error.message.sub("download completed, but downloaded file not found", "Verify that you have public internet access.")
             ui.error error.message
             Chef::Log.debug("#{error.backtrace.join("\n")}")
             exit
