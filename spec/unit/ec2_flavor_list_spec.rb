@@ -15,7 +15,6 @@
 
 require File.expand_path('../../spec_helper', __FILE__)
 require 'fog/aws'
-require 'chef/knife/ec2_flavor_list'
 
 describe Chef::Knife::Ec2FlavorList do
 
