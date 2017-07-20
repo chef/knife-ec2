@@ -21,9 +21,9 @@ Gem::Specification.new do |s|
   s.add_dependency 'mime-types'
   s.add_dependency 'knife-windows', '~> 1.0'
 
-  s.add_development_dependency 'chef',  '~> 12.0', '>= 12.2.1'
+  s.add_development_dependency 'chef',  '>= 12.2.1'
   s.add_development_dependency 'rspec', '~> 3.0'
-  s.add_development_dependency 'rake',  '~> 11.0'
+  s.add_development_dependency 'rake'
   s.add_development_dependency 'sdoc',  '~> 0.3'
 
   s.require_paths = ['lib']
