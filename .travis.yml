@@ -1,5 +1,6 @@
 language: ruby
 cache: bundler
+dist: trusty
 sudo: false
 
 # Early warning system to catch if Rubygems breaks something
@@ -10,6 +11,17 @@ before_install:
   - rm -f .bundle/config
 
 rvm:
-  - 2.2.5
-  - 2.3.1
+  - 2.2.7
+  - 2.3.4
+  - 2.4.1
+  - ruby-head
+  
+matrix:
+  allow_failures:
+    - rvm: ruby-head
+
 script: bundle exec rake spec
+
+branches:
+  only:
+  - master
