@@ -732,6 +732,8 @@ class Chef
 
       def bootstrap_common_params(bootstrap)
         bootstrap.config[:run_list] = config[:run_list]
+        bootstrap.config[:policy_group] = locate_config_value(:policy_group)
+        bootstrap.config[:policy_name] = locate_config_value(:policy_name)
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
         bootstrap.config[:distro] = locate_config_value(:distro) || default_bootstrap_template
         # setting bootstrap_template value to template_file for backward compatibility
