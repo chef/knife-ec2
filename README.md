@@ -208,6 +208,15 @@ View additional information on configuring Windows images for bootstrap in the d
 Users can also include the ec2 server id in the node name by placing `%s` in the string passed to the `--chef-node-name` option. The %s is replaced by the ec2 server id dynamically. 
 e.g. `-N "www-server-%s" or  --chef-node-name "www-server-%s"`
 
+#### Tagging node in Chef
+
+Users can use option `--tag-node-in-chef` for tagging node in EC2 and chef both with `knife ec2 server create` command. If user does not pass this option, then the node will be tagged only in EC2.
+
+#### Tagging EBS Volumes
+
+Users can attach ebs volumes to a new instance being created with knife-ec2 using `--volume-tags Tag=Value[,Tag=Value...]`.
+
+
 #### Bootstrap Windows (2012 R2 and above platform) instance without user-data through winrm ssl transport
 
 Users can bootstrap the Windows instance without the need to provide the user-data. `knife-ec2` has the ability to bootstrap the Windows instance through `winrm protocol` using the `ssl` transport. This requires users to set `--winrm-transport` option as `ssl` and `--winrm-ssl-verify-mode` option as `verify_none`. This will do the necessary winrm ssl transport configurations on the target node and the bootstrap will just work.
