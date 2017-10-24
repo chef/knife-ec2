@@ -5,6 +5,15 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
 
+## Latest Release 0.16.0 (yyyy-mm-dd)
+* [knife-ec2:#503](https://github.com/chef/knife-ec2/pull/503) Update list of instance_types that support ebs-encryption.
+* [knife-ec2:#496](https://github.com/chef/knife-ec2/pull/496) Change Winrm cert to 10 year expiry.
+* [knife-ec2:#492](https://github.com/chef/knife-ec2/pull/492) Added support to tag node details to chef.
+* [knife-ec2:#490](https://github.com/chef/knife-ec2/pull/490) Improper alignment of EC2 flavor list.
+* [knife-ec2:#489](https://github.com/chef/knife-ec2/pull/489) Added support to handle long passwords in windows.
+* [knife-ec2:#488](https://github.com/chef/knife-ec2/pull/488) Added support to tag EBS volumes on node creation.
+* [knife-ec2:#487](https://github.com/chef/knife-ec2/pull/487) Added new column description in EC2 AMIs list.
+
 ## Latest Release 0.15.0 (2017-02-15)
 * [knife-ec2:#484](https://github.com/chef/knife-ec2/pull/484) sleep for collecting windows password
 * [knife-ec2:#481](https://github.com/chef/knife-ec2/pull/481) Updated readme for EC2 AMI list
