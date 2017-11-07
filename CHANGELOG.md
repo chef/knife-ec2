@@ -5,7 +5,7 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
 
-## Latest Release 0.16.0 (yyyy-mm-dd)
+## Latest Release 0.16.0 (2017-11-07)
 * [knife-ec2:#503](https://github.com/chef/knife-ec2/pull/503) Update list of instance_types that support ebs-encryption.
 * [knife-ec2:#496](https://github.com/chef/knife-ec2/pull/496) Change Winrm cert to 10 year expiry.
 * [knife-ec2:#492](https://github.com/chef/knife-ec2/pull/492) Added support to tag node details to chef.
