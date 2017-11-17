@@ -454,8 +454,8 @@ class Chef
         :default => false
 
       option :instance_initiated_shutdown_behavior,
-        :long => "--instance-initiated-shutdown-behavior",
-        :descript => "Indicates whether an instance stops or terminates when you initiate shutdown from the instance. Possible values are 'stop' and 'terminate', default is 'stop'."
+        :long => "--instance-initiated-shutdown-behavior STUTDOWN_BEHAVIOR",
+        :description => "Indicates whether an instance stops or terminates when you initiate shutdown from the instance. Possible values are 'stop' and 'terminate', default is 'stop'."
 
       def run
         $stdout.sync = true
