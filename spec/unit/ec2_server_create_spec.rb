@@ -133,7 +133,8 @@ describe Chef::Knife::Ec2ServerCreate do
           :request_type => 'persistent',
           :placement_group => nil,
           :iam_instance_profile_name => nil,
-          :ebs_optimized => "false"
+          :ebs_optimized => "false",
+          :instance_initiated_shutdown_behavior=>nil
         }
       allow(@bootstrap).to receive(:run)
     end

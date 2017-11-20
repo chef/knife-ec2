@@ -453,6 +453,10 @@ class Chef
         :boolean => true,
         :default => false
 
+      option :instance_initiated_shutdown_behavior,
+        :long => "--instance-initiated-shutdown-behavior STUTDOWN_BEHAVIOR",
+        :description => "Indicates whether an instance stops or terminates when you initiate shutdown from the instance. Possible values are 'stop' and 'terminate', default is 'stop'."
+
       def run
         $stdout.sync = true
         validate!
@@ -1198,6 +1202,8 @@ EOH
 
         ## cannot pass disable_api_termination option to the API when using spot instances ##
         server_def[:disable_api_termination] = locate_config_value(:disable_api_termination) if locate_config_value(:spot_price).nil?
+
+        server_def[:instance_initiated_shutdown_behavior] = locate_config_value(:instance_initiated_shutdown_behavior)
 
         server_def
       end
