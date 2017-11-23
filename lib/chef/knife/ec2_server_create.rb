@@ -454,7 +454,7 @@ class Chef
         :default => false
 
       option :instance_initiated_shutdown_behavior,
-        :long => "--instance-initiated-shutdown-behavior STUTDOWN_BEHAVIOR",
+        :long => "--instance-initiated-shutdown-behavior SHUTDOWN_BEHAVIOR",
         :description => "Indicates whether an instance stops or terminates when you initiate shutdown from the instance. Possible values are 'stop' and 'terminate', default is 'stop'."
 
       def run

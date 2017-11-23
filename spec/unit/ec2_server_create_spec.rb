@@ -134,7 +134,7 @@ describe Chef::Knife::Ec2ServerCreate do
           :placement_group => nil,
           :iam_instance_profile_name => nil,
           :ebs_optimized => "false",
-          :instance_initiated_shutdown_behavior=>nil
+          :instance_initiated_shutdown_behavior => nil
         }
       allow(@bootstrap).to receive(:run)
     end
