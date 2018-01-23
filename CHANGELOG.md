@@ -5,6 +5,15 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
 
+## Latest Release 0.17.0 (date-to-be-updated-on-release)
+* [knife-ec2:#516](https://github.com/chef/knife-ec2/pull/516) Fix the review comments for the PR #514.
+* [knife-ec2:#515](https://github.com/chef/knife-ec2/pull/515) Add primary eni to server.
+* [knife-ec2:#514](https://github.com/chef/knife-ec2/pull/514) Add `--instance-initiated-shutdown-behavior` option.
+* [knife-ec2:#513](https://github.com/chef/knife-ec2/pull/513) require `rb-readline` to avoid ruby 2.4 warnings about `Fixnum`.
+* [knife-ec2:#510](https://github.com/chef/knife-ec2/pull/510) Prep knife-ec2 release v0.16.0.
+* [knife-ec2:#508](https://github.com/chef/knife-ec2/pull/508) Pass policy params into bootstrap config.
+* [knife-ec2:#506](https://github.com/chef/knife-ec2/pull/506) Test on the latest ruby / chef releases.
+
 ## Latest Release 0.16.0 (2017-11-07)
 * [knife-ec2:#503](https://github.com/chef/knife-ec2/pull/503) Update list of instance_types that support ebs-encryption.
 * [knife-ec2:#496](https://github.com/chef/knife-ec2/pull/496) Change Winrm cert to 10 year expiry.
