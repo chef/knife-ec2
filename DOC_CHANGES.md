@@ -14,4 +14,4 @@ The `--instance-initiated-shutdown-behavior` option indicates whether an instanc
 
 ### `--primary-eni` option
 
-Specify a pre-existing eni to use when building the instance.
+Specify a pre-existing ENI for primary interface when building the instance.
