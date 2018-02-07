@@ -5,7 +5,7 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
 
-## Latest Release 0.17.0 (date-to-be-updated-on-release)
+## Latest Release 0.17.0 (2018-02-07)
 * [knife-ec2:#515](https://github.com/chef/knife-ec2/pull/515) Allow re-use of existing ENI for primary interface.
 * [knife-ec2:#514](https://github.com/chef/knife-ec2/pull/514) Add `--instance-initiated-shutdown-behavior` option.
 * [knife-ec2:#513](https://github.com/chef/knife-ec2/pull/513) require `rb-readline` to avoid ruby 2.4 warnings about `Fixnum`.
