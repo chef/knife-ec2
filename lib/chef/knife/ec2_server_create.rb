@@ -461,6 +461,15 @@ class Chef
         :long => "--instance-initiated-shutdown-behavior SHUTDOWN_BEHAVIOR",
         :description => "Indicates whether an instance stops or terminates when you initiate shutdown from the instance. Possible values are 'stop' and 'terminate', default is 'stop'."
 
+      option :chef_tag,
+        :long => "--chef-tag TAG",
+        :description => "The Chef tag for this server; Use the --chef-tag option multiple times when specifying multiple tags e.g. --chef-tag tag1 --chef-tag tag2.",
+        :proc => Proc.new { |chef_tag|
+          Chef::Config[:knife][:chef_tag] ||= []
+          Chef::Config[:knife][:chef_tag].push(chef_tag)
+          Chef::Config[:knife][:chef_tag]
+        }
+
       def run
         $stdout.sync = true
         validate!
@@ -642,6 +651,7 @@ class Chef
         msg_pair("IAM Profile", locate_config_value(:iam_instance_profile)) if locate_config_value(:iam_instance_profile)
         msg_pair("Primary ENI", locate_config_value(:primary_eni)) if locate_config_value(:primary_eni)
         msg_pair("Tags", printed_tags)
+        msg_pair("Chef Tags", locate_config_value(:chef_tag)) if locate_config_value(:chef_tag)
         msg_pair("SSH Key", @server.key_name)
         msg_pair("Root Device Type", @server.root_device_type)
         msg_pair("Root Volume Tags", printed_volume_tags)
@@ -817,6 +827,7 @@ class Chef
         bootstrap.config[:install_as_service] = locate_config_value(:install_as_service)
         bootstrap.config[:session_timeout] = locate_config_value(:session_timeout)
         bootstrap.config[:tags] = config[:tags] if locate_config_value(:tag_node_in_chef)
+        bootstrap.config[:tags] = config[:chef_tag] if locate_config_value(:chef_tag)
 
         if locate_config_value(:chef_node_name)
           bootstrap.config[:chef_node_name] = evaluate_node_name(locate_config_value(:chef_node_name))
@@ -835,6 +846,7 @@ class Chef
         bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
         bootstrap.config[:identity_file] = config[:identity_file]
         bootstrap.config[:tags] = config[:tags] if locate_config_value(:tag_node_in_chef)
+        bootstrap.config[:tags] = config[:chef_tag] if locate_config_value(:chef_tag)
 
         if locate_config_value(:chef_node_name)
           bootstrap.config[:chef_node_name] = evaluate_node_name(locate_config_value(:chef_node_name))
@@ -1219,7 +1231,7 @@ EOH
         server_def[:disable_api_termination] = locate_config_value(:disable_api_termination) if locate_config_value(:spot_price).nil?
 
         server_def[:instance_initiated_shutdown_behavior] = locate_config_value(:instance_initiated_shutdown_behavior)
-
+        server_def[:chef_tag] = locate_config_value(:chef_tag)
         server_def
       end
 

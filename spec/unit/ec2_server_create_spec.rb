@@ -2570,6 +2570,28 @@ netstat > c:\\netstat_data.txt
       end
     end
   end
+   ## Add chef tag spec
+  describe '--chef-tag option' do
+    before do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
+    end
+
+    context 'when mulitple values provided from cli for e.g. --chef-tag "foo" --chef-tag "bar"' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--chef-tag', 'foo', '--chef-tag', 'bar'])}
+      it 'creates array of chef tag' do
+        server_def = ec2_server_create.create_server_def
+        expect(server_def[:chef_tag]).to eq(['foo', 'bar'])
+      end
+    end
+
+    context 'when single value provided from cli for e.g. --chef-tag foo' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--chef-tag', 'foo'])}
+      it 'creates array of chef tag' do
+        server_def = ec2_server_create.create_server_def
+        expect(server_def[:chef_tag]).to eq(['foo'])
+      end
+    end
+  end
 
   describe 'evaluate_node_name' do
     before do
