@@ -110,8 +110,11 @@ class Chef
       option :tags,
         :short => "-T T=V[,T=V,...]",
         :long => "--tags Tag=Value[,Tag=Value...]",
-        :description => "The tags for this server",
-        :proc => Proc.new { |tags| tags.split(',') }
+        :description => "The tags for this server. [DEPRECATED] Use --aws-tag instead.",
+        :proc => Proc.new { |v|
+          Chef::Log.warn("[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead.")
+          v
+        }
 
       option :availability_zone,
         :short => "-Z ZONE",
@@ -453,7 +456,11 @@ class Chef
 
       option :tag_node_in_chef,
         :long => "--tag-node-in-chef",
-        :description => "Flag for tagging node in ec2 and chef both",
+        :description => "Flag for tagging node in ec2 and chef both. [DEPRECATED] Use --chef-tag instead.",
+        :proc        => Proc.new { |v|
+          Chef::Log.warn("[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead.")
+          v
+        },
         :boolean => true,
         :default => false
 
@@ -462,12 +469,21 @@ class Chef
         :description => "Indicates whether an instance stops or terminates when you initiate shutdown from the instance. Possible values are 'stop' and 'terminate', default is 'stop'."
 
       option :chef_tag,
-        :long => "--chef-tag TAG",
+        :long => "--chef-tag CHEF_TAG",
         :description => "The Chef tag for this server; Use the --chef-tag option multiple times when specifying multiple tags e.g. --chef-tag tag1 --chef-tag tag2.",
         :proc => Proc.new { |chef_tag|
           Chef::Config[:knife][:chef_tag] ||= []
           Chef::Config[:knife][:chef_tag].push(chef_tag)
           Chef::Config[:knife][:chef_tag]
+        }
+
+      option :aws_tag,
+        :long => "--aws-tag AWS_TAG",
+        :description => "AWS tag for this server; Use the --aws-tag option multiple times when specifying multiple tags e.g. --aws-tag key1=value1 --aws-tag key2=value2.",
+        :proc => Proc.new { |aws_tag|
+          Chef::Config[:knife][:aws_tag] ||= []
+          Chef::Config[:knife][:aws_tag].push(aws_tag)
+          Chef::Config[:knife][:aws_tag]
         }
 
       def run
@@ -536,7 +552,7 @@ class Chef
           end
         end
 
-        printed_tags = hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")
+        printed_aws_tags = hashed_tags.map{ |tag, val| "#{tag}: #{val}" }.join(", ")
 
         hashed_volume_tags={}
         volume_tags = locate_config_value(:volume_tags)
@@ -563,7 +579,7 @@ class Chef
 
         msg_pair("IAM Profile", locate_config_value(:iam_instance_profile))
 
-        msg_pair("Tags", printed_tags)
+        msg_pair("AWS Tags", printed_aws_tags)
         msg_pair("Volume Tags", printed_volume_tags)
         msg_pair("SSH Key", @server.key_name)
 
@@ -650,7 +666,7 @@ class Chef
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? or @server.security_group_ids
         msg_pair("IAM Profile", locate_config_value(:iam_instance_profile)) if locate_config_value(:iam_instance_profile)
         msg_pair("Primary ENI", locate_config_value(:primary_eni)) if locate_config_value(:primary_eni)
-        msg_pair("Tags", printed_tags)
+        msg_pair("AWS Tags", printed_aws_tags)
         msg_pair("Chef Tags", locate_config_value(:chef_tag)) if locate_config_value(:chef_tag)
         msg_pair("SSH Key", @server.key_name)
         msg_pair("Root Device Type", @server.root_device_type)
@@ -1019,9 +1035,9 @@ class Chef
       end
 
       def tags
-       tags = locate_config_value(:tags)
+       tags = locate_config_value(:aws_tag)
         if !tags.nil? and tags.length != tags.to_s.count('=')
-          ui.error("Tags should be entered in a key = value pair")
+          ui.error("AWS Tags should be entered in a key = value pair")
           exit 1
         end
        tags

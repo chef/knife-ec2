@@ -134,7 +134,8 @@ describe Chef::Knife::Ec2ServerCreate do
           :placement_group => nil,
           :iam_instance_profile_name => nil,
           :ebs_optimized => "false",
-          :instance_initiated_shutdown_behavior => nil
+          :instance_initiated_shutdown_behavior => nil,
+          :chef_tag => nil
         }
       allow(@bootstrap).to receive(:run)
     end
@@ -477,7 +478,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "sets the Name tag to the specified name when given --tags Name=NAME" do
-      knife_ec2_create.config[:tags] = ["Name=bobcat"]
+      knife_ec2_create.config[:aws_tag] = ["Name=bobcat"]
       expect(ec2_connection.tags).to receive(:create).with(:key => "Name",
                                                         :value => "bobcat",
                                                         :resource_id => new_ec2_server.id)
@@ -485,7 +486,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "sets arbitrary tags" do
-      knife_ec2_create.config[:tags] = ["foo=bar"]
+      knife_ec2_create.config[:aws_tag] = ["foo=bar"]
       expect(ec2_connection.tags).to receive(:create).with(:key => "foo",
                                                         :value => "bar",
                                                         :resource_id => new_ec2_server.id)
