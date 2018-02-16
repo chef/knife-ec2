@@ -477,7 +477,7 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.run
     end
 
-    it "sets the Name tag to the specified name when given --tags Name=NAME" do
+    it "sets the Name tag to the specified name when given --aws-tag Name=NAME" do
       knife_ec2_create.config[:aws_tag] = ["Name=bobcat"]
       expect(ec2_connection.tags).to receive(:create).with(:key => "Name",
                                                         :value => "bobcat",
@@ -485,7 +485,7 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.run
     end
 
-    it "sets arbitrary tags" do
+    it "sets arbitrary aws tags" do
       knife_ec2_create.config[:aws_tag] = ["foo=bar"]
       expect(ec2_connection.tags).to receive(:create).with(:key => "foo",
                                                         :value => "bar",
@@ -2571,7 +2571,7 @@ netstat > c:\\netstat_data.txt
       end
     end
   end
-   ## Add chef tag spec
+
   describe '--chef-tag option' do
     before do
       allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
