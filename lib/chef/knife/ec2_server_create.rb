@@ -470,7 +470,7 @@ class Chef
 
       option :chef_tag,
         :long => "--chef-tag CHEF_TAG",
-        :description => "Used to tag the node in chef server; Provide --chef-tag option multiple times when specifying multiple tags e.g. --chef-tag tag1 --chef-tag tag2.",
+        :description => "Use to tag the node in chef server; Provide --chef-tag option multiple times when specifying multiple tags e.g. --chef-tag tag1 --chef-tag tag2.",
         :proc => Proc.new { |chef_tag|
           Chef::Config[:knife][:chef_tag] ||= []
           Chef::Config[:knife][:chef_tag].push(chef_tag)

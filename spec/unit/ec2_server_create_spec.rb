@@ -2594,6 +2594,42 @@ netstat > c:\\netstat_data.txt
     end
   end
 
+  describe '--aws-tag option' do
+    before do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
+    end
+
+    context 'when mulitple values provided from cli for e.g. --aws-tag "foo=bar" --aws-tag "foo1=bar1"' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--aws-tag', 'foo=bar', '--aws-tag', 'foo1=bar1'])}
+      it 'creates array of aws tag' do
+        server_def = ec2_server_create.config
+        expect(server_def[:aws_tag]).to eq(['foo=bar', 'foo1=bar1'])
+      end
+    end
+
+    context 'when single value provided from cli for e.g. --aws-tag foo=bar' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--aws-tag', 'foo=bar'])}
+      it 'creates array of aws tag' do
+        server_def = ec2_server_create.config
+        expect(server_def[:aws_tag]).to eq(['foo=bar'])
+      end
+    end
+  end
+
+  describe '--tag-node-in-chef option' do
+    before do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
+    end
+
+    context 'when provided from cli for e.g. --tag-node-in-chef' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--tag-node-in-chef'])}
+      it 'raises deprecated warning "[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead."' do
+        server_def = ec2_server_create.config
+        expect(server_def[:tag_node_in_chef]).to eq(true)
+      end
+    end
+  end
+
   describe 'evaluate_node_name' do
     before do
       knife_ec2_create.instance_variable_set(:@server, server)
