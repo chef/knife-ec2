@@ -1031,6 +1031,9 @@ class Chef
           end
         end
 
+        if locate_config_value(:tag_node_in_chef)
+          ui.warn("[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead.")
+        end
       end
 
       def tags

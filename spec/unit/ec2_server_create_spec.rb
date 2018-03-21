@@ -2624,8 +2624,8 @@ netstat > c:\\netstat_data.txt
     context 'when provided from cli for e.g. --tag-node-in-chef' do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--tag-node-in-chef'])}
       it 'raises deprecated warning "[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead."' do
-        server_def = ec2_server_create.config
-        expect(server_def[:tag_node_in_chef]).to eq(true)
+        expect(ec2_server_create.ui).to receive(:warn).with("[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead.")
+        ec2_server_create.validate!
       end
     end
   end
