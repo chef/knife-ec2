@@ -134,7 +134,8 @@ describe Chef::Knife::Ec2ServerCreate do
           :placement_group => nil,
           :iam_instance_profile_name => nil,
           :ebs_optimized => "false",
-          :instance_initiated_shutdown_behavior => nil
+          :instance_initiated_shutdown_behavior => nil,
+          :chef_tag => nil
         }
       allow(@bootstrap).to receive(:run)
     end
@@ -476,16 +477,16 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.run
     end
 
-    it "sets the Name tag to the specified name when given --tags Name=NAME" do
-      knife_ec2_create.config[:tags] = ["Name=bobcat"]
+    it "sets the Name tag to the specified name when given --aws-tag Name=NAME" do
+      knife_ec2_create.config[:aws_tag] = ["Name=bobcat"]
       expect(ec2_connection.tags).to receive(:create).with(:key => "Name",
                                                         :value => "bobcat",
                                                         :resource_id => new_ec2_server.id)
       knife_ec2_create.run
     end
 
-    it "sets arbitrary tags" do
-      knife_ec2_create.config[:tags] = ["foo=bar"]
+    it "sets arbitrary aws tags" do
+      knife_ec2_create.config[:aws_tag] = ["foo=bar"]
       expect(ec2_connection.tags).to receive(:create).with(:key => "foo",
                                                         :value => "bar",
                                                         :resource_id => new_ec2_server.id)
@@ -2567,6 +2568,64 @@ netstat > c:\\netstat_data.txt
       it 'creates array of security group ids' do
         server_def = ec2_server_create.create_server_def
         expect(server_def[:security_group_ids]).to eq(['sg-aab343ytr'])
+      end
+    end
+  end
+
+  describe '--chef-tag option' do
+    before do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
+    end
+
+    context 'when mulitple values provided from cli for e.g. --chef-tag "foo" --chef-tag "bar"' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--chef-tag', 'foo', '--chef-tag', 'bar'])}
+      it 'creates array of chef tag' do
+        server_def = ec2_server_create.create_server_def
+        expect(server_def[:chef_tag]).to eq(['foo', 'bar'])
+      end
+    end
+
+    context 'when single value provided from cli for e.g. --chef-tag foo' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--chef-tag', 'foo'])}
+      it 'creates array of chef tag' do
+        server_def = ec2_server_create.create_server_def
+        expect(server_def[:chef_tag]).to eq(['foo'])
+      end
+    end
+  end
+
+  describe '--aws-tag option' do
+    before do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
+    end
+
+    context 'when mulitple values provided from cli for e.g. --aws-tag "foo=bar" --aws-tag "foo1=bar1"' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--aws-tag', 'foo=bar', '--aws-tag', 'foo1=bar1'])}
+      it 'creates array of aws tag' do
+        server_def = ec2_server_create.config
+        expect(server_def[:aws_tag]).to eq(['foo=bar', 'foo1=bar1'])
+      end
+    end
+
+    context 'when single value provided from cli for e.g. --aws-tag foo=bar' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--aws-tag', 'foo=bar'])}
+      it 'creates array of aws tag' do
+        server_def = ec2_server_create.config
+        expect(server_def[:aws_tag]).to eq(['foo=bar'])
+      end
+    end
+  end
+
+  describe '--tag-node-in-chef option' do
+    before do
+      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
+    end
+
+    context 'when provided from cli for e.g. --tag-node-in-chef' do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(['--tag-node-in-chef'])}
+      it 'raises deprecated warning "[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead."' do
+        expect(ec2_server_create.ui).to receive(:warn).with("[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead.")
+        ec2_server_create.validate!
       end
     end
   end
