@@ -4,14 +4,14 @@ This file is reset everytime when a new release is done. Contents of this file i
 
 # knife-ec2 doc changes
 
-Documentation changes are given below for **knife-ec2 version 0.17.0**.
+Documentation changes are given below for **knife-ec2 version 0.18.0**.
 
 ## `knife ec2 server create` subcommand changes
 
-### `--instance-initiated-shutdown-behavior` option
+### `--aws-tag` option
 
-The `--instance-initiated-shutdown-behavior` option indicates whether an instance stops or terminates when you initiate shutdown from the instance. Possible values are 'stop' and 'terminate', default is 'stop'.
+The `--aws-tag` option is used for tagging the EC2 instances in AWS as `key=value` pair. Use this option like e.g. `--aws-tag <key1=value1>`.
 
-### `--primary-eni` option
+### `--chef-tag` option
 
-Specify a pre-existing ENI for primary interface when building the instance.
+The `--chef-tag` option is used for tagging the EC2 instances in Chef server. Use this option like e.g. `--chef-tag <myTag>`.

@@ -5,6 +5,9 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
 
+## Latest Release 0.18.0 (date-to-be-updated-on-release)
+* [knife-ec2:#520](https://github.com/chef/knife-ec2/pull/520) Options `--aws-tag` and `--chef-tag` are added for tagging EC2 instance in AWS and Chef separately.
+
 ## Latest Release 0.17.0 (2018-02-07)
 * [knife-ec2:#515](https://github.com/chef/knife-ec2/pull/515) Allow re-use of existing ENI for primary interface.
 * [knife-ec2:#514](https://github.com/chef/knife-ec2/pull/514) Add `--instance-initiated-shutdown-behavior` option.
