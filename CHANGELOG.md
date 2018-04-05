@@ -5,15 +5,15 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
 
-## Latest Release 0.18.0 (date-to-be-updated-on-release)
+## Latest Release 0.18.0 (2018-04-05)
 * [knife-ec2:#520](https://github.com/chef/knife-ec2/pull/520) Options `--aws-tag` and `--chef-tag` are added for tagging EC2 instance in AWS and Chef separately.
 
-## Latest Release 0.17.0 (2018-02-07)
+## Release 0.17.0 (2018-02-07)
 * [knife-ec2:#515](https://github.com/chef/knife-ec2/pull/515) Allow re-use of existing ENI for primary interface.
 * [knife-ec2:#514](https://github.com/chef/knife-ec2/pull/514) Add `--instance-initiated-shutdown-behavior` option.
 * [knife-ec2:#513](https://github.com/chef/knife-ec2/pull/513) require `rb-readline` to avoid ruby 2.4 warnings about `Fixnum`.
 
-## Latest Release 0.16.0 (2017-11-07)
+## Release 0.16.0 (2017-11-07)
 * [knife-ec2:#503](https://github.com/chef/knife-ec2/pull/503) Update list of instance_types that support ebs-encryption.
 * [knife-ec2:#496](https://github.com/chef/knife-ec2/pull/496) Change Winrm cert to 10 year expiry.
 * [knife-ec2:#492](https://github.com/chef/knife-ec2/pull/492) Added support to tag node details to chef.
@@ -22,7 +22,7 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 * [knife-ec2:#488](https://github.com/chef/knife-ec2/pull/488) Added support to tag EBS volumes on node creation.
 * [knife-ec2:#487](https://github.com/chef/knife-ec2/pull/487) Added new column description in EC2 AMIs list.
 
-## Latest Release 0.15.0 (2017-02-15)
+## Release 0.15.0 (2017-02-15)
 * [knife-ec2:#484](https://github.com/chef/knife-ec2/pull/484) sleep for collecting windows password
 * [knife-ec2:#481](https://github.com/chef/knife-ec2/pull/481) Updated readme for EC2 AMI list
 * [knife-ec2:#482](https://github.com/chef/knife-ec2/pull/482) Allow search for EC2 AMIs
@@ -33,7 +33,7 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 * [knife-ec2:#468](https://github.com/chef/knife-ec2/pull/468) In VPC mode use private IP when public IP and DNS not available 
 * [knife-ec2:#464](https://github.com/chef/knife-ec2/pull/464) default value and desription is changed for --ebs-volume-type 
 
-## Latest Release 0.14.0 (2016-12-02)
+## Release 0.14.0 (2016-12-02)
 * `knife-ec2` requires `chef-client 12.14` or newer.
 * [knife-ec2:#442](https://github.com/chef/knife-ec2/pull/442) Added support to show flavor list in json format.
 * [knife-ec2:#439](https://github.com/chef/knife-ec2/pull/439) Allow to accept multiple security group ids using --security-group-id option multiple times and added deprecated message for comma seprated --security-group-ids option.

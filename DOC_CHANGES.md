@@ -10,8 +10,8 @@ Documentation changes are given below for **knife-ec2 version 0.18.0**.
 
 ### `--aws-tag` option
 
-The `--aws-tag` option is used for tagging the EC2 instances in AWS as `key=value` pair. Use this option like e.g. `--aws-tag <key1=value1>`.
+The `--aws-tag` option is used for tagging the EC2 instances in AWS as `key=value` pair. Use this option like e.g. `--aws-tag <key1=value1>`. Multiple tags can be added by specifying the option multiple times.
 
 ### `--chef-tag` option
 
-The `--chef-tag` option is used for tagging the EC2 instances in Chef server. Use this option like e.g. `--chef-tag <myTag>`.
+The `--chef-tag` option is used for tagging the EC2 instances on the Chef server. Use this option like e.g. `--chef-tag <myTag>`. Multiple tags can be added by specifying the option multiple times.
