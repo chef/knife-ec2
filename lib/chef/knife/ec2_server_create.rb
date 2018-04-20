@@ -1537,12 +1537,13 @@ EOH
         if not locate_config_value(:winrm_password)
           if locate_config_value(:identity_file)
             print "\n#{ui.color("Waiting for Windows Admin password to be available", :magenta)}"
-            print(".") until check_windows_password_available(@server.id) {
+            print(".\n") unless @server
+            if @server && check_windows_password_available(@server.id)
               puts("done")
-            }
-            response = connection.get_password_data(@server.id)
-            data = File.read(locate_config_value(:identity_file))
-            config[:winrm_password] = decrypt_admin_password(response.body["passwordData"], data)
+              response = connection.get_password_data(@server.id)
+              data = File.read(locate_config_value(:identity_file))
+              config[:winrm_password] = decrypt_admin_password(response.body["passwordData"], data)
+            end
           else
             ui.error("Cannot find SSH Identity file, required to fetch dynamically generated password")
             exit 1
