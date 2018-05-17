@@ -4,6 +4,13 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
+<!-- latest_release -->
+<!-- latest_release -->
+
+<!-- release_rollup -->
+<!-- release_rollup -->
+
+<!-- latest_stable_release -->
 
 ## Latest Release 0.18.0 (2018-04-05)
 * [knife-ec2:#520](https://github.com/chef/knife-ec2/pull/520) Options `--aws-tag` and `--chef-tag` are added for tagging EC2 instance in AWS and Chef separately.
