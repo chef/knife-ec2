@@ -1,4 +1,4 @@
-# Documentation available at http://expeditor-docs.es.chef.io/
+# Documentation available at http://expeditor.es.chef.io
 
 # Slack channel in Chef Software slack to send notifications about build failures, etc
 slack:
@@ -10,8 +10,6 @@ rubygems:
 github:
   # The tag format to use (e.g. v1.0.0)
   version_tag_format: "v{{version}}"
-  # The Github Team primarily responsible for handling incoming Pull Requests.
-  maintainer_group: chef/msys-developers
   delete_branch_on_merge: true
   # Which Github branches to build gems from, and what versions
   # (as determined by the value in the VERSION file) those branches are responsible
@@ -40,4 +38,4 @@ merge_actions:
         - "Expeditor: Exclude From Changelog"
         - "Expeditor: Skip All"
   - built_in:build_gem:
-only_if: built_in:bump_version
+      only_if: built_in:bump_version
