@@ -111,7 +111,10 @@ class Chef
         :short => "-T T=V[,T=V,...]",
         :long => "--tags Tag=Value[,Tag=Value...]",
         :description => "The tags for this server. [DEPRECATED] Use --aws-tag instead.",
-        :proc => Proc.new { |tags| tags.split(',') }
+        :proc => Proc.new { |tags|
+          Chef::Log.warn("[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead.")
+          tags.split(',')
+        }
 
       option :availability_zone,
         :short => "-Z ZONE",
@@ -794,8 +797,11 @@ class Chef
         bootstrap.config[:bootstrap_vault_item] = locate_config_value(:bootstrap_vault_item)
         bootstrap.config[:use_sudo_password] = locate_config_value(:use_sudo_password)
         bootstrap.config[:yes] = locate_config_value(:yes)
+        # If --chef-tag is provided then it will be set in chef as single value e.g. --chef-tag "myTag"
+        # Otherwise if --tag-node-in-chef is provided then it will tag the chef in key=value pair of --tags option
+        # e.g. --tags "key=value"
         if locate_config_value(:chef_tag)
-          bootstrap.config[:tags] = config[:chef_tag]
+          bootstrap.config[:tags] = locate_config_value(:chef_tag)
         elsif locate_config_value(:tag_node_in_chef)
           bootstrap.config[:tags] = config[:tags]
         end
