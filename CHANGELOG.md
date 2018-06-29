@@ -4,10 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release -->
+<!-- latest_release 0.18.1 -->
+## [v0.18.1](https://github.com/chef/knife-ec2/tree/v0.18.1) (2018-06-29)
+
+#### Merged Pull Requests
+- [MSYS-824] fix breaking tag changes &amp; deprecation warning [#527](https://github.com/chef/knife-ec2/pull/527) ([dheerajd-msys](https://github.com/dheerajd-msys))
 <!-- latest_release -->
 
-<!-- release_rollup -->
+<!-- release_rollup since=0.18.0 -->
+### Changes since 0.18.0 release
+
+#### Merged Pull Requests
+- [MSYS-824] fix breaking tag changes &amp; deprecation warning [#527](https://github.com/chef/knife-ec2/pull/527) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 0.18.1 -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
@@ -121,5 +129,3 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 ## Releases prior to 0.8.0
 Please see <https://github.com/chef/knife-ec2/commits> to view changes in
 the form of commits to the source repository for releases before 0.8.0.
-
-
