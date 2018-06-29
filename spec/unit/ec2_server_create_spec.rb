@@ -493,6 +493,31 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.run
     end
 
+    it "sets the Name tag to the specified name when given --tags Name=NAME" do
+      knife_ec2_create.config[:tags] = ["Name=bobcat"]
+      expect(ec2_connection.tags).to receive(:create).with(:key => "Name",
+                                                        :value => "bobcat",
+                                                        :resource_id => new_ec2_server.id)
+      knife_ec2_create.run
+    end
+
+    it "sets arbitrary tags" do
+      knife_ec2_create.config[:tags] = ["foo=bar"]
+      expect(ec2_connection.tags).to receive(:create).with(:key => "foo",
+                                                        :value => "bar",
+                                                        :resource_id => new_ec2_server.id)
+      knife_ec2_create.run
+    end
+
+    it 'raises deprecated warning "[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead."' do
+      knife_ec2_create.config[:tags] = ["foo=bar"]
+      expect(ec2_connection.tags).to receive(:create).with(:key => "foo",
+                                                      :value => "bar",
+                                                      :resource_id => new_ec2_server.id)
+      expect(knife_ec2_create.ui).to receive(:warn).with("[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead.").exactly(2).times
+      knife_ec2_create.validate!
+      knife_ec2_create.run
+    end
   end
 
   describe "when setting volume tags" do
