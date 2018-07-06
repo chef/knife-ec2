@@ -4,23 +4,21 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 0.18.2 -->
-## [v0.18.2](https://github.com/chef/knife-ec2/tree/v0.18.2) (2018-07-05)
-
-#### Merged Pull Requests
-- MSYS-798 - Fixes for windows administrator password [#524](https://github.com/chef/knife-ec2/pull/524) ([dheerajd-msys](https://github.com/dheerajd-msys))
+<!-- latest_release -->
 <!-- latest_release -->
 
-<!-- release_rollup since=0.18.0 -->
-### Changes since 0.18.0 release
-
-#### Merged Pull Requests
-- MSYS-798 - Fixes for windows administrator password [#524](https://github.com/chef/knife-ec2/pull/524) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 0.18.2 -->
-- [MSYS-824] fix breaking tag changes &amp; deprecation warning [#527](https://github.com/chef/knife-ec2/pull/527) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 0.18.1 -->
+<!-- release_rollup -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
+## [v0.18.2](https://github.com/chef/knife-ec2/tree/v0.18.2) (2018-07-06)
+
+#### Merged Pull Requests
+- [MSYS-824] fix breaking tag changes &amp; deprecation warning [#527](https://github.com/chef/knife-ec2/pull/527) ([dheerajd-msys](https://github.com/dheerajd-msys))
+- MSYS-798 - Fixes for windows administrator password [#524](https://github.com/chef/knife-ec2/pull/524) ([dheerajd-msys](https://github.com/dheerajd-msys))
 <!-- latest_stable_release -->
+
+
 
 ## Latest Release 0.18.0 (2018-04-05)
 * [knife-ec2:#520](https://github.com/chef/knife-ec2/pull/520) Options `--aws-tag` and `--chef-tag` are added for tagging EC2 instance in AWS and Chef separately.
