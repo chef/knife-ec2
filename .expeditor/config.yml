@@ -20,24 +20,22 @@ github:
     - master:
         version_constraint: 0.*
 
-promote:
-  action:
-    - built_in:publish_rubygems
-    - built_in:rollover_changelog
-
 # These actions are taken, in order they are specified, anytime a Pull Request is merged.
 merge_actions:
   - built_in:bump_version:
       ignore_labels:
-        - "Version: Skip Bump"
         - "Expeditor: Skip Version Bump"
         - "Expeditor: Skip All"
   - bash:.expeditor/update_version.sh:
       only_if: built_in:bump_version
   - built_in:update_changelog:
       ignore_labels:
-        - "Meta: Exclude From Changelog"
         - "Expeditor: Exclude From Changelog"
         - "Expeditor: Skip All"
   - built_in:build_gem:
       only_if: built_in:bump_version
+
+promote:
+  action:
+    - built_in:publish_rubygems
+    - built_in:rollover_changelog
