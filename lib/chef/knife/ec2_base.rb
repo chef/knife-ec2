@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-require 'chef/knife'
+require "chef/knife"
 
 class Chef
   class Knife
@@ -29,62 +29,62 @@ class Chef
         includer.class_eval do
 
           deps do
-            require 'fog/aws'
-            require 'readline'
-            require 'chef/json_compat'
+            require "fog/aws"
+            require "readline"
+            require "chef/json_compat"
           end
 
           option :aws_credential_file,
-            :long => "--aws-credential-file FILE",
-            :description => "File containing AWS credentials as used by AWS command line tools",
-            :proc => Proc.new { |key| Chef::Config[:knife][:aws_credential_file] = key }
+            long: "--aws-credential-file FILE",
+            description: "File containing AWS credentials as used by AWS command line tools",
+            proc: Proc.new { |key| Chef::Config[:knife][:aws_credential_file] = key }
 
           option :aws_config_file,
-            :long => "--aws-config-file FILE",
-            :description => "File containing AWS configurations as used by aws cmdline tools",
-            :proc => Proc.new {|key| Chef::Config[:knife][:aws_config_file] = key}
+            long: "--aws-config-file FILE",
+            description: "File containing AWS configurations as used by aws cmdline tools",
+            proc: Proc.new { |key| Chef::Config[:knife][:aws_config_file] = key }
 
           option :aws_profile,
-            :long => "--aws-profile PROFILE",
-            :description => "AWS profile, from AWS credential file and AWS config file, to use",
-            :default => 'default',
-            :proc => Proc.new { |key| Chef::Config[:knife][:aws_profile] = key }
+            long: "--aws-profile PROFILE",
+            description: "AWS profile, from AWS credential file and AWS config file, to use",
+            default: "default",
+            proc: Proc.new { |key| Chef::Config[:knife][:aws_profile] = key }
 
           option :aws_access_key_id,
-            :short => "-A ID",
-            :long => "--aws-access-key-id KEY",
-            :description => "Your AWS Access Key ID",
-            :proc => Proc.new { |key| Chef::Config[:knife][:aws_access_key_id] = key }
+            short: "-A ID",
+            long: "--aws-access-key-id KEY",
+            description: "Your AWS Access Key ID",
+            proc: Proc.new { |key| Chef::Config[:knife][:aws_access_key_id] = key }
 
           option :aws_secret_access_key,
-            :short => "-K SECRET",
-            :long => "--aws-secret-access-key SECRET",
-            :description => "Your AWS API Secret Access Key",
-            :proc => Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
+            short: "-K SECRET",
+            long: "--aws-secret-access-key SECRET",
+            description: "Your AWS API Secret Access Key",
+            proc: Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
 
           option :aws_session_token,
-            :long => "--aws-session-token TOKEN",
-            :description => "Your AWS Session Token, for use with AWS STS Federation or Session Tokens",
-            :proc => Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
+            long: "--aws-session-token TOKEN",
+            description: "Your AWS Session Token, for use with AWS STS Federation or Session Tokens",
+            proc: Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
 
           option :region,
-            :long => "--region REGION",
-            :description => "Your AWS region",
-            :proc => Proc.new { |key| Chef::Config[:knife][:region] = key }
+            long: "--region REGION",
+            description: "Your AWS region",
+            proc: Proc.new { |key| Chef::Config[:knife][:region] = key }
 
           option :use_iam_profile,
-            :long => "--use-iam-profile",
-            :description => "Use IAM profile assigned to current machine",
-            :boolean => true,
-            :default => false,
-            :proc => Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key }
+            long: "--use-iam-profile",
+            description: "Use IAM profile assigned to current machine",
+            boolean: true,
+            default: false,
+            proc: Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key }
         end
       end
 
       def connection
         connection_settings = {
-          :provider => 'AWS',
-          :region => locate_config_value(:region)
+          provider: "AWS",
+          region: locate_config_value(:region),
         }
 
         if locate_config_value(:use_iam_profile)
@@ -104,7 +104,7 @@ class Chef
         config[key] || Chef::Config[:knife][key]
       end
 
-      def msg_pair(label, value, color=:cyan)
+      def msg_pair(label, value, color = :cyan)
         if value && !value.to_s.empty?
           ui.info("#{ui.color(label, color)}: #{value}")
         end
@@ -112,23 +112,23 @@ class Chef
 
       def is_image_windows?
         image_info = connection.images.get(@server.image_id)
-        return image_info.platform == 'windows'
+        image_info.platform == "windows"
       end
 
-      def validate!(keys=[:aws_access_key_id, :aws_secret_access_key])
+      def validate!(keys = [:aws_access_key_id, :aws_secret_access_key])
         errors = []
 
         if locate_config_value(:aws_config_file)
           aws_config = ini_parse(File.read(locate_config_value(:aws_config_file)))
-          profile = if locate_config_value(:aws_profile) == 'default'
-                      'default'
+          profile = if locate_config_value(:aws_profile) == "default"
+                      "default"
                     else
                       "profile #{locate_config_value(:aws_profile)}"
                     end
 
           unless aws_config.values.empty?
             if aws_config[profile]
-               Chef::Config[:knife][:region] = aws_config[profile]['region']
+              Chef::Config[:knife][:region] = aws_config[profile]["region"]
             else
               raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
             end
@@ -151,29 +151,29 @@ class Chef
             aws_creds = ini_parse(File.read(locate_config_value(:aws_credential_file)))
             profile = locate_config_value(:aws_profile)
 
-            entries = if aws_creds.values.first.has_key?("AWSAccessKeyId")
+            entries = if aws_creds.values.first.key?("AWSAccessKeyId")
                         aws_creds.values.first
                       else
                         aws_creds[profile]
                       end
 
             if entries
-              Chef::Config[:knife][:aws_access_key_id] = entries['AWSAccessKeyId'] || entries['aws_access_key_id']
-              Chef::Config[:knife][:aws_secret_access_key] = entries['AWSSecretKey'] || entries['aws_secret_access_key']
-              Chef::Config[:knife][:aws_session_token] = entries['AWSSessionToken'] || entries['aws_session_token']
+              Chef::Config[:knife][:aws_access_key_id] = entries["AWSAccessKeyId"] || entries["aws_access_key_id"]
+              Chef::Config[:knife][:aws_secret_access_key] = entries["AWSSecretKey"] || entries["aws_secret_access_key"]
+              Chef::Config[:knife][:aws_session_token] = entries["AWSSessionToken"] || entries["aws_session_token"]
             else
               raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
             end
           end
 
           keys.each do |k|
-            pretty_key = k.to_s.gsub(/_/, ' ').gsub(/\w+/){ |w| (w =~ /(ssh)|(aws)/i) ? w.upcase  : w.capitalize }
+            pretty_key = k.to_s.tr("_", " ").gsub(/\w+/) { |w| (w =~ /(ssh)|(aws)/i) ? w.upcase : w.capitalize }
             if Chef::Config[:knife][k].nil?
               errors << "You did not provide a valid '#{pretty_key}' value."
             end
           end
 
-          if errors.each{|e| ui.error(e)}.any?
+          if errors.each { |e| ui.error(e) }.any?
             exit 1
           end
         end
@@ -195,10 +195,10 @@ class Chef
 
     def iam_name_from_profile(profile)
       # The IAM profile object only contains the name as part of the arn
-      if profile && profile.key?('arn')
-        name = profile['arn'].split('/')[-1]
+      if profile && profile.key?("arn")
+        name = profile["arn"].split("/")[-1]
       end
-      name ||= ''
+      name ||= ""
     end
 
     def ini_parse(file)
@@ -222,15 +222,14 @@ class Chef
 
     # All valid platforms
     def valid_platforms
-      ["windows", "ubuntu", "debian", "centos", "fedora", "rhel", "nginx", "turnkey", "jumpbox", "coreos", "cisco", "amazon", "nessus"]
+      %w{windows ubuntu debian centos fedora rhel nginx turnkey jumpbox coreos cisco amazon nessus}
     end
 
     # Get the platform from server name
     def find_server_platform(server_name)
       get_platform = valid_platforms.select { |name| server_name.downcase.include?(name) }
-      return get_platform.first
+      get_platform.first
     end
-
 
     # Custom Warning
     def custom_warnings!

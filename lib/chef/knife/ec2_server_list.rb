@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-require 'chef/knife/ec2_base'
+require "chef/knife/ec2_base"
 
 class Chef
   class Knife
@@ -28,23 +28,23 @@ class Chef
       banner "knife ec2 server list (options)"
 
       option :name,
-        :short => "-n",
-        :long => "--no-name",
-        :boolean => true,
-        :default => true,
-        :description => "Do not display name tag in output"
+        short: "-n",
+        long: "--no-name",
+        boolean: true,
+        default: true,
+        description: "Do not display name tag in output"
 
       option :az,
-        :short => "-z",
-        :long => "--availability-zone",
-        :boolean => true,
-        :default => false,
-        :description => "Show availability zones"
+        short: "-z",
+        long: "--availability-zone",
+        boolean: true,
+        default: false,
+        description: "Show availability zones"
 
       option :tags,
-        :short => "-t TAG1,TAG2",
-        :long => "--tags TAG1,TAG2",
-        :description => "List of tags to output"
+        short: "-t TAG1,TAG2",
+        long: "--tags TAG1,TAG2",
+        description: "List of tags to output"
 
       def azcolor(az)
         case az
@@ -67,23 +67,23 @@ class Chef
         validate!
 
         server_list = [
-          ui.color('Instance ID', :bold),
+          ui.color("Instance ID", :bold),
 
           if config[:name]
             ui.color("Name", :bold)
           end,
 
-          ui.color('Public IP', :bold),
-          ui.color('Private IP', :bold),
-          ui.color('Flavor', :bold),
+          ui.color("Public IP", :bold),
+          ui.color("Private IP", :bold),
+          ui.color("Flavor", :bold),
 
           if config[:az]
-            ui.color('AZ', :bold)
+            ui.color("AZ", :bold)
           end,
 
-          ui.color('Image', :bold),
-          ui.color('SSH Key', :bold),
-          ui.color('Security Groups', :bold),
+          ui.color("Image", :bold),
+          ui.color("SSH Key", :bold),
+          ui.color("Security Groups", :bold),
 
           if config[:tags]
             config[:tags].split(",").collect do |tag_name|
@@ -91,8 +91,8 @@ class Chef
             end
           end,
 
-          ui.color('IAM Profile', :bold),
-          ui.color('State', :bold)
+          ui.color("IAM Profile", :bold),
+          ui.color("State", :bold)
         ].flatten.compact
 
         output_column_count = server_list.length
@@ -102,7 +102,7 @@ class Chef
         end
 
         servers = connection.servers
-        if (config[:format] == 'summary')
+        if config[:format] == "summary"
           servers.each do |server|
             server_list << server.id.to_s
 
@@ -136,9 +136,9 @@ class Chef
             server_list << begin
               state = server.state.to_s.downcase
               case state
-              when 'shutting-down','terminated','stopping','stopped'
+              when "shutting-down", "terminated", "stopping", "stopped"
                 ui.color(state, :red)
-              when 'pending'
+              when "pending"
                 ui.color(state, :yellow)
               else
                 ui.color(state, :green)

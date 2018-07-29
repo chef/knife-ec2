@@ -13,19 +13,19 @@
 # limitations under the License.
 #
 
-require File.expand_path('../../spec_helper', __FILE__)
-require 'fog/aws'
+require File.expand_path("../../spec_helper", __FILE__)
+require "fog/aws"
 
 describe Chef::Knife::Ec2ServerList do
 
-  describe '#run' do
+  describe "#run" do
     let(:knife_ec2_list) { Chef::Knife::Ec2ServerList.new }
     let(:ec2_connection) { double(Fog::Compute::AWS) }
     before do
       allow(knife_ec2_list).to receive(:connection).and_return(ec2_connection)
     end
 
-    it 'invokes validate!' do
+    it "invokes validate!" do
       ec2_servers = double()
       allow(ec2_connection).to receive(:servers).and_return(ec2_servers)
       allow(knife_ec2_list.ui).to receive(:warn)
@@ -33,8 +33,8 @@ describe Chef::Knife::Ec2ServerList do
       knife_ec2_list.run
     end
 
-    context 'when region is not specified' do
-      it 'shows warning that default region will be will be used' do
+    context "when region is not specified" do
+      it "shows warning that default region will be will be used" do
         knife_ec2_list.config.delete(:region)
         Chef::Config[:knife].delete(:region)
         ec2_servers = double()
@@ -45,31 +45,31 @@ describe Chef::Knife::Ec2ServerList do
       end
     end
 
-    context '--format option' do
-      context 'when format=summary' do
+    context "--format option" do
+      context "when format=summary" do
         before do
-          knife_ec2_list.config[:format] = 'summary'
+          knife_ec2_list.config[:format] = "summary"
           allow(knife_ec2_list.ui).to receive(:warn)
         end
 
-        it 'shows the output without Tags and Availability Zone in summary format' do
+        it "shows the output without Tags and Availability Zone in summary format" do
           output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
             "Image", "SSH Key", "Security Groups", "IAM Profile", "State"]
           output_column_count = output_column.length
           allow(ec2_connection).to receive(:servers).and_return([])
           allow(knife_ec2_list).to receive(:validate!)
-          expect(knife_ec2_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
+          expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
           knife_ec2_list.run
         end
       end
 
-      context 'when format=json' do
+      context "when format=json" do
         before do
-          knife_ec2_list.config[:format] = 'json'
+          knife_ec2_list.config[:format] = "json"
           allow(knife_ec2_list.ui).to receive(:warn)
         end
 
-        it 'shows the output without Tags and Availability Zone in summary format' do
+        it "shows the output without Tags and Availability Zone in summary format" do
           allow(ec2_connection).to receive(:servers).and_return([])
           allow(knife_ec2_list).to receive(:validate!)
           allow(knife_ec2_list).to receive(:format_for_display)
@@ -79,51 +79,51 @@ describe Chef::Knife::Ec2ServerList do
       end
     end
 
-    context 'when --tags option is passed' do
+    context "when --tags option is passed" do
       before do
-        knife_ec2_list.config[:format] = 'summary'
+        knife_ec2_list.config[:format] = "summary"
         allow(knife_ec2_list.ui).to receive(:warn)
         allow(ec2_connection).to receive(:servers).and_return([])
         allow(knife_ec2_list).to receive(:validate!)
       end
 
-      context 'when single tag is passed' do
-        it 'shows single tag field in the output' do
-          knife_ec2_list.config[:tags] = 'tag1'
+      context "when single tag is passed" do
+        it "shows single tag field in the output" do
+          knife_ec2_list.config[:tags] = "tag1"
           output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
             "Image", "SSH Key", "Security Groups", "Tag:tag1", "IAM Profile", "State"]
           output_column_count = output_column.length
-          expect(knife_ec2_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
+          expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
           knife_ec2_list.run
         end
       end
 
-      context 'when multiple tags are passed' do
-        it 'shows multiple tags fields in the output' do
-          knife_ec2_list.config[:tags] = 'tag1,tag2'
+      context "when multiple tags are passed" do
+        it "shows multiple tags fields in the output" do
+          knife_ec2_list.config[:tags] = "tag1,tag2"
           output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
             "Image", "SSH Key", "Security Groups", "Tag:tag1", "Tag:tag2", "IAM Profile", "State"]
           output_column_count = output_column.length
-          expect(knife_ec2_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
+          expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
           knife_ec2_list.run
         end
       end
     end
 
-    context 'when --availability-zone is passed' do
+    context "when --availability-zone is passed" do
       before do
-        knife_ec2_list.config[:format] = 'summary'
+        knife_ec2_list.config[:format] = "summary"
         allow(knife_ec2_list.ui).to receive(:warn)
         allow(ec2_connection).to receive(:servers).and_return([])
         allow(knife_ec2_list).to receive(:validate!)
       end
 
-      it 'shows the availability zones in the output' do
+      it "shows the availability zones in the output" do
         knife_ec2_list.config[:az] = true
         output_column = ["Instance ID", "Public IP", "Private IP", "Flavor", "AZ",
             "Image", "SSH Key", "Security Groups", "IAM Profile", "State"]
         output_column_count = output_column.length
-        expect(knife_ec2_list.ui).to receive(:list).with(output_column,:uneven_columns_across, output_column_count)
+        expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
         knife_ec2_list.run
       end
     end

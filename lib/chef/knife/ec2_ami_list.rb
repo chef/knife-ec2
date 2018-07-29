@@ -15,7 +15,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 require "chef/knife/ec2_base"
 
 class Chef
@@ -31,7 +30,7 @@ class Chef
       #   * self => Displays the list of AMIs created by the user
       #   * aws-marketplace => Displays all AMIs form trusted vendors like Ubuntu, Microsoft, SAP, Zend as well as many open source offering
       #   * micosoft => Displays only Microsoft vendor AMIs
-      # 
+      #
       # == Platform
       # By default all platform AMI's will display but you can filter your response
       # by specify the platform using -p or --platform
@@ -44,19 +43,19 @@ class Chef
       banner "knife ec2 ami list (options)"
 
       option :platform,
-        :short => "-p PLATFORM",
-        :long => "--platform PLATFORM",
-        :description => "Platform of the server. Allowed values are windows, ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco, amazon, nessus"
+        short: "-p PLATFORM",
+        long: "--platform PLATFORM",
+        description: "Platform of the server. Allowed values are windows, ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco, amazon, nessus"
 
       option :owner,
-        :short => "-o OWNER",
-        :long => "--owner OWNER",
-        :description => "The server owner (self, aws-marketplace, microsoft). Default is aws-marketplace"
+        short: "-o OWNER",
+        long: "--owner OWNER",
+        description: "The server owner (self, aws-marketplace, microsoft). Default is aws-marketplace"
 
       option :search,
-        :short => "-s SEARCH",
-        :long => "--search SEARCH",
-        :description => "Filter AMIs list as per search keywords."
+        short: "-s SEARCH",
+        long: "--search SEARCH",
+        description: "Filter AMIs list as per search keywords."
 
       def run
         $stdout.sync = true
@@ -76,7 +75,7 @@ class Chef
         output_column_count = server_list.length
         begin
           owner = locate_config_value(:owner) || "aws-marketplace"
-          servers = connection.describe_images({"Owner"=>"#{owner}"}) # aws-marketplace, microsoft
+          servers = connection.describe_images({ "Owner" => "#{owner}" }) # aws-marketplace, microsoft
         rescue Exception => api_error
           raise api_error
         end
@@ -84,9 +83,9 @@ class Chef
         servers.body["imagesSet"].each do |server|
           server["platform"] = find_server_platform(server["name"]) unless server["platform"]
 
-          if (locate_config_value(:platform) && locate_config_value(:search))
+          if locate_config_value(:platform) && locate_config_value(:search)
             locate_config_value(:search).downcase!
-            if (server["description"] && server["platform"] == locate_config_value(:platform) && server["description"].downcase.include?(locate_config_value(:search)))
+            if server["description"] && server["platform"] == locate_config_value(:platform) && server["description"].downcase.include?(locate_config_value(:search))
               server_list += get_server_list(server)
             end
           elsif locate_config_value(:platform)
@@ -95,7 +94,7 @@ class Chef
             end
           elsif locate_config_value(:search)
             locate_config_value(:search).downcase!
-            if (server["description"] && server["description"].downcase.include?(locate_config_value(:search)))
+            if server["description"] && server["description"].downcase.include?(locate_config_value(:search))
               server_list += get_server_list(server)
             end
           else
@@ -105,7 +104,7 @@ class Chef
         puts ui.list(server_list, :uneven_columns_across, output_column_count)
       end
 
-    private
+      private
 
       def get_server_list(server)
         server_list = []
