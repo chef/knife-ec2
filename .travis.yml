@@ -21,8 +21,10 @@ bundler_args: --without docs development
 # Early warning system to catch if Rubygems breaks something
 before_install:
   - gem update --system
-  - gem uninstall bundler -a -x
+  - gem --version
+  - rvm @global do gem uninstall bundler -a -x || true
   - gem install bundler
+  - bundle --version
   - rm -f .bundle/config
 
 script: bundle exec rake
