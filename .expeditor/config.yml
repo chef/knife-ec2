@@ -13,6 +13,11 @@ github:
   delete_branch_on_merge: true
   # The tag format to use (e.g. v1.0.0)
   version_tag_format: "v{{version}}"
+  # The Github Team primarily responsible for handling incoming Pull Requests.
+  maintainer_group: chef/sustaining-eng-team
+  # allow bumping the minor release via label
+  minor_bump_labels:
+    - "Expeditor: Bump Minor Version"
   # Which Github branches to build gems from, and what versions
   # (as determined by the value in the VERSION file) those branches are responsible
   # for building.
@@ -37,5 +42,5 @@ merge_actions:
 
 promote:
   action:
-    - built_in:publish_rubygems
     - built_in:rollover_changelog
+    - built_in:publish_rubygems
