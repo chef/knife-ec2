@@ -466,56 +466,56 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "sets the Name tag to the instance id by default" do
       expect(ec2_connection.tags).to receive(:create).with(key: "Name",
-                                                        value: new_ec2_server.id,
-                                                        resource_id: new_ec2_server.id)
+                                                           value: new_ec2_server.id,
+                                                           resource_id: new_ec2_server.id)
       knife_ec2_create.run
     end
 
     it "sets the Name tag to the chef_node_name when given" do
       knife_ec2_create.config[:chef_node_name] = "wombat"
       expect(ec2_connection.tags).to receive(:create).with(key: "Name",
-                                                        value: "wombat",
-                                                        resource_id: new_ec2_server.id)
+                                                           value: "wombat",
+                                                           resource_id: new_ec2_server.id)
       knife_ec2_create.run
     end
 
     it "sets the Name tag to the specified name when given --aws-tag Name=NAME" do
       knife_ec2_create.config[:aws_tag] = ["Name=bobcat"]
       expect(ec2_connection.tags).to receive(:create).with(key: "Name",
-                                                        value: "bobcat",
-                                                        resource_id: new_ec2_server.id)
+                                                           value: "bobcat",
+                                                           resource_id: new_ec2_server.id)
       knife_ec2_create.run
     end
 
     it "sets arbitrary aws tags" do
       knife_ec2_create.config[:aws_tag] = ["foo=bar"]
       expect(ec2_connection.tags).to receive(:create).with(key: "foo",
-                                                        value: "bar",
-                                                        resource_id: new_ec2_server.id)
+                                                           value: "bar",
+                                                           resource_id: new_ec2_server.id)
       knife_ec2_create.run
     end
 
     it "sets the Name tag to the specified name when given --tags Name=NAME" do
       knife_ec2_create.config[:tags] = ["Name=bobcat"]
       expect(ec2_connection.tags).to receive(:create).with(key: "Name",
-                                                        value: "bobcat",
-                                                        resource_id: new_ec2_server.id)
+                                                           value: "bobcat",
+                                                           resource_id: new_ec2_server.id)
       knife_ec2_create.run
     end
 
     it "sets arbitrary tags" do
       knife_ec2_create.config[:tags] = ["foo=bar"]
       expect(ec2_connection.tags).to receive(:create).with(key: "foo",
-                                                        value: "bar",
-                                                        resource_id: new_ec2_server.id)
+                                                           value: "bar",
+                                                           resource_id: new_ec2_server.id)
       knife_ec2_create.run
     end
 
     it 'raises deprecated warning "[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead."' do
       knife_ec2_create.config[:tags] = ["foo=bar"]
       expect(ec2_connection.tags).to receive(:create).with(key: "foo",
-                                                      value: "bar",
-                                                      resource_id: new_ec2_server.id)
+                                                           value: "bar",
+                                                           resource_id: new_ec2_server.id)
       expect(knife_ec2_create.ui).to receive(:warn).with("[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead.").exactly(2).times
       knife_ec2_create.validate!
       knife_ec2_create.run
@@ -535,8 +535,8 @@ describe Chef::Knife::Ec2ServerCreate do
     it "sets the volume tags as specified when given --volume-tags Key=Value" do
       knife_ec2_create.config[:volume_tags] = ["VolumeTagKey=TestVolumeTagValue"]
       expect(ec2_connection.tags).to receive(:create).with(key: "VolumeTagKey",
-                                                        value: "TestVolumeTagValue",
-                                                        resource_id: new_ec2_server.block_device_mapping.first["volumeId"])
+                                                           value: "TestVolumeTagValue",
+                                                           resource_id: new_ec2_server.block_device_mapping.first["volumeId"])
       knife_ec2_create.run
     end
   end
@@ -2438,7 +2438,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
         it "does not set disable_api_termination option in server_def" do
           server_def = knife_ec2_create.create_server_def
-          expect(server_def[:disable_api_termination]).to be.nil?
+          expect(server_def[:disable_api_termination]).to be_nil
         end
 
         it "does not raise error" do

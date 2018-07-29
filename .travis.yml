@@ -4,7 +4,6 @@ cache: bundler
 
 matrix:
   include:
-    - rvm: 2.2.10
     - rvm: 2.3.7
     - rvm: 2.4.4
     - rvm: 2.5.1

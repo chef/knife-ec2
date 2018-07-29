@@ -12,7 +12,7 @@ group :test do
   gem "chefstyle", git: "https://github.com/chef/chefstyle.git", branch: "master"
   gem "rspec", "~> 3.0"
   gem "rake"
-  gem "chef" # required for specs
+  gem "chef", ">= 13.0"
 end
 
 group :development do
