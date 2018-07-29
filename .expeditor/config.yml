@@ -1,16 +1,18 @@
-# Documentation available at http://expeditor.es.chef.io
-
+# Documentation available at https://expeditor.chef.io/docs/getting-started/
+---
 # Slack channel in Chef Software slack to send notifications about build failures, etc
 slack:
   notify_channel: sustaining-notify
 
+# This publish is triggered by the `built_in:publish_rubygems` artifact_action.
 rubygems:
   - knife-ec2
 
 github:
+  # This deletes the GitHub PR branch after successfully merged into the release branch
+  delete_branch_on_merge: true
   # The tag format to use (e.g. v1.0.0)
   version_tag_format: "v{{version}}"
-  delete_branch_on_merge: true
   # Which Github branches to build gems from, and what versions
   # (as determined by the value in the VERSION file) those branches are responsible
   # for building.
