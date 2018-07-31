@@ -18,39 +18,39 @@
 # limitations under the License.
 #
 
-require 'bundler'
+require "bundler/gem_tasks"
+require "rspec/core/rake_task"
+
+task default: [:style, :spec]
+
 Bundler::GemHelper.install_tasks
 
-# require 'rubygems'
-# require 'rake/gempackagetask'
-require 'rdoc/task'
-
-begin
-  require 'sdoc'
-  require 'rdoc/task'
-
-  RDoc::Task.new do |rdoc|
-    rdoc.title = 'Chef Ruby API Documentation'
-    rdoc.main = 'README.rdoc'
-    rdoc.options << '--fmt' << 'shtml' # explictly set shtml generator
-    rdoc.template = 'direct' # lighter template
-    rdoc.rdoc_files.include('README.rdoc', 'LICENSE', 'spec/tiny_server.rb', 'lib/**/*.rb')
-    rdoc.rdoc_dir = 'rdoc'
-  end
-rescue LoadError
-  puts 'sdoc is not available. (sudo) gem install sdoc to generate rdoc documentation.'
+desc "Run specs"
+RSpec::Core::RakeTask.new(:spec) do |spec|
+  spec.pattern = "spec/**/*_spec.rb"
 end
 
 begin
-  require 'rspec/core/rake_task'
-
-  task :default => :spec
-
-  desc 'Run all specs in spec directory'
-  RSpec::Core::RakeTask.new(:spec) do |t|
-    t.pattern = 'spec/unit/**/*_spec.rb'
+  require "chefstyle"
+  require "rubocop/rake_task"
+  RuboCop::RakeTask.new(:style) do |task|
+    task.options += ["--display-cop-names", "--no-color"]
   end
-
 rescue LoadError
-  STDERR.puts "\n*** RSpec not available. (sudo) gem install rspec to run unit tests. ***\n\n"
+  puts "chefstyle/rubocop is not available. bundle install first to make sure all dependencies are installed."
+end
+
+begin
+  require "yard"
+  YARD::Rake::YardocTask.new(:docs)
+rescue LoadError
+  puts "yard is not available. bundle install first to make sure all dependencies are installed."
+end
+
+task :console do
+  require "irb"
+  require "irb/completion"
+  require "mixlib/versioning"
+  ARGV.clear
+  IRB.start
 end

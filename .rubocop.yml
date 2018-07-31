@@ -1,0 +1,30 @@
+Lint/AssignmentInCondition:
+  Exclude:
+    - 'lib/chef/knife/ec2_server_create.rb'
+
+Lint/EmptyWhen:
+  Exclude:
+    - 'lib/chef/knife/ec2_server_create.rb'
+
+Lint/ParenthesesAsGroupedExpression:
+  Exclude:
+    - 'lib/chef/knife/ec2_base.rb'
+    - 'lib/chef/knife/ec2_server_create.rb'
+    - 'spec/unit/ec2_ami_list_spec.rb'
+    - 'spec/unit/ec2_server_create_spec.rb'
+
+Lint/ShadowingOuterLocalVariable:
+  Exclude:
+    - 'lib/chef/knife/ec2_server_create.rb'
+    - 'lib/chef/knife/ec2_server_delete.rb'
+
+Lint/UselessAssignment:
+  Exclude:
+    - 'lib/chef/knife/ec2_base.rb'
+    - 'lib/chef/knife/ec2_server_list.rb'
+    - 'spec/unit/ec2_ami_list_spec.rb'
+
+Style/NumericPredicate:
+  Exclude:
+    - 'spec/**/*'
+    - 'lib/chef/knife/ec2_server_create.rb'
