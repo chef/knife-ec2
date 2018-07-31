@@ -285,12 +285,24 @@ Outputs a list of all instance types comprising varying combinations of CPU, mem
 ### `knife ec2 server delete`
 Deletes an existing server in the currently configured AWS account. **By default, this does not delete the associated node and client objects from the Chef server. To do so, add the `--purge` flag**
 
-## License and Authors
-- Author:: Adam Jacob ([adam@chef.io](mailto:adam@chef.io))
+## Development Documentation
+
+All documentation is written using YARD. You can generate a by running:
+
+```
+rake docs
+```
+
+## Contributing
+
+For information on contributing to this project please see our [Contributing Documentation](https://github.com/chef/chef/blob/master/CONTRIBUTING.md)
+
+## License & Copyright
+
+- Copyright:: Copyright (c) 2009-2018 Chef Software, Inc.
+- License:: Apache License, Version 2.0
 
 ```text
-Copyright 2009-2015 Chef Software, Inc.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
