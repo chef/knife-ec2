@@ -1,0 +1,4 @@
+# Order is important. The last matching pattern has the most precedence.
+
+*               @chef/msys-developers
+.expeditor/**   @chef/jex-team
