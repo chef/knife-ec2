@@ -50,7 +50,6 @@ end
 task :console do
   require "irb"
   require "irb/completion"
-  require "mixlib/versioning"
   ARGV.clear
   IRB.start
 end
