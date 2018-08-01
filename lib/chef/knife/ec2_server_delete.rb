@@ -110,6 +110,7 @@ class Chef
         end
       end
 
+      # @return [String]
       def fetch_node_name(instance_id)
         result = query.search(:node, "ec2_instance_id:#{instance_id}")
         unless result.first.empty?
@@ -119,6 +120,7 @@ class Chef
         end
       end
 
+      # @return [String]
       def fetch_instance_id(name)
         result = query.search(:node, "name:#{name}")
         unless result.first.empty?
@@ -129,6 +131,7 @@ class Chef
         end
       end
 
+      # @return [Chef::Search::Query]
       def query
         @query ||= Chef::Search::Query.new
       end

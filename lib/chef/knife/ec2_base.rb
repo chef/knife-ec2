@@ -22,9 +22,7 @@ class Chef
   class Knife
     module Ec2Base
 
-      # :nodoc:
-      # Would prefer to do this in a rational way, but can't be done b/c of
-      # Mixlib::CLI's design :(
+      # @todo Would prefer to do this in a rational way, but can't be done b/c of Mixlib::CLI's design :(
       def self.included(includer)
         includer.class_eval do
 
@@ -81,6 +79,7 @@ class Chef
         end
       end
 
+      # @return [Fog::Compute]
       def connection
         connection_settings = {
           provider: "AWS",
@@ -99,6 +98,7 @@ class Chef
         end
       end
 
+      # @return [String]
       def locate_config_value(key)
         key = key.to_sym
         config[key] || Chef::Config[:knife][key]
@@ -110,11 +110,13 @@ class Chef
         end
       end
 
+      # @return [Boolean]
       def is_image_windows?
         image_info = connection.images.get(@server.image_id)
         image_info.platform == "windows"
       end
 
+      # validate the config options that were passed since some of them cannot be used together
       def validate!(keys = [:aws_access_key_id, :aws_secret_access_key])
         errors = []
 
@@ -193,6 +195,7 @@ class Chef
 
     end
 
+    # @return [String]
     def iam_name_from_profile(profile)
       # The IAM profile object only contains the name as part of the arn
       if profile && profile.key?("arn")
@@ -221,11 +224,13 @@ class Chef
     end
 
     # All valid platforms
+    # @return [Array]
     def valid_platforms
       %w{windows ubuntu debian centos fedora rhel nginx turnkey jumpbox coreos cisco amazon nessus}
     end
 
     # Get the platform from server name
+    # @return [String]
     def find_server_platform(server_name)
       get_platform = valid_platforms.select { |name| server_name.downcase.include?(name) }
       get_platform.first

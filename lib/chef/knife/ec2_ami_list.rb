@@ -19,25 +19,23 @@ require "chef/knife/ec2_base"
 
 class Chef
   class Knife
+    # == Overview
+    #
+    # This file provides the facility to display AMI list.
+    #
+    # == Owner
+    # By default owner is aws-marketplace but you can specify following owner with the help of -o or --owner
+    #   * self => Displays the list of AMIs created by the user
+    #   * aws-marketplace => Displays all AMIs form trusted vendors like Ubuntu, Microsoft, SAP, Zend as well as many open source offering
+    #   * micosoft => Displays only Microsoft vendor AMIs
+    #
+    # == Platform
+    # By default all platform AMI's will display but you can filter your response
+    # by specify the platform using -p or --platform
+    #  * Valid Platform => ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco
+    #
+    # {Amazon API Reference}[http://docs.amazonwebservices.com/AWSEC2/latest/APIReference/ApiReference-query-DescribeImages.html]
     class Ec2AmiList < Knife
-
-      # == Overview
-      #
-      # This file provides the facility to display AMI list.
-      #
-      # == Owner
-      # By default owner is aws-marketplace but you can specify following owner with the help of -o or --owner
-      #   * self => Displays the list of AMIs created by the user
-      #   * aws-marketplace => Displays all AMIs form trusted vendors like Ubuntu, Microsoft, SAP, Zend as well as many open source offering
-      #   * micosoft => Displays only Microsoft vendor AMIs
-      #
-      # == Platform
-      # By default all platform AMI's will display but you can filter your response
-      # by specify the platform using -p or --platform
-      #  * Valid Platform => ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco
-      #
-      # {Amazon API Reference}[http://docs.amazonwebservices.com/AWSEC2/latest/APIReference/ApiReference-query-DescribeImages.html]
-
       include Knife::Ec2Base
 
       banner "knife ec2 ami list (options)"

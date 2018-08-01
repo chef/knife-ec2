@@ -19,6 +19,7 @@ class Chef
         @bucket_obj ||= fog.directories.get(bucket)
       end
 
+      # @return [URI]
       def bucket
         uri = URI(@url)
         if uri.scheme == "s3"
@@ -28,6 +29,7 @@ class Chef
         end
       end
 
+      # @return [URI]
       def path
         uri = URI(@url)
         if uri.scheme == "s3"
@@ -37,6 +39,7 @@ class Chef
         end
       end
 
+      # @return [Fog::Storage::AWS]
       def fog
         require "fog/aws" # lazy load the fog library to speed up the knife run
         @fog ||= Fog::Storage::AWS.new(

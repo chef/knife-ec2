@@ -722,6 +722,8 @@ class Chef
         end
       end
 
+      # return the default bootstrap template based on platform
+      # @return [String]
       def default_bootstrap_template
         is_image_windows? ? "windows-chef-client-msi" : "chef-full"
       end
@@ -736,6 +738,7 @@ class Chef
         end
       end
 
+      # @return [Tempfile]
       def validation_key_tmpfile
         @validation_key_tmpfile ||= Tempfile.new("validation_key")
       end

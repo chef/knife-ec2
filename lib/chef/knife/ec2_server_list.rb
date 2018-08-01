@@ -46,6 +46,7 @@ class Chef
         long: "--tags TAG1,TAG2",
         description: "List of tags to output"
 
+      # @return [Symbol]
       def azcolor(az)
         case az
         when /a$/
