@@ -9,11 +9,8 @@ This is the official Chef Knife plugin for Amazon EC2. This plugin gives knife t
 - Mailing list: [https://discourse.chef.io/](https://discourse.chef.io/)
 
 ## Installation
-If you're using [ChefDK](https://downloads.chef.io/chef-dk/), simply install the Gem:
 
-```bash
-$ chef gem install knife-ec2
-```
+We highly recommend using [ChefDK](https://downloads.chef.io/chef-dk/), which includes knife-ec2 out of the box. If for some reason you can't use ChefDK you can manually install the gem.
 
 If you're using bundler, simply add Chef and Knife EC2 to your `Gemfile`:
 
@@ -30,6 +27,7 @@ $ gem install knife-ec2
 Depending on your system's configuration, you may need to run this command with root privileges.
 
 ## Configuration
+
 In order to communicate with the Amazon's EC2 API you will need to pass Knife your AWS Access Key, Secret Access Key, and if using STS your session token. This can be done in several ways:
 
 ### Knife.rb Configuration
@@ -49,6 +47,7 @@ knife[:aws_session_token] = "Your AWS Session Token"
 Note: If your `knife.rb` file will be checked into a source control management system, or is otherwise accessible by others, you may want to use one of the other configuration methods to avoid exposing your credentials.
 
 ### Environmental Variables
+
 Knife-ec2 can also read your credentials from shell environmental variables. Export `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` variables in your shell then add the following configuration to your `knife.rb` file:
 
 ```ruby
@@ -63,6 +62,7 @@ knife[:aws_session_token] = ENV['AWS_SESSION_TOKEN']
 ```
 
 ### CLI Arguments
+
 You also have the option of passing your AWS API Key/Secret into the individual knife subcommands using the `--aws-access-key-id` and `--aws-secret-access-key` command options
 
 Example of provisioning a new t2.micro Ubuntu 14.04 webserver:
@@ -72,6 +72,7 @@ $ knife ec2 server create -r 'role[webserver]' -I ami-cd0fd6be -f t2.micro --aws
 ```
 
 ### AWS Credential File
+
 Amazon's newer credential config file format is also supported by knife:
 
 ```
@@ -99,6 +100,7 @@ knife[:aws_profile] = "personal"
 ```
 
 ### AWS Configuration File
+
 Amazon's newer configuration file format is also supported by knife:
 
 ```
@@ -132,6 +134,7 @@ region = "specify_any_supported_region"
 
 
 ## Additional knife.rb Configuration Options
+
 The following configuration options may be set in your `knife.rb`:
 - flavor
 - image
@@ -143,6 +146,7 @@ The following configuration options may be set in your `knife.rb`:
 - template_file
 
 ## Using Cloud-Based Secret Data
+
 knife-ec2 now includes the ability to retrieve the encrypted data bag secret and validation keys directly from a cloud-based assets store (currently only S3 is supported). To enable this functionality, you must first upload keys to S3 and give them appropriate permissions. The following is a suggested set of IAM permissions required to make this work:
 
 ```json
@@ -163,6 +167,7 @@ knife-ec2 now includes the ability to retrieve the encrypted data bag secret and
 ```
 
 ### Supported URL format
+
 - `http` or `https` based: 'http://example.com/chef/my-validator.pem'
 - `s3` based:  's3://chef/my-validator.pem'
 
@@ -174,13 +179,16 @@ knife[:s3_secret] = 'http://example.com/chef/encrypted_data_bag_secret'
 ```
 
 ### Alternatively, URLs can be passed directly on the command line:
+
 - Validation Key: `--validation-key-url s3://chef/my-validator.pem`
 - Encrypted Data Bag Secret: `--s3-secret s3://chef/encrypted_data_bag_secret`
 
 ## knife-ec2 Subcommands
+
 This plugin provides the following Knife subcommands. Specific command options can be found by invoking the subcommand with a `--help` flag
 
 ### `knife ec2 server create`
+
 Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap (using the SSH or WinRM protocols). The goal of the bootstrap is to get Chef installed on the target system so it can run Chef Client with a Chef Server. The main assumption is a baseline OS installation exists (provided by the provisioning). It is primarily intended for Chef Client systems that talk to a Chef server.  The examples below create Linux and Windows instances:
 
 ```
@@ -228,6 +236,7 @@ knife ec2 server create -N chef-node-name -I your-windows-image -f flavor-of-ser
 ```
 
 #### Options for bootstrapping Windows
+
 The `knife ec2 server create` command also supports the following options for bootstrapping a Windows node after the VM s created:
 
 ```
@@ -242,6 +251,7 @@ The `knife ec2 server create` command also supports the following options for bo
 :kerberos_service              The Kerberos service used for authentication
 ```
 ### `knife ec2 ami list`
+
 This command provides the feature to list all EC2 AMIs. It also provides the feature to filter the AMIs based on owner and platform.
 
 ```
@@ -249,6 +259,7 @@ knife ec2 ami list
 ```
 
 #### Options for AMIs list
+
 - **Owner:**
   By default owner is aws-marketplace but you can specify following owner with the help of -o or --owner:
 
@@ -277,12 +288,15 @@ knife ec2 ami list
   ```  
 
 ### `knife ec2 server list`
+
 Outputs a list of all servers in the currently configured AWS account. **Note, this shows all instances associated with the account, some of which may not be currently managed by the Chef server.**
 
 ### `knife ec2 flavor list`
+
 Outputs a list of all instance types comprising varying combinations of CPU, memory, storage, and architecture capacity of the currently configured AWS account. **Note, this shows all instances type associated with the account.**
 
 ### `knife ec2 server delete`
+
 Deletes an existing server in the currently configured AWS account. **By default, this does not delete the associated node and client objects from the Chef server. To do so, add the `--purge` flag**
 
 ## Development Documentation
