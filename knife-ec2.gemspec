@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.authors      = ["Adam Jacob", "Seth Chisamore"]
   s.email        = ["adam@chef.io", "schisamo@chef.io"]
   s.homepage     = "https://github.com/chef/knife-ec2"
-  s.summary      = "EC2 Support for Chef's Knife Command"
+  s.summary      = "Amazon EC2 Support for Chef's Knife Command"
   s.description  = s.summary
   s.license      = "Apache-2.0"
 
