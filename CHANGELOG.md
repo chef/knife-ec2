@@ -4,17 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 0.18.4 -->
-## [v0.18.4](https://github.com/chef/knife-ec2/tree/v0.18.4) (2018-08-01)
+<!-- latest_release 0.18.5 -->
+## [v0.18.5](https://github.com/chef/knife-ec2/tree/v0.18.5) (2018-08-01)
 
 #### Merged Pull Requests
-- Bump copyrights &amp; minor readme updates [#532](https://github.com/chef/knife-ec2/pull/532) ([tas50](https://github.com/tas50))
+- Move contributing docs out of the repo [#535](https://github.com/chef/knife-ec2/pull/535) ([tas50](https://github.com/tas50))
 <!-- latest_release -->
 
 <!-- release_rollup since=0.18.2 -->
 ### Changes since 0.18.2 release
 
 #### Merged Pull Requests
+- Move contributing docs out of the repo [#535](https://github.com/chef/knife-ec2/pull/535) ([tas50](https://github.com/tas50)) <!-- 0.18.5 -->
 - Bump copyrights &amp; minor readme updates [#532](https://github.com/chef/knife-ec2/pull/532) ([tas50](https://github.com/tas50)) <!-- 0.18.4 -->
 - Drop Ruby 2.2 + Add Chefstyle + align testing with other projects [#530](https://github.com/chef/knife-ec2/pull/530) ([tas50](https://github.com/tas50)) <!-- 0.18.3 -->
 <!-- release_rollup -->
