@@ -28,10 +28,45 @@ Depending on your system's configuration, you may need to run this command with 
 
 ## Configuration
 
-In order to communicate with the Amazon's EC2 API you will need to pass Knife your AWS Access Key, Secret Access Key, and if using STS your session token. This can be done in several ways:
+In order to communicate with the Amazon's EC2 API you will need to pass Knife your AWS Access Key, Secret Access Key, and if using STS your session token. The knife-ec2 plugin supports multiple methods for configuring these credentials including:
+  - AWS configuration / credential files (preferred method)
+  - knife.rb / config.rb configuration files
+  - environmental variables
+  - command line arguments
 
-### Knife.rb Configuration
-The easiest way to configure your Amazon EC2 credentials for knife-ec2 is to specify them in your your `knife.rb` file:
+### AWS Configuration / Credential Files
+
+The preferred method of storing credentials for AWS is to use Amazon's own credential and configuration files. The files allow for multiple "profiles", each with their own set of credentials. Also since these credentials aren't stored in your knife.rb/config.rb files you don't have to worry about accidently checking credentials into a git repository. The configs can be created by hand or generated automatically by running `aws configure` if the aws cli tools are installed.
+
+
+See Amazon's [Configuration and Credentials Files](https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html) documentation for additional information on the file format and default locations for Linux/Mac & Windows hosts.
+
+#### Alternative Config Files Location
+
+If you're not storing the files in their default directory you'll need to specify the location in your `knife.rb`/`config.rb` files:
+
+```ruby
+knife[:aws_credential_file] = "/path/to/credentials/file"
+knife[:aws_config_file] = "/path/to/configuration/file"
+```
+Since the Knife config file is just Ruby you can also avoid hardcoding your home directory, which creates a configuration that can be used for any user:
+
+```ruby
+knife[:aws_credential_file] = File.join(ENV['HOME'], "/.aws/credentials")
+knife[:aws_config_file] = File.join(ENV['HOME'], "/path/to/configuration/file")
+```
+
+#### Specifying the AWS Profile
+
+If you have multiple profiles in your credentials file you can define which profile to use. The `default` profile will be used if not supplied,
+
+```ruby
+knife[:aws_profile] = "personal"
+```
+
+### Config.rb / Knife.rb Configuration
+
+If you prefer to keep all of your configuration in a single location with Chef you can store your Amazon EC2 credentials in Chef's `knife.rb` or `config.rb` files:
 
 ```ruby
 knife[:aws_access_key_id] = "Your AWS Access Key ID"
@@ -44,7 +79,7 @@ Additionally if using AWS STS:
 knife[:aws_session_token] = "Your AWS Session Token"
 ```
 
-Note: If your `knife.rb` file will be checked into a source control management system, or is otherwise accessible by others, you may want to use one of the other configuration methods to avoid exposing your credentials.
+Note: If your `knife.rb` or `config.rb` files will be checked into a source control management system, or are otherwise accessible by others, you may want to use one of the other configuration methods to avoid exposing your credentials.
 
 ### Environmental Variables
 
@@ -71,69 +106,9 @@ Example of provisioning a new t2.micro Ubuntu 14.04 webserver:
 $ knife ec2 server create -r 'role[webserver]' -I ami-cd0fd6be -f t2.micro --aws-access-key-id 'Your AWS Access Key ID' --aws-secret-access-key "Your AWS Secret Access Key"
 ```
 
-### AWS Credential File
+Note: Passing credentials via the command line exposes the credentials in your shell's history and should be avoided unless absolutely necessary.
 
-Amazon's newer credential config file format is also supported by knife:
-
-```
-[default]
-aws_access_key_id = Your AWS Access Key ID
-aws_secret_access_key = Your AWS Secret Access Key
-```
-
-In this case, you can point the `aws_credential_file` option to this file in your `knife.rb` file, like so:
-
-```ruby
-knife[:aws_credential_file] = "/path/to/credentials/file"
-```
-Since the Knife config file is just Ruby you can also avoid hardcoding your home directory, which creates a configuration that can be used for any user:
-
-```ruby
-knife[:aws_credential_file] = File.join(ENV['HOME'], "/.aws/credentials")
-```
-
-
-If you have multiple profiles in your credentials file you can define which profile to use. The `default` profile will be used if not supplied,
-
-```ruby
-knife[:aws_profile] = "personal"
-```
-
-### AWS Configuration File
-
-Amazon's newer configuration file format is also supported by knife:
-
-```
-[default]
-region = "specify_any_supported_region"
-```
-
-In this case you can point the `aws_config_file` option to this file in your `knife.rb` file, like so:
-
-```ruby
-knife[:aws_config_file] = "/path/to/configuration/file"
-```
-Since the Knife config is just Ruby you can also avoid hardcoding your name directory, which creates a config that can be used for any user:
-
-```ruby
-knife[:aws_config_file] = File.join(ENV['HOME'], "/.aws/configuration")
-```
-
-
-If you have multiple profiles in your configuration file you can define which profile to use. The `default` profile will be used if not supplied,
-
-```ruby
-knife[:aws_profile] = "personal"
-```
-
-In this case configuration file format is:
-```
-[profile personal]
-region = "specify_any_supported_region"
-```
-
-
-## Additional knife.rb Configuration Options
+## Additional config.rb & knife.rb Configuration Options
 
 The following configuration options may be set in your `knife.rb`:
 - flavor
@@ -191,7 +166,7 @@ This plugin provides the following Knife subcommands. Specific command options c
 
 Provisions a new server in the Amazon EC2 and then perform a Chef bootstrap (using the SSH or WinRM protocols). The goal of the bootstrap is to get Chef installed on the target system so it can run Chef Client with a Chef Server. The main assumption is a baseline OS installation exists (provided by the provisioning). It is primarily intended for Chef Client systems that talk to a Chef server.  The examples below create Linux and Windows instances:
 
-```
+```bash
 # Create some instances -- knife configuration contains the AWS credentials
 
 # A Linux instance via ssh
@@ -211,7 +186,7 @@ View additional information on configuring Windows images for bootstrap in the d
 
 #### Adding server_id to the node name
 
-Users can also include the ec2 server id in the node name by placing `%s` in the string passed to the `--chef-node-name` option. The %s is replaced by the ec2 server id dynamically. 
+Users can also include the ec2 server id in the node name by placing `%s` in the string passed to the `--chef-node-name` option. The %s is replaced by the ec2 server id dynamically.
 e.g. `-N "www-server-%s" or  --chef-node-name "www-server-%s"`
 
 #### Tagging node in Chef
