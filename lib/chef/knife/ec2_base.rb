@@ -27,7 +27,7 @@ class Chef
         includer.class_eval do
 
           deps do
-            require "fog/aws"
+            require "aws-sdk"
             require "chef/json_compat"
             require "chef/util/path_helper"
           end
@@ -79,22 +79,23 @@ class Chef
         end
       end
 
-      # @return [Fog::Compute]
-      def ec2_connection
-        connection_settings = {
-          provider: "AWS",
-          region: locate_config_value(:region),
-        }
+      def connection_string
+        conn = {}
+        conn[:region] = locate_config_value(:region) if locate_config_value(:region)
+        conn[:credentials] = if locate_config_value(:use_iam_profile)
+                               Aws::InstanceProfileCredentials.new
+                             elsif locate_config_value(:aws_session_token)
+                               Aws::Credentials.new(locate_config_value(:aws_access_key_id), locate_config_value(:aws_secret_access_key), locate_config_value(:aws_session_token))
+                             else
+                               Aws::Credentials.new(locate_config_value(:aws_access_key_id), locate_config_value(:aws_secret_access_key))
+                             end
+        conn
+      end
 
-        if locate_config_value(:use_iam_profile)
-          connection_settings[:use_iam_profile] = true
-        else
-          connection_settings[:aws_access_key_id] = locate_config_value(:aws_access_key_id)
-          connection_settings[:aws_secret_access_key] = locate_config_value(:aws_secret_access_key)
-          connection_settings[:aws_session_token] = locate_config_value(:aws_session_token)
-        end
-        @fog_connection ||= begin
-          connection = Fog::Compute.new(connection_settings)
+      # @return [Aws::EC2::Client]
+      def ec2_connection
+        @ec2_connection ||= begin
+          Aws::EC2::Client.new(connection_string)
         end
       end
 
