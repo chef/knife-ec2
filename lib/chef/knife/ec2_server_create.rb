@@ -182,23 +182,6 @@ class Chef
         description: "The proxy server for the node being bootstrapped",
         proc: Proc.new { |p| Chef::Config[:knife][:bootstrap_proxy] = p }
 
-      option :distro,
-        short: "-d DISTRO",
-        long: "--distro DISTRO",
-        description: "Bootstrap a distro using a template. [DEPRECATED] Use --bootstrap-template option instead.",
-        proc: Proc.new { |v|
-          Chef::Log.warn("[DEPRECATED] -d / --distro option is deprecated. Use --bootstrap-template option instead.")
-          v
-        }
-
-      option :template_file,
-        long: "--template-file TEMPLATE",
-        description: "Full path to location of template to use. [DEPRECATED] Use -t / --bootstrap-template option instead.",
-        proc: Proc.new { |v|
-          Chef::Log.warn("[DEPRECATED] --template-file option is deprecated. Use -t / --bootstrap-template option instead.")
-          v
-        }
-
       option :bootstrap_template,
         long: "--bootstrap-template TEMPLATE",
         description: "Bootstrap Chef using a built-in or custom template. Set to the full path of an erb template or use one of the built-in templates."
@@ -772,9 +755,6 @@ class Chef
         bootstrap.config[:policy_group] = locate_config_value(:policy_group)
         bootstrap.config[:policy_name] = locate_config_value(:policy_name)
         bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:distro] = locate_config_value(:distro) || default_bootstrap_template
-        # setting bootstrap_template value to template_file for backward compatibility
-        bootstrap.config[:template_file] = locate_config_value(:template_file) || locate_config_value(:bootstrap_template)
         bootstrap.config[:environment] = locate_config_value(:environment)
         bootstrap.config[:prerelease] = config[:prerelease]
         bootstrap.config[:first_boot_attributes] = locate_config_value(:first_boot_attributes)

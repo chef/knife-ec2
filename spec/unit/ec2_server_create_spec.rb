@@ -256,13 +256,6 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(@bootstrap).to receive(:run)
     end
 
-    it "defaults to a distro of 'chef-full' for a linux instance" do
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      knife_ec2_create.config[:distro] = knife_ec2_create.options[:distro][:default]
-      expect(knife_ec2_create).to receive(:default_bootstrap_template).and_return("chef-full")
-      knife_ec2_create.run
-    end
-
     it "creates an EC2 instance and bootstraps it" do
       expect(new_ec2_server).to receive(:wait_for).and_return(true)
       expect(knife_ec2_create).to receive(:ssh_override_winrm)
@@ -390,18 +383,6 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(@bootstrap_winrm).to receive(:run)
       expect(knife_ec2_create).not_to receive(:ssh_override_winrm)
       expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      knife_ec2_create.run
-    end
-
-    it "set default distro to windows-chef-client-msi for windows" do
-      knife_ec2_create.config[:winrm_password] = "winrm-password"
-      knife_ec2_create.config[:bootstrap_protocol] = "winrm"
-      @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
-      allow(Chef::Knife::BootstrapWindowsWinrm).to receive(:new).and_return(@bootstrap_winrm)
-      expect(@bootstrap_winrm).to receive(:run)
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      allow(knife_ec2_create).to receive(:is_image_windows?).and_return(true)
-      expect(knife_ec2_create).to receive(:default_bootstrap_template).and_return("windows-chef-client-msi")
       knife_ec2_create.run
     end
 
@@ -601,7 +582,6 @@ describe Chef::Knife::Ec2ServerCreate do
     before do
       Chef::Config[:knife][:s3_secret] =
         "s3://test.bucket/folder/encrypted_data_bag_secret"
-      knife_ec2_create.config[:distro] = "ubuntu-10.04-magic-sparkles"
       @secret_content = "TEST DATA BAG SECRET\n"
       allow(knife_ec2_create).to receive(:s3_secret).and_return(@secret_content)
       allow(Chef::Knife).to receive(:Bootstrap)
@@ -689,8 +669,6 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.config[:ssh_port] = 22
       knife_ec2_create.config[:ssh_gateway] = "bastion.host.com"
       knife_ec2_create.config[:chef_node_name] = "blarf"
-      knife_ec2_create.config[:template_file] = "~/.chef/templates/my-bootstrap.sh.erb"
-      knife_ec2_create.config[:distro] = "ubuntu-10.04-magic-sparkles"
       knife_ec2_create.config[:run_list] = ["role[base]"]
       knife_ec2_create.config[:first_boot_attributes] = "{'my_attributes':{'foo':'bar'}"
       knife_ec2_create.config[:first_boot_attributes_from_file] = "{'my_attributes':{'foo':'bar'}"
@@ -755,16 +733,8 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(bootstrap.config[:prerelease]).to eq(true)
     end
 
-    it "configures the bootstrap to use the desired distro-specific bootstrap script" do
-      expect(@bootstrap.config[:distro]).to eq("ubuntu-10.04-magic-sparkles")
-    end
-
     it "configures the bootstrap to use sudo" do
       expect(@bootstrap.config[:use_sudo]).to eq(true)
-    end
-
-    it "configured the bootstrap to use the desired template" do
-      expect(@bootstrap.config[:template_file]).to eq("~/.chef/templates/my-bootstrap.sh.erb")
     end
 
     it "configured the bootstrap to set an ec2 hint (via Chef::Config)" do
@@ -802,8 +772,6 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.config[:bootstrap_protocol] = "winrm"
       knife_ec2_create.config[:kerberos_service] = "service"
       knife_ec2_create.config[:chef_node_name] = "blarf"
-      knife_ec2_create.config[:template_file] = "~/.chef/templates/my-bootstrap.sh.erb"
-      knife_ec2_create.config[:distro] = "ubuntu-10.04-magic-sparkles"
       knife_ec2_create.config[:run_list] = ["role[base]"]
       knife_ec2_create.config[:first_boot_attributes] = "{'my_attributes':{'foo':'bar'}"
       knife_ec2_create.config[:winrm_ssl_verify_mode] = "verify_peer"

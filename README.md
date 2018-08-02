@@ -117,8 +117,6 @@ The following configuration options may be set in your `knife.rb`:
 - ssh_key_name
 - aws_session_token
 - region
-- distro
-- template_file
 
 ## Using Cloud-Based Secret Data
 
