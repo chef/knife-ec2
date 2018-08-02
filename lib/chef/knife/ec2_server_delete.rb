@@ -19,15 +19,17 @@
 
 require "chef/knife/ec2_base"
 
-# These two are needed for the '--purge' deletion case
-require "chef/node"
-require "chef/api_client"
-
 class Chef
   class Knife
     class Ec2ServerDelete < Knife
 
       include Knife::Ec2Base
+
+      deps do
+        # These two are needed for the '--purge' deletion case
+        require "chef/node"
+        require "chef/api_client"
+      end
 
       banner "knife ec2 server delete SERVER [SERVER] (options)"
 
