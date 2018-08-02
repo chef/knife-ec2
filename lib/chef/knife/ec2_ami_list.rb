@@ -48,7 +48,7 @@ class Chef
       option :owner,
         short: "-o OWNER",
         long: "--owner OWNER",
-        description: "The server owner (self, aws-marketplace, microsoft). Default is aws-marketplace"
+        description: "The AMI owner (self, aws-marketplace, microsoft). Default is aws-marketplace"
 
       option :search,
         short: "-s SEARCH",
