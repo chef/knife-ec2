@@ -36,7 +36,7 @@ In order to communicate with the Amazon's EC2 API you will need to pass Knife yo
 
 ### AWS Configuration / Credential Files
 
-The preferred method of storing credentials for AWS is to use Amazon's own credential and configuration files. The files allow for multiple "profiles", each with their own set of credentials. Also since these credentials aren't stored in your knife.rb/config.rb files you don't have to worry about accidently checking credentials into a git repository. The configs can be created by hand or generated automatically by running `aws configure` if the aws cli tools are installed.
+The preferred method of storing credentials for AWS is to use Amazon's own credential and configuration files. The files allow for multiple "profiles", each with their own set of credentials. Also since these credentials aren't stored in your knife.rb/config.rb files you don't have to worry about accidentally checking credentials into a git repository. The configs can be created by hand or generated automatically by running `aws configure` if the AWS Command Line Interface (awscli) is installed.
 
 
 See Amazon's [Configuration and Credentials Files](https://docs.aws.amazon.com/cli/latest/userguide/cli-config-files.html) documentation for additional information on the file format and default locations for Linux/Mac & Windows hosts.
