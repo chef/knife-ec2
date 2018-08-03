@@ -4,17 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 0.19.2 -->
-## [v0.19.2](https://github.com/chef/knife-ec2/tree/v0.19.2) (2018-08-02)
+<!-- latest_release 0.19.3 -->
+## [v0.19.3](https://github.com/chef/knife-ec2/tree/v0.19.3) (2018-08-03)
 
 #### Merged Pull Requests
-- Clarify which AWS CLI tools we&#39;re talking about [#540](https://github.com/chef/knife-ec2/pull/540) ([tas50](https://github.com/tas50))
+- Lazy load deps and avoid double loading [#544](https://github.com/chef/knife-ec2/pull/544) ([tas50](https://github.com/tas50))
 <!-- latest_release -->
 
 <!-- release_rollup since=0.18.2 -->
 ### Changes since 0.18.2 release
 
 #### Merged Pull Requests
+- Lazy load deps and avoid double loading [#544](https://github.com/chef/knife-ec2/pull/544) ([tas50](https://github.com/tas50)) <!-- 0.19.3 -->
 - Clarify which AWS CLI tools we&#39;re talking about [#540](https://github.com/chef/knife-ec2/pull/540) ([tas50](https://github.com/tas50)) <!-- 0.19.2 -->
 - Fix knife ami list --group flag description [#539](https://github.com/chef/knife-ec2/pull/539) ([tas50](https://github.com/tas50)) <!-- 0.19.1 -->
 - Rewrite the credentials section of the readme with new recommendations [#538](https://github.com/chef/knife-ec2/pull/538) ([tas50](https://github.com/tas50)) <!-- 0.19.0 -->
