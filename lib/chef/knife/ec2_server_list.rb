@@ -34,6 +34,13 @@ class Chef
         default: true,
         description: "Do not display name tag in output"
 
+      option :iamprofile,
+        short: "-i",
+        long: "--iam-profile",
+        boolean: true,
+        default: false,
+        description: "Show the iam profile"
+
       option :az,
         short: "-z",
         long: "--availability-zone",
