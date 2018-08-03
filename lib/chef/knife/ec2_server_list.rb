@@ -57,6 +57,8 @@ class Chef
           color = :red
         when /d$/
           color = :magenta
+        when /e$/
+          color = :yellow
         else
           color = :cyan
         end
