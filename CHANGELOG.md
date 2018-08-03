@@ -4,17 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 0.19.4 -->
-## [v0.19.4](https://github.com/chef/knife-ec2/tree/v0.19.4) (2018-08-03)
+<!-- latest_release 0.19.5 -->
+## [v0.19.5](https://github.com/chef/knife-ec2/tree/v0.19.5) (2018-08-03)
 
 #### Merged Pull Requests
-- Improve the AMI missing error and improve the readme example [#543](https://github.com/chef/knife-ec2/pull/543) ([tas50](https://github.com/tas50))
+- Provide a unique console color for us-east-1f availability zone [#541](https://github.com/chef/knife-ec2/pull/541) ([tas50](https://github.com/tas50))
 <!-- latest_release -->
 
 <!-- release_rollup since=0.18.2 -->
 ### Changes since 0.18.2 release
 
 #### Merged Pull Requests
+- Provide a unique console color for us-east-1f availability zone [#541](https://github.com/chef/knife-ec2/pull/541) ([tas50](https://github.com/tas50)) <!-- 0.19.5 -->
 - Improve the AMI missing error and improve the readme example [#543](https://github.com/chef/knife-ec2/pull/543) ([tas50](https://github.com/tas50)) <!-- 0.19.4 -->
 - Lazy load deps and avoid double loading [#544](https://github.com/chef/knife-ec2/pull/544) ([tas50](https://github.com/tas50)) <!-- 0.19.3 -->
 - Clarify which AWS CLI tools we&#39;re talking about [#540](https://github.com/chef/knife-ec2/pull/540) ([tas50](https://github.com/tas50)) <!-- 0.19.2 -->
