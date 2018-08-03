@@ -28,7 +28,6 @@ class Chef
 
           deps do
             require "fog/aws"
-            require "readline"
             require "chef/json_compat"
           end
 
