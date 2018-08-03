@@ -19,7 +19,6 @@ group :development do
   gem "pry"
   gem "pry-byebug"
   gem "pry-stack_explorer"
-  gem "rb-readline"
 end
 
 instance_eval(ENV["GEMFILE_MOD"]) if ENV["GEMFILE_MOD"]
