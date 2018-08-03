@@ -100,10 +100,10 @@ knife[:aws_session_token] = ENV['AWS_SESSION_TOKEN']
 
 You also have the option of passing your AWS API Key/Secret into the individual knife subcommands using the `--aws-access-key-id` and `--aws-secret-access-key` command options
 
-Example of provisioning a new t2.micro Ubuntu 14.04 webserver:
+Example of provisioning a new t2.micro Ubuntu 16.04 webserver:
 
 ```bash
-$ knife ec2 server create -r 'role[webserver]' -I ami-cd0fd6be -f t2.micro --aws-access-key-id 'Your AWS Access Key ID' --aws-secret-access-key "Your AWS Secret Access Key"
+$ knife ec2 server create -r 'role[webserver]' -I ami-5e8bb23b -f t2.micro --aws-access-key-id 'Your AWS Access Key ID' --aws-secret-access-key "Your AWS Secret Access Key" -ssh-key my_key_name --region us-west-2
 ```
 
 Note: Passing credentials via the command line exposes the credentials in your shell's history and should be avoided unless absolutely necessary.

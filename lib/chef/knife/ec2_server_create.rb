@@ -900,7 +900,7 @@ class Chef
         validate_nics! if locate_config_value(:network_interfaces)
 
         if ami.nil?
-          ui.error("You have not provided a valid image (AMI) value.")
+          ui.error("The provided AMI value '#{locate_config_value(:image)}' could not be found. Is this AMI availble in the provided region #{locate_config_value(:region)}?")
           exit 1
         end
 
