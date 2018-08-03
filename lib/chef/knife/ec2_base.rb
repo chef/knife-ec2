@@ -116,55 +116,19 @@ class Chef
       end
 
       # validate the config options that were passed since some of them cannot be used together
+      # also validate the aws configuration file contents if present
       def validate!(keys = [:aws_access_key_id, :aws_secret_access_key])
-        errors = []
+        errors = [] # track all errors so we report on all of them
 
-        if locate_config_value(:aws_config_file)
-          aws_config = ini_parse(File.read(locate_config_value(:aws_config_file)))
-          profile = if locate_config_value(:aws_profile) == "default"
-                      "default"
-                    else
-                      "profile #{locate_config_value(:aws_profile)}"
-                    end
+        validate_aws_config_file! if locate_config_value(:aws_config_file)
 
-          unless aws_config.values.empty?
-            if aws_config[profile]
-              Chef::Config[:knife][:region] = aws_config[profile]["region"]
-            else
-              raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
-            end
-          end
-        end
-
-        unless locate_config_value(:use_iam_profile)
-          if locate_config_value(:aws_credential_file)
+        unless locate_config_value(:use_iam_profile) # skip config file / key validation if we're using iam profile
+          if locate_config_value(:aws_credential_file) # validate the config
             unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
               errors << "Either provide a credentials file or the access key and secret keys but not both."
             end
-            # File format:
-            # AWSAccessKeyId=somethingsomethingdarkside
-            # AWSSecretKey=somethingsomethingcomplete
-            #               OR
-            # [default]
-            # aws_access_key_id = somethingsomethingdarkside
-            # aws_secret_access_key = somethingsomethingdarkside
 
-            aws_creds = ini_parse(File.read(locate_config_value(:aws_credential_file)))
-            profile = locate_config_value(:aws_profile)
-
-            entries = if aws_creds.values.first.key?("AWSAccessKeyId")
-                        aws_creds.values.first
-                      else
-                        aws_creds[profile]
-                      end
-
-            if entries
-              Chef::Config[:knife][:aws_access_key_id] = entries["AWSAccessKeyId"] || entries["aws_access_key_id"]
-              Chef::Config[:knife][:aws_secret_access_key] = entries["AWSSecretKey"] || entries["aws_secret_access_key"]
-              Chef::Config[:knife][:aws_session_token] = entries["AWSSessionToken"] || entries["aws_session_token"]
-            else
-              raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
-            end
+            validate_aws_credential_file!
           end
 
           keys.each do |k|
@@ -239,6 +203,56 @@ class Chef
     def custom_warnings!
       if !config[:region] && Chef::Config[:knife][:region].nil?
         ui.warn "No region was specified in knife.rb or as an argument. The default region, us-east-1, will be used:"
+      end
+    end
+
+    private
+
+    # validate the contents of the aws configuration file
+    # @return [void]
+    def validate_aws_config_file!
+      aws_config = ini_parse(File.read(locate_config_value(:aws_config_file)))
+      profile = if locate_config_value(:aws_profile) == "default"
+                  "default"
+                else
+                  "profile #{locate_config_value(:aws_profile)}"
+                end
+
+      unless aws_config.values.empty?
+        if aws_config[profile]
+          Chef::Config[:knife][:region] = aws_config[profile]["region"]
+        else
+          raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
+        end
+      end
+    end
+
+    # validate the contents of the aws credentials file
+    # @return [void]
+    def validate_aws_credential_file!
+      # File format:
+      # AWSAccessKeyId=somethingsomethingdarkside
+      # AWSSecretKey=somethingsomethingcomplete
+      #               OR
+      # [default]
+      # aws_access_key_id = somethingsomethingdarkside
+      # aws_secret_access_key = somethingsomethingdarkside
+
+      aws_creds = ini_parse(File.read(locate_config_value(:aws_credential_file)))
+      profile = locate_config_value(:aws_profile)
+
+      entries = if aws_creds.values.first.key?("AWSAccessKeyId")
+                  aws_creds.values.first
+                else
+                  aws_creds[profile]
+                end
+
+      if entries
+        Chef::Config[:knife][:aws_access_key_id] = entries["AWSAccessKeyId"] || entries["aws_access_key_id"]
+        Chef::Config[:knife][:aws_secret_access_key] = entries["AWSSecretKey"] || entries["aws_secret_access_key"]
+        Chef::Config[:knife][:aws_session_token] = entries["AWSSessionToken"] || entries["aws_session_token"]
+      else
+        raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
       end
     end
   end
