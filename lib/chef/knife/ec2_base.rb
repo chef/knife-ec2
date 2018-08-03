@@ -124,13 +124,13 @@ class Chef
         validate_aws_config_file! if locate_config_value(:aws_config_file)
 
         unless locate_config_value(:use_iam_profile) # skip config file / key validation if we're using iam profile
-          # keys not passed via CLI or configs
-          # test credentials file since we'll fallback to that file
-          validate_aws_credential_file! if (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty? && aws_cred_file_location
+          # validate the creds file if:
+          #   aws keys have not been passed in config / CLI and the default cred file location does exist
+          #   OR
+          #   the user passed aws_credential_file
+          if (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty? && aws_cred_file_location ||
+             locate_config_value(:aws_credential_file)
 
-          # credential file passed on CLI or configs.
-          # make sure keys weren't passed as well, but otherwise validate config
-          if locate_config_value(:aws_credential_file)
             unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
               errors << "Either provide a credentials file or the access key and secret keys but not both."
             end
@@ -171,8 +171,9 @@ class Chef
     # @return [String, nil] location to aws credentials file or nil if none exists
     def aws_cred_file_location
       @cred_file ||= begin
-        if !locate_config_value(:aws_config_file).nil?
-          locate_config_value(:aws_config_file)
+        # require 'pry'; binding.pry
+        if !locate_config_value(:aws_credential_file).nil?
+          locate_config_value(:aws_credential_file)
         else
           Chef::Util::PathHelper.home(".aws", "credentials") if ::File.exist?(Chef::Util::PathHelper.home(".aws", "credentials"))
         end
