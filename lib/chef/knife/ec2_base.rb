@@ -29,6 +29,7 @@ class Chef
           deps do
             require "fog/aws"
             require "chef/json_compat"
+            require "chef/util/path_helper"
           end
 
           option :aws_credential_file,
@@ -123,7 +124,13 @@ class Chef
         validate_aws_config_file! if locate_config_value(:aws_config_file)
 
         unless locate_config_value(:use_iam_profile) # skip config file / key validation if we're using iam profile
-          if locate_config_value(:aws_credential_file) # validate the config
+          # keys not passed via CLI or configs
+          # test credentials file since we'll fallback to that file
+          validate_aws_credential_file! if (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty? && aws_cred_file_location
+
+          # credential file passed on CLI or configs.
+          # make sure keys weren't passed as well, but otherwise validate config
+          if locate_config_value(:aws_credential_file)
             unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
               errors << "Either provide a credentials file or the access key and secret keys but not both."
             end
@@ -156,6 +163,20 @@ class Chef
         end
       end
 
+    end
+
+    # the path to the aws credentials file.
+    # if passed via cli config use that
+    # if default location exists on disk fallback to that
+    # @return [String, nil] location to aws credentials file or nil if none exists
+    def aws_cred_file_location
+      @cred_file ||= begin
+        if !locate_config_value(:aws_config_file).nil?
+          locate_config_value(:aws_config_file)
+        else
+          Chef::Util::PathHelper.home(".aws", "credentials") if ::File.exist?(Chef::Util::PathHelper.home(".aws", "credentials"))
+        end
+      end
     end
 
     # @return [String]
@@ -238,7 +259,7 @@ class Chef
       # aws_access_key_id = somethingsomethingdarkside
       # aws_secret_access_key = somethingsomethingdarkside
 
-      aws_creds = ini_parse(File.read(locate_config_value(:aws_credential_file)))
+      aws_creds = ini_parse(File.read(aws_cred_file_location))
       profile = locate_config_value(:aws_profile)
 
       entries = if aws_creds.values.first.key?("AWSAccessKeyId")
