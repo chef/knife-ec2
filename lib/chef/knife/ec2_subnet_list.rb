@@ -60,6 +60,8 @@ class Chef
         end
       end
 
+      private
+
       def subnet_hash
         all_data = {}
         connection.describe_subnets.first.subnets.each do |s|

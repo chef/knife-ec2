@@ -56,6 +56,8 @@ class Chef
         end
       end
 
+      private
+
       def vpc_hash
         all_data = {}
         connection.describe_vpcs.first.vpcs.each do |v|
