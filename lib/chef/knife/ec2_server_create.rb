@@ -246,7 +246,7 @@ class Chef
 
       option :network_interfaces,
         short: "-n",
-        long: "--attach-network-interface ENI1,ENI2",
+        long: "--attach-network-interface ENI_ID1,ENI_ID2",
         description: "Attach additional network interfaces during bootstrap",
         proc: proc { |nics| nics.split(",") }
 
