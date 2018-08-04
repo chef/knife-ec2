@@ -171,7 +171,6 @@ class Chef
     # @return [String, nil] location to aws credentials file or nil if none exists
     def aws_cred_file_location
       @cred_file ||= begin
-        # require 'pry'; binding.pry
         if !locate_config_value(:aws_credential_file).nil?
           locate_config_value(:aws_credential_file)
         else
