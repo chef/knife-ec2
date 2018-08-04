@@ -129,7 +129,7 @@ class Chef
           #   OR
           #   the user passed aws_credential_file
           if (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty? && aws_cred_file_location ||
-             locate_config_value(:aws_credential_file)
+              locate_config_value(:aws_credential_file)
 
             unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
               errors << "Either provide a credentials file or the access key and secret keys but not both."
@@ -233,7 +233,10 @@ class Chef
     # validate the contents of the aws configuration file
     # @return [void]
     def validate_aws_config_file!
-      aws_config = ini_parse(File.read(locate_config_value(:aws_config_file)))
+      config_file = locate_config_value(:aws_config_file)
+      raise ArgumentError, "The provided --aws_config_file (#{config_file}) cannot be found on disk." unless File.exist?(config_file)
+
+      aws_config = ini_parse(File.read(config_file))
       profile = if locate_config_value(:aws_profile) == "default"
                   "default"
                 else
@@ -252,6 +255,8 @@ class Chef
     # validate the contents of the aws credentials file
     # @return [void]
     def validate_aws_credential_file!
+      raise ArgumentError, "The provided --aws_credential_file (#{aws_cred_file_location}) cannot be found on disk." unless File.exist?(aws_cred_file_location)
+
       # File format:
       # AWSAccessKeyId=somethingsomethingdarkside
       # AWSSecretKey=somethingsomethingcomplete

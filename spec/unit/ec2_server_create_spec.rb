@@ -866,6 +866,7 @@ describe Chef::Knife::Ec2ServerCreate do
         Chef::Config[:knife].delete(:aws_access_key_id)
         Chef::Config[:knife].delete(:aws_secret_access_key)
 
+        allow(File).to receive(:exist?).with("/apple/pear").and_return(true)
         Chef::Config[:knife][:aws_credential_file] = "/apple/pear"
         @access_key_id = "access_key_id"
         @secret_key = "secret_key"
@@ -886,6 +887,7 @@ describe Chef::Knife::Ec2ServerCreate do
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
       end
+
       it "reads UNIX Line endings for new format" do
         allow(File).to receive(:read)
           .and_return("[default]\naws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
@@ -918,11 +920,20 @@ describe Chef::Knife::Ec2ServerCreate do
           expect { knife_ec2_create.validate! }.to raise_error("The provided --aws-profile 'xyz' is invalid.")
         end
       end
+
+      context "when non-existent --aws_credential_file is given" do
+        it "raises exception" do
+          Chef::Config[:knife][:aws_credential_file] = "/foo/bar"
+          allow(File).to receive(:exist?).and_return(false)
+          expect { knife_ec2_create.validate! }.to raise_error("The provided --aws_credential_file (/foo/bar) cannot be found on disk.")
+        end
+      end
     end
 
     describe "when reading aws_config_file" do
       before do
         Chef::Config[:knife][:aws_config_file] = "/apple/pear"
+        allow(File).to receive(:exist?).with("/apple/pear").and_return(true)
         @region = "region"
       end
 
@@ -966,6 +977,14 @@ describe Chef::Knife::Ec2ServerCreate do
           Chef::Config[:knife][:aws_profile] = "xyz"
           allow(File).to receive(:read).and_return("[default]\nregion=TESTREGION")
           expect { knife_ec2_create.validate! }.to raise_error("The provided --aws-profile 'profile xyz' is invalid.")
+        end
+      end
+
+      context "when non-existent --aws_config_file is given" do
+        it "raises exception" do
+          Chef::Config[:knife][:aws_config_file] = "/foo/bar"
+          allow(File).to receive(:exist?).and_return(false)
+          expect { knife_ec2_create.validate! }.to raise_error("The provided --aws_config_file (/foo/bar) cannot be found on disk.")
         end
       end
 
@@ -1032,6 +1051,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "disallows specifying credentials file and aws keys" do
       Chef::Config[:knife][:aws_credential_file] = "/apple/pear"
+      allow(File).to receive(:exist?).with("/apple/pear").and_return(true)
       allow(File).to receive(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
 
       expect { knife_ec2_create.validate! }.to raise_error SystemExit
