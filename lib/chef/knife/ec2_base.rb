@@ -34,48 +34,40 @@ class Chef
 
           option :aws_credential_file,
             long: "--aws-credential-file FILE",
-            description: "File containing AWS credentials as used by the AWS Command Line Interface.",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_credential_file] = key }
+            description: "File containing AWS credentials as used by the AWS Command Line Interface."
 
           option :aws_config_file,
             long: "--aws-config-file FILE",
-            description: "File containing AWS configurations as used by the AWS Command Line Interface.",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_config_file] = key }
+            description: "File containing AWS configurations as used by the AWS Command Line Interface."
 
           option :aws_profile,
             long: "--aws-profile PROFILE",
             description: "AWS profile, from AWS credential file and AWS config file, to use",
-            default: "default",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_profile] = key }
+            default: "default"
 
           option :aws_access_key_id,
             short: "-A ID",
             long: "--aws-access-key-id KEY",
-            description: "Your AWS Access Key ID",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_access_key_id] = key }
+            description: "Your AWS Access Key ID"
 
           option :aws_secret_access_key,
             short: "-K SECRET",
             long: "--aws-secret-access-key SECRET",
-            description: "Your AWS API Secret Access Key",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
+            description: "Your AWS API Secret Access Key"
 
           option :aws_session_token,
             long: "--aws-session-token TOKEN",
-            description: "Your AWS Session Token, for use with AWS STS Federation or Session Tokens",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
+            description: "Your AWS Session Token, for use with AWS STS Federation or Session Tokens"
 
           option :region,
             long: "--region REGION",
-            description: "Your AWS region",
-            proc: Proc.new { |key| Chef::Config[:knife][:region] = key }
+            description: "Your AWS region"
 
           option :use_iam_profile,
             long: "--use-iam-profile",
             description: "Use IAM profile assigned to current machine",
             boolean: true,
-            default: false,
-            proc: Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key }
+            default: false
         end
       end
 
