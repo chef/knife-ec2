@@ -18,7 +18,6 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 2.3"
 
   s.add_dependency "fog-aws", ">= 1", "< 4"
-  s.add_dependency "mime-types"
   s.add_dependency "knife-windows", "~> 1.0"
 
   s.require_paths = ["lib"]
