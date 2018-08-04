@@ -24,42 +24,11 @@ class Chef
 
       include Knife::Ec2Base
 
-      banner "knife ec2 flavor list (options)"
+      banner "knife ec2 flavor list (options) [DEPRECATED]"
 
       def run
-        validate!
-        custom_warnings!
-
-        flavor_list = [
-          ui.color("ID", :bold),
-          ui.color("Name", :bold),
-          ui.color("Architecture", :bold),
-          ui.color("RAM", :bold),
-          ui.color("Disk", :bold),
-          ui.color("Cores", :bold)
-        ].flatten.compact
-
-        output_column_count = flavor_list.length
-
-        begin
-          flavors = connection.flavors.sort_by(&:id)
-        rescue Exception => api_error
-          raise api_error
-        end
-
-        if config[:format] == "summary"
-          flavors.each do |flavor|
-            flavor_list << flavor.id.to_s
-            flavor_list << flavor.name
-            flavor_list << "#{flavor.bits}-bit"
-            flavor_list << "#{flavor.ram}"
-            flavor_list << "#{flavor.disk} GB"
-            flavor_list << flavor.cores.to_s
-          end
-          puts ui.list(flavor_list, :uneven_columns_across, output_column_count)
-        else
-          output(format_for_display(flavors))
-        end
+        ui.error("knife ec2 flavor list has been deprecated as this functionality is not provided by the AWS API the previous implementatin relied upon hardcoded values that were often incorrect. For an up to date list of instance types see https://www.ec2instances.info/")
+        exit 1
       end
     end
   end
