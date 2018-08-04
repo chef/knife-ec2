@@ -24,6 +24,7 @@ require "fog/aws"
 require "chef/knife/bootstrap"
 require "chef/knife/bootstrap_windows_winrm"
 require "chef/knife/bootstrap_windows_ssh"
+require "chef/util/path_helper"
 
 describe Chef::Knife::Ec2ServerCreate do
   let(:knife_ec2_create) { Chef::Knife::Ec2ServerCreate.new }
@@ -1157,12 +1158,24 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "when creating the connection" do
-    describe "when use_iam_profile is true" do
-      before do
-        Chef::Config[:knife].delete(:aws_access_key_id)
-        Chef::Config[:knife].delete(:aws_secret_access_key)
-      end
+    before(:each) do
+      Chef::Config[:knife].delete(:aws_access_key_id)
+      Chef::Config[:knife].delete(:aws_secret_access_key)
+    end
 
+    describe "when no keys or credential file is specified" do
+      it "it loads credentials from the default credentials file" do
+        default_cred_file = Chef::Util::PathHelper.home(".aws", "credentials")
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with(default_cred_file).and_return(true)
+        allow(File).to receive(:read).with(default_cred_file).and_return("[default]\naws_access_key_id=abc\naws_secret_access_key=abc")
+        expect(Fog::Compute::AWS).to receive(:new).with(hash_including(aws_access_key_id: "abc", aws_secret_access_key: "abc")).and_return(ec2_connection)
+        knife_ec2_create.validate!
+        knife_ec2_create.connection
+      end
+    end
+
+    describe "when use_iam_profile is true" do
       it "creates a connection without access keys" do
         knife_ec2_create.config[:use_iam_profile] = true
         expect(Fog::Compute::AWS).to receive(:new).with(hash_including(use_iam_profile: true)).and_return(ec2_connection)
