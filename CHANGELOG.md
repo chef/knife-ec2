@@ -4,17 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 0.19.7 -->
-## [v0.19.7](https://github.com/chef/knife-ec2/tree/v0.19.7) (2018-08-03)
+<!-- latest_release 0.19.8 -->
+## [v0.19.8](https://github.com/chef/knife-ec2/tree/v0.19.8) (2018-08-04)
 
 #### Merged Pull Requests
-- Remove readline dep which we&#39;re not using [#547](https://github.com/chef/knife-ec2/pull/547) ([tas50](https://github.com/tas50))
+- Remove mime-types dependency [#550](https://github.com/chef/knife-ec2/pull/550) ([tas50](https://github.com/tas50))
 <!-- latest_release -->
 
 <!-- release_rollup since=0.18.2 -->
 ### Changes since 0.18.2 release
 
 #### Merged Pull Requests
+- Remove mime-types dependency [#550](https://github.com/chef/knife-ec2/pull/550) ([tas50](https://github.com/tas50)) <!-- 0.19.8 -->
 - Remove readline dep which we&#39;re not using [#547](https://github.com/chef/knife-ec2/pull/547) ([tas50](https://github.com/tas50)) <!-- 0.19.7 -->
 - Removed deprecated options distro and template_file flags in server create command [#542](https://github.com/chef/knife-ec2/pull/542) ([tas50](https://github.com/tas50)) <!-- 0.19.6 -->
 - Provide a unique console color for us-east-1f availability zone [#541](https://github.com/chef/knife-ec2/pull/541) ([tas50](https://github.com/tas50)) <!-- 0.19.5 -->
