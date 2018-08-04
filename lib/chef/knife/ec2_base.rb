@@ -71,17 +71,23 @@ class Chef
         end
       end
 
+      def connection_string
+        conn = {}
+        conn[:region] = locate_config_value(:region) if locate_config_value(:region)
+        conn[:credentials] = if locate_config_value(:use_iam_profile)
+                               Aws::InstanceProfileCredentials.new
+                             elsif locate_config_value(:aws_session_token)
+                               Aws::Credentials.new(locate_config_value(:aws_access_key_id), locate_config_value(:aws_secret_access_key), locate_config_value(:aws_session_token))
+                             else
+                               Aws::Credentials.new(locate_config_value(:aws_access_key_id), locate_config_value(:aws_secret_access_key))
+                             end
+        conn
+      end
+
       # @return [Aws::EC2::Client]
       def connection
         @connection ||= begin
-          # use the CLI passed region is available
-          unless locate_config_value(:region).nil?
-            Aws.config.update({
-              region: locate_config_value(:region)
-            })
-          end
-
-          Aws::EC2::Client.new
+          Aws::EC2::Client.new(connection_string)
         end
       end
 
