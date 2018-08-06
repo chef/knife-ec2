@@ -4,43 +4,39 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 0.19.10 -->
-## [v0.19.10](https://github.com/chef/knife-ec2/tree/v0.19.10) (2018-08-06)
-
-#### Merged Pull Requests
-- If no keys specified on CLI/config use an AWS credential file if present [#548](https://github.com/chef/knife-ec2/pull/548) ([tas50](https://github.com/tas50))
+<!-- latest_release -->
 <!-- latest_release -->
 
-<!-- release_rollup since=0.18.2 -->
-### Changes since 0.18.2 release
-
-#### Merged Pull Requests
-- If no keys specified on CLI/config use an AWS credential file if present [#548](https://github.com/chef/knife-ec2/pull/548) ([tas50](https://github.com/tas50)) <!-- 0.19.10 -->
-- Remove executables from gemspec and cleanup test files [#549](https://github.com/chef/knife-ec2/pull/549) ([tas50](https://github.com/tas50)) <!-- 0.19.9 -->
-- Remove mime-types dependency [#550](https://github.com/chef/knife-ec2/pull/550) ([tas50](https://github.com/tas50)) <!-- 0.19.8 -->
-- Remove readline dep which we&#39;re not using [#547](https://github.com/chef/knife-ec2/pull/547) ([tas50](https://github.com/tas50)) <!-- 0.19.7 -->
-- Removed deprecated options distro and template_file flags in server create command [#542](https://github.com/chef/knife-ec2/pull/542) ([tas50](https://github.com/tas50)) <!-- 0.19.6 -->
-- Provide a unique console color for us-east-1f availability zone [#541](https://github.com/chef/knife-ec2/pull/541) ([tas50](https://github.com/tas50)) <!-- 0.19.5 -->
-- Improve the AMI missing error and improve the readme example [#543](https://github.com/chef/knife-ec2/pull/543) ([tas50](https://github.com/tas50)) <!-- 0.19.4 -->
-- Lazy load deps and avoid double loading [#544](https://github.com/chef/knife-ec2/pull/544) ([tas50](https://github.com/tas50)) <!-- 0.19.3 -->
-- Allow for fog-aws 1.0 - 3.0 dep to bring in bugfixes and new region support [#545](https://github.com/chef/knife-ec2/pull/545) ([tas50]
-- Clarify which AWS CLI tools we&#39;re talking about [#540](https://github.com/chef/knife-ec2/pull/540) ([tas50](https://github.com/tas50)) <!-- 0.19.2 -->
-- Fix knife ami list --group flag description [#539](https://github.com/chef/knife-ec2/pull/539) ([tas50](https://github.com/tas50)) <!-- 0.19.1 -->
-- Rewrite the credentials section of the readme with new recommendations [#538](https://github.com/chef/knife-ec2/pull/538) ([tas50](https://github.com/tas50)) <!-- 0.19.0 -->
-- Update installation instructions in the readme to push ChefDK [#537](https://github.com/chef/knife-ec2/pull/537) ([tas50](https://github.com/tas50)) <!-- 0.18.7 -->
-- Add codeowners and PR template files [#533](https://github.com/chef/knife-ec2/pull/533) ([tas50](https://github.com/tas50)) <!-- 0.18.6 -->
-- Move contributing docs out of the repo [#535](https://github.com/chef/knife-ec2/pull/535) ([tas50](https://github.com/tas50)) <!-- 0.18.5 -->
-- Bump copyrights &amp; minor readme updates [#532](https://github.com/chef/knife-ec2/pull/532) ([tas50](https://github.com/tas50)) <!-- 0.18.4 -->
-- Drop Ruby 2.2 + Add Chefstyle + align testing with other projects [#530](https://github.com/chef/knife-ec2/pull/530) ([tas50](https://github.com/tas50)) <!-- 0.18.3 -->
+<!-- release_rollup -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
+## [v0.19.10](https://github.com/chef/knife-ec2/tree/v0.19.10) (2018-08-06)
+
+#### Merged Pull Requests
+- Drop Ruby 2.2 + Add Chefstyle + align testing with other projects [#530](https://github.com/chef/knife-ec2/pull/530) ([tas50](https://github.com/tas50))
+- Bump copyrights &amp; minor readme updates [#532](https://github.com/chef/knife-ec2/pull/532) ([tas50](https://github.com/tas50))
+- Move contributing docs out of the repo [#535](https://github.com/chef/knife-ec2/pull/535) ([tas50](https://github.com/tas50))
+- Add codeowners and PR template files [#533](https://github.com/chef/knife-ec2/pull/533) ([tas50](https://github.com/tas50))
+- Update installation instructions in the readme to push ChefDK [#537](https://github.com/chef/knife-ec2/pull/537) ([tas50](https://github.com/tas50))
+- Rewrite the credentials section of the readme with new recommendations [#538](https://github.com/chef/knife-ec2/pull/538) ([tas50](https://github.com/tas50))
+- Fix knife ami list --group flag description [#539](https://github.com/chef/knife-ec2/pull/539) ([tas50](https://github.com/tas50))
+- Clarify which AWS CLI tools we&#39;re talking about [#540](https://github.com/chef/knife-ec2/pull/540) ([tas50](https://github.com/tas50))
+- Lazy load deps and avoid double loading [#544](https://github.com/chef/knife-ec2/pull/544) ([tas50](https://github.com/tas50))
+- Improve the AMI missing error and improve the readme example [#543](https://github.com/chef/knife-ec2/pull/543) ([tas50](https://github.com/tas50))
+- Provide a unique console color for us-east-1f availability zone [#541](https://github.com/chef/knife-ec2/pull/541) ([tas50](https://github.com/tas50))
+- Removed deprecated options distro and template_file flags in server create command [#542](https://github.com/chef/knife-ec2/pull/542) ([tas50](https://github.com/tas50))
+- Remove readline dep which we&#39;re not using [#547](https://github.com/chef/knife-ec2/pull/547) ([tas50](https://github.com/tas50))
+- Remove mime-types dependency [#550](https://github.com/chef/knife-ec2/pull/550) ([tas50](https://github.com/tas50))
+- Remove executables from gemspec and cleanup test files [#549](https://github.com/chef/knife-ec2/pull/549) ([tas50](https://github.com/tas50))
+- If no keys specified on CLI/config use an AWS credential file if present [#548](https://github.com/chef/knife-ec2/pull/548) ([tas50](https://github.com/tas50))
+<!-- latest_stable_release -->
+
 ## [v0.18.2](https://github.com/chef/knife-ec2/tree/v0.18.2) (2018-07-06)
 
 #### Merged Pull Requests
 - [MSYS-824] fix breaking tag changes &amp; deprecation warning [#527](https://github.com/chef/knife-ec2/pull/527) ([dheerajd-msys](https://github.com/dheerajd-msys))
 - MSYS-798 - Fixes for windows administrator password [#524](https://github.com/chef/knife-ec2/pull/524) ([dheerajd-msys](https://github.com/dheerajd-msys))
-<!-- latest_stable_release -->
 
 
 
