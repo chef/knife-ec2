@@ -24,6 +24,7 @@ require "fog/aws"
 require "chef/knife/bootstrap"
 require "chef/knife/bootstrap_windows_winrm"
 require "chef/knife/bootstrap_windows_ssh"
+require "chef/util/path_helper"
 
 describe Chef::Knife::Ec2ServerCreate do
   let(:knife_ec2_create) { Chef::Knife::Ec2ServerCreate.new }
@@ -866,6 +867,7 @@ describe Chef::Knife::Ec2ServerCreate do
         Chef::Config[:knife].delete(:aws_access_key_id)
         Chef::Config[:knife].delete(:aws_secret_access_key)
 
+        allow(File).to receive(:exist?).with("/apple/pear").and_return(true)
         Chef::Config[:knife][:aws_credential_file] = "/apple/pear"
         @access_key_id = "access_key_id"
         @secret_key = "secret_key"
@@ -886,6 +888,7 @@ describe Chef::Knife::Ec2ServerCreate do
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
       end
+
       it "reads UNIX Line endings for new format" do
         allow(File).to receive(:read)
           .and_return("[default]\naws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
@@ -918,11 +921,20 @@ describe Chef::Knife::Ec2ServerCreate do
           expect { knife_ec2_create.validate! }.to raise_error("The provided --aws-profile 'xyz' is invalid.")
         end
       end
+
+      context "when non-existent --aws_credential_file is given" do
+        it "raises exception" do
+          Chef::Config[:knife][:aws_credential_file] = "/foo/bar"
+          allow(File).to receive(:exist?).and_return(false)
+          expect { knife_ec2_create.validate! }.to raise_error("The provided --aws_credential_file (/foo/bar) cannot be found on disk.")
+        end
+      end
     end
 
     describe "when reading aws_config_file" do
       before do
         Chef::Config[:knife][:aws_config_file] = "/apple/pear"
+        allow(File).to receive(:exist?).with("/apple/pear").and_return(true)
         @region = "region"
       end
 
@@ -966,6 +978,14 @@ describe Chef::Knife::Ec2ServerCreate do
           Chef::Config[:knife][:aws_profile] = "xyz"
           allow(File).to receive(:read).and_return("[default]\nregion=TESTREGION")
           expect { knife_ec2_create.validate! }.to raise_error("The provided --aws-profile 'profile xyz' is invalid.")
+        end
+      end
+
+      context "when non-existent --aws_config_file is given" do
+        it "raises exception" do
+          Chef::Config[:knife][:aws_config_file] = "/foo/bar"
+          allow(File).to receive(:exist?).and_return(false)
+          expect { knife_ec2_create.validate! }.to raise_error("The provided --aws_config_file (/foo/bar) cannot be found on disk.")
         end
       end
 
@@ -1032,6 +1052,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "disallows specifying credentials file and aws keys" do
       Chef::Config[:knife][:aws_credential_file] = "/apple/pear"
+      allow(File).to receive(:exist?).with("/apple/pear").and_return(true)
       allow(File).to receive(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
 
       expect { knife_ec2_create.validate! }.to raise_error SystemExit
@@ -1137,12 +1158,24 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "when creating the connection" do
-    describe "when use_iam_profile is true" do
-      before do
-        Chef::Config[:knife].delete(:aws_access_key_id)
-        Chef::Config[:knife].delete(:aws_secret_access_key)
-      end
+    before(:each) do
+      Chef::Config[:knife].delete(:aws_access_key_id)
+      Chef::Config[:knife].delete(:aws_secret_access_key)
+    end
 
+    describe "when no keys or credential file is specified" do
+      it "it loads credentials from the default credentials file" do
+        default_cred_file = Chef::Util::PathHelper.home(".aws", "credentials")
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with(default_cred_file).and_return(true)
+        allow(File).to receive(:read).with(default_cred_file).and_return("[default]\naws_access_key_id=abc\naws_secret_access_key=abc")
+        expect(Fog::Compute::AWS).to receive(:new).with(hash_including(aws_access_key_id: "abc", aws_secret_access_key: "abc")).and_return(ec2_connection)
+        knife_ec2_create.validate!
+        knife_ec2_create.connection
+      end
+    end
+
+    describe "when use_iam_profile is true" do
       it "creates a connection without access keys" do
         knife_ec2_create.config[:use_iam_profile] = true
         expect(Fog::Compute::AWS).to receive(:new).with(hash_including(use_iam_profile: true)).and_return(ec2_connection)
