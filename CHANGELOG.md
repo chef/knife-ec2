@@ -4,10 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release -->
+<!-- latest_release 0.19.11 -->
+## [v0.19.11](https://github.com/chef/knife-ec2/tree/v0.19.11) (2018-08-30)
+
+#### Merged Pull Requests
+- Misc cleanup to sync with other gems [#552](https://github.com/chef/knife-ec2/pull/552) ([tas50](https://github.com/tas50))
 <!-- latest_release -->
 
-<!-- release_rollup -->
+<!-- release_rollup since=0.19.10 -->
+### Changes not yet released to rubygems.org
+
+#### Merged Pull Requests
+- Misc cleanup to sync with other gems [#552](https://github.com/chef/knife-ec2/pull/552) ([tas50](https://github.com/tas50)) <!-- 0.19.11 -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
