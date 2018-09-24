@@ -115,7 +115,7 @@ describe Chef::Knife::Ec2AmiList do
         ec2_servers = double()
         allow(ec2_connection).to receive(:describe_images).and_return(@describe_images_format)
         allow(knife_ec2_ami_list).to receive(:validate!)
-        expect(knife_ec2_ami_list.ui).to receive(:warn).with("No region was specified in knife.rb or as an argument. The default region, us-east-1, will be used:")
+        expect(knife_ec2_ami_list.ui).to receive(:warn).with("No region was specified in knife.rb/config.rb or as an argument. The default region, us-east-1, will be used:")
         knife_ec2_ami_list.run
       end
     end

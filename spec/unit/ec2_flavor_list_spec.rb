@@ -45,7 +45,7 @@ describe Chef::Knife::Ec2FlavorList do
         ec2_flavors = double(sort_by: [])
         allow(ec2_connection).to receive(:flavors).and_return(ec2_flavors)
         allow(knife_flavor_list).to receive(:validate!)
-        expect(knife_flavor_list.ui).to receive(:warn).with("No region was specified in knife.rb or as an argument. The default region, us-east-1, will be used:")
+        expect(knife_flavor_list.ui).to receive(:warn).with("No region was specified in knife.rb/config.rb or as an argument. The default region, us-east-1, will be used:")
         knife_flavor_list.run
       end
     end
