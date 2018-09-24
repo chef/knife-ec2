@@ -872,7 +872,7 @@ class Chef
         if Chef::Config[:knife].keys.include? :aws_ssh_key_id
           Chef::Config[:knife][:ssh_key_name] = Chef::Config[:knife][:aws_ssh_key_id] if !Chef::Config[:knife][:ssh_key_name]
           Chef::Config[:knife].delete(:aws_ssh_key_id)
-          ui.warn("Use of aws_ssh_key_id option in knife.rb config is deprecated, use ssh_key_name option instead.")
+          ui.warn("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
         end
 
         super([:image, :ssh_key_name, :aws_access_key_id, :aws_secret_access_key])
@@ -930,13 +930,13 @@ class Chef
         end
 
         if config[:security_groups] && config[:security_groups].class == String
-          ui.error("Invalid value type for knife[:security_groups] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_groups] = ['sgroup1']")
+          ui.error("Invalid value type for knife[:security_groups] in knife configuration file (i.e knife.rb/config.rb). Type should be array. e.g - knife[:security_groups] = ['sgroup1']")
           exit 1
         end
 
-        # Validation for security_group_ids passed through knife.rb. It will raise error if values are not provided in Array.
+        # Validation for security_group_ids passed through knife.rb/config.rb. It will raise error if values are not provided in Array.
         if locate_config_value(:security_group_ids) && locate_config_value(:security_group_ids).class == String
-          ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
+          ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb/config.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
           exit 1
         end
 
