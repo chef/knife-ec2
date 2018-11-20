@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.description  = s.summary
   s.license      = "Apache-2.0"
 
-  s.files        = `git ls-files`.split("\n")
+  s.files        = %w(LICENSE) + Dir.glob("lib/**/*")
   s.test_files   = `git ls-files spec/*`.split("\n")
   s.required_ruby_version = ">= 2.3"
 
