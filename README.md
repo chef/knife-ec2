@@ -222,6 +222,7 @@ The `knife ec2 server create` command also supports the following options for bo
 :kerberos_keytab_file          The Kerberos keytab file used for authentication
 :kerberos_realm                The Kerberos realm used for authentication
 :kerberos_service              The Kerberos service used for authentication
+:allow_long_password           Defaults to false, warns and prompts about WinRM passwords longer than 14 characters
 ```
 ### `knife ec2 ami list`
 

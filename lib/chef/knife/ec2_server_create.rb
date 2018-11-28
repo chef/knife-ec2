@@ -1005,14 +1005,18 @@ class Chef
         end
 
         if locate_config_value(:winrm_password).to_s.length > 14
-          ui.warn("The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):")
-          password_promt = STDIN.gets.chomp.upcase
-          if password_promt == "N"
-            raise "Exiting as operation with password greater than 14 characters not accepted"
-          elsif password_promt == "Y"
+          if locate_config_value(:allow_long_password)
             @allow_long_password = "/yes"
           else
-            raise "The input provided is incorrect."
+            ui.warn("The password provided is longer than 14 characters and allow_long_password is not set to true in knife.rb. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):")
+            password_prompt = STDIN.gets.chomp.upcase
+            if password_prompt == "N"
+              raise "Exiting as operation with password greater than 14 characters not accepted"
+            elsif password_prompt == "Y"
+              @allow_long_password = "/yes"
+            else
+              raise "The input provided is incorrect."
+            end
           end
         end
 

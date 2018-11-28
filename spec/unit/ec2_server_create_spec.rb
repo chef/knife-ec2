@@ -2712,7 +2712,17 @@ describe Chef::Knife::Ec2ServerCreate do
       end
     end
 
+    context "allow_long_password is passed in knife config" do
+      before do
+        Chef::Config[:knife][:allow_long_password] = true
+      end
+      it "user addition command is executed forcefully" do
+        knife_ec2_create.validate!
+        expect(knife_ec2_create.instance_variable_get(:@allow_long_password)).to eq ("/yes")
+      end
+    end
   end
+
   describe "--primary_eni option" do
     before do
       allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
