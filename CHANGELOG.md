@@ -4,22 +4,20 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 0.19.12 -->
-## [v0.19.12](https://github.com/chef/knife-ec2/tree/v0.19.12) (2018-11-28)
-
-#### Merged Pull Requests
-- Pass bootstrap template in common config [#560](https://github.com/chef/knife-ec2/pull/560) ([scotthain](https://github.com/scotthain))
+<!-- latest_release -->
 <!-- latest_release -->
 
-<!-- release_rollup since=0.19.10 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Pass bootstrap template in common config [#560](https://github.com/chef/knife-ec2/pull/560) ([scotthain](https://github.com/scotthain)) <!-- 0.19.12 -->
-- Misc cleanup to sync with other gems [#552](https://github.com/chef/knife-ec2/pull/552) ([tas50](https://github.com/tas50)) <!-- 0.19.11 -->
+<!-- release_rollup -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
+## [v0.19.12](https://github.com/chef/knife-ec2/tree/v0.19.12) (2018-11-28)
+
+#### Merged Pull Requests
+- Misc cleanup to sync with other gems [#552](https://github.com/chef/knife-ec2/pull/552) ([tas50](https://github.com/tas50))
+- Pass bootstrap template in common config [#560](https://github.com/chef/knife-ec2/pull/560) ([scotthain](https://github.com/scotthain))
+<!-- latest_stable_release -->
+
 ## [v0.19.10](https://github.com/chef/knife-ec2/tree/v0.19.10) (2018-08-06)
 
 #### Merged Pull Requests
@@ -39,7 +37,6 @@ prior to release 0.8.0, please visit the [source repository](https://github.com/
 - Remove mime-types dependency [#550](https://github.com/chef/knife-ec2/pull/550) ([tas50](https://github.com/tas50))
 - Remove executables from gemspec and cleanup test files [#549](https://github.com/chef/knife-ec2/pull/549) ([tas50](https://github.com/tas50))
 - If no keys specified on CLI/config use an AWS credential file if present [#548](https://github.com/chef/knife-ec2/pull/548) ([tas50](https://github.com/tas50))
-<!-- latest_stable_release -->
 
 ## [v0.18.2](https://github.com/chef/knife-ec2/tree/v0.18.2) (2018-07-06)
 
