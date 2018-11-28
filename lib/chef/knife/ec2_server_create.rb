@@ -774,6 +774,7 @@ class Chef
         bootstrap.config[:bootstrap_vault_file] = locate_config_value(:bootstrap_vault_file)
         bootstrap.config[:bootstrap_vault_json] = locate_config_value(:bootstrap_vault_json)
         bootstrap.config[:bootstrap_vault_item] = locate_config_value(:bootstrap_vault_item)
+        bootstrap.config[:bootstrap_template] = locate_config_value(:bootstrap_template)
         bootstrap.config[:use_sudo_password] = locate_config_value(:use_sudo_password)
         bootstrap.config[:yes] = locate_config_value(:yes)
         # If --chef-tag is provided then it will be set in chef as single value e.g. --chef-tag "myTag"
