@@ -616,7 +616,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "gives warning message and creates the attribute with the required name" do
-      expect(knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb config is deprecated, use ssh_key_name option instead.")
+      expect(knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
       knife_ec2_create.validate!
       expect(Chef::Config[:knife][:ssh_key_name]).to eq(@aws_key)
     end
@@ -631,7 +631,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "gives warning message and gives preference to CLI value over knife config's value" do
-      expect(knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb config is deprecated, use ssh_key_name option instead.")
+      expect(knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
       knife_ec2_create.validate!
       expect(Chef::Config[:knife][:ssh_key_name]).to_not eq(@aws_key)
     end

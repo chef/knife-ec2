@@ -223,7 +223,7 @@ class Chef
     # Custom Warning
     def custom_warnings!
       if !config[:region] && Chef::Config[:knife][:region].nil?
-        ui.warn "No region was specified in knife.rb or as an argument. The default region, us-east-1, will be used:"
+        ui.warn "No region was specified in knife.rb/config.rb or as an argument. The default region, us-east-1, will be used:"
       end
     end
 

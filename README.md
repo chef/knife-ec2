@@ -110,7 +110,7 @@ Note: Passing credentials via the command line exposes the credentials in your s
 
 ## Additional config.rb & knife.rb Configuration Options
 
-The following configuration options may be set in your `knife.rb`:
+The following configuration options may be set in your configuration file:
 - flavor
 - image
 - availability_zone
@@ -144,7 +144,7 @@ knife-ec2 now includes the ability to retrieve the encrypted data bag secret and
 - `http` or `https` based: 'http://example.com/chef/my-validator.pem'
 - `s3` based:  's3://chef/my-validator.pem'
 
-### Use the following configuration options in `knife.rb` to set the source URLs:
+### Use the following configuration options in `knife.rb` or `config.rb` to set the source URLs:
 
 ```ruby
 knife[:validation_key_url] = 'http://example.com/chef/my-validator.pem'
@@ -250,7 +250,7 @@ knife ec2 ami list
 
   ```
   :Allowed platform             windows, ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco, amazon, nessus
-  ```  
+  ```
 - **Search:**
   User can search any string into the description column by using -s or --search:
 
@@ -258,7 +258,7 @@ knife ec2 ami list
 
   ```
   :search_keyword             Any String or number
-  ```  
+  ```
 
 ### `knife ec2 server list`
 
