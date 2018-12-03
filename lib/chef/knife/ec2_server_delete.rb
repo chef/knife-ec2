@@ -88,7 +88,7 @@ class Chef
             msg_pair("Private DNS Name", @server.private_dns_name)
             msg_pair("Private IP Address", @server.private_ip_address)
 
-            puts '\n'
+            puts "\n"
             confirm("Do you really want to delete this server")
 
             @server.destroy
