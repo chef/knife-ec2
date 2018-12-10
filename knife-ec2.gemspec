@@ -13,7 +13,6 @@ Gem::Specification.new do |s|
   s.license      = "Apache-2.0"
 
   s.files        = %w{LICENSE} + Dir.glob("lib/**/*")
-  s.test_files   = `git ls-files spec/*`.split("\n")
   s.required_ruby_version = ">= 2.3"
 
   s.add_dependency "fog-aws", ">= 1", "< 4"
