@@ -4,28 +4,25 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 0.19.16 -->
+<!-- latest_release -->
+<!-- latest_release -->
+
+<!-- release_rollup -->
+<!-- release_rollup -->
+
+<!-- latest_stable_release -->
 ## [v0.19.16](https://github.com/chef/knife-ec2/tree/v0.19.16) (2018-12-11)
 
 #### Merged Pull Requests
 - Don&#39;t ship the spec files in the gem [#562](https://github.com/chef/knife-ec2/pull/562) ([tas50](https://github.com/tas50))
-<!-- latest_release -->
-
-<!-- release_rollup since=0.19.15 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Don&#39;t ship the spec files in the gem [#562](https://github.com/chef/knife-ec2/pull/562) ([tas50](https://github.com/tas50)) <!-- 0.19.16 -->
-<!-- release_rollup -->
-
 <!-- latest_stable_release -->
+
 ## [v0.19.15](https://github.com/chef/knife-ec2/tree/v0.19.15) (2018-12-03)
 
 #### Merged Pull Requests
 - Only ship the necessary libraries in the gem [#559](https://github.com/chef/knife-ec2/pull/559) ([tas50](https://github.com/tas50))
 - Do not print out a literal \n when deleting servers from ec2 [#558](https://github.com/chef/knife-ec2/pull/558) ([muz](https://github.com/muz))
 - Updated descriptions to mention config.rb [#555](https://github.com/chef/knife-ec2/pull/555) ([Vasu1105](https://github.com/Vasu1105))
-<!-- latest_stable_release -->
 
 ## [v0.19.12](https://github.com/chef/knife-ec2/tree/v0.19.12) (2018-11-28)
 
