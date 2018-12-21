@@ -1,4 +1,3 @@
-require "bundler/gem_tasks"
 require "rspec/core/rake_task"
 
 begin
@@ -8,8 +7,6 @@ rescue Bundler::BundlerError => e
   $stderr.puts "Run `bundle install` to install missing gems"
   exit e.status_code
 end
-
-Bundler::GemHelper.install_tasks
 
 desc "Run specs"
 RSpec::Core::RakeTask.new(:spec) do |spec|
