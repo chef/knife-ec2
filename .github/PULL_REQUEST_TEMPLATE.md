@@ -5,7 +5,7 @@
 ### Issues Resolved
 
 [List any existing issues this PR resolves, or any Discourse or
-StackOverflow discussion that's relevant]
+StackOverflow discussions that are relevant]
 
 ### Check List
 
