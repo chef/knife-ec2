@@ -5,8 +5,8 @@ require "knife-ec2/version"
 Gem::Specification.new do |s|
   s.name         = "knife-ec2"
   s.version      = Knife::Ec2::VERSION
-  s.authors      = ["Adam Jacob", "Seth Chisamore"]
-  s.email        = ["adam@chef.io", "schisamo@chef.io"]
+  s.authors      = ["Chef Software, Inc."]
+  s.email        = ["info@chef.io"]
   s.homepage     = "https://github.com/chef/knife-ec2"
   s.summary      = "Amazon EC2 Support for Chef's Knife Command"
   s.description  = s.summary
