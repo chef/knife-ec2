@@ -777,6 +777,7 @@ class Chef
         bootstrap.config[:bootstrap_template] = locate_config_value(:bootstrap_template)
         bootstrap.config[:use_sudo_password] = locate_config_value(:use_sudo_password)
         bootstrap.config[:yes] = locate_config_value(:yes)
+
         # If --chef-tag is provided then it will be set in chef as single value e.g. --chef-tag "myTag"
         # Otherwise if --tag-node-in-chef is provided then it will tag the chef in key=value pair of --tags option
         # e.g. --tags "key=value"
@@ -820,6 +821,7 @@ class Chef
           bootstrap.config[:ssh_password] = locate_config_value(:ssh_password)
           bootstrap.config[:ssh_port] = locate_config_value(:ssh_port)
           bootstrap.config[:identity_file] = locate_config_value(:identity_file)
+          bootstrap.config[:ssh_identity_file] = locate_config_value(:identity_file)
           bootstrap.config[:no_host_key_verify] = locate_config_value(:no_host_key_verify)
           bootstrap.config[:forward_agent] = locate_config_value(:forward_agent)
         else
@@ -847,6 +849,7 @@ class Chef
         bootstrap.config[:ssh_port] = config[:ssh_port]
         bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
         bootstrap.config[:identity_file] = config[:identity_file]
+        bootstrap.config[:ssh_identity_file] = locate_config_value(:identity_file)
 
         if locate_config_value(:chef_node_name)
           bootstrap.config[:chef_node_name] = evaluate_node_name(locate_config_value(:chef_node_name))
