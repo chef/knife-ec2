@@ -19,16 +19,12 @@
 
 require "chef/knife/ec2_base"
 require "chef/knife/s3_source"
-require "chef/knife/winrm_base"
-require "chef/knife/bootstrap_windows_base"
 
 class Chef
   class Knife
     class Ec2ServerCreate < Knife
 
       include Knife::Ec2Base
-      include Knife::WinrmBase
-      include Knife::BootstrapWindowsBase
       deps do
         require "tempfile"
         require "uri"
@@ -997,7 +993,7 @@ class Chef
           exit 1
         end
 
-        if locate_config_value(:spot_price).nil? && !locate_config_value(:spot_wait_mode).casecmp("prompt").zero?
+        if locate_config_value(:spot_price).nil? && !locate_config_value(:spot_wait_mode).casecmp("prompt") == 0
           ui.error("spot-wait-mode option requires that a spot-price option is set.")
           exit 1
         end
@@ -1053,7 +1049,7 @@ class Chef
           user_related_commands = <<~EOH
             net user /add #{locate_config_value(:winrm_user).delete('.\\')} #{windows_password} #{@allow_long_password};
             net localgroup Administrators /add #{locate_config_value(:winrm_user).delete('.\\')};
-        EOH
+          EOH
         end
         <<~EOH
           #{user_related_commands}
@@ -1100,7 +1096,7 @@ class Chef
           $create_listener_cmd = "winrm create winrm/config/Listener?Address=*+Transport=HTTPS '@{Hostname=`"$vm_name`";CertificateThumbprint=`"$thumbprint`"}'"
           iex $create_listener_cmd
           netsh advfirewall firewall add rule name="WinRM HTTPS" protocol=TCP dir=in Localport=5986 remoteport=any action=allow localip=any remoteip=any profile=any enable=yes
-EOH
+        EOH
       end
 
       def ssl_config_data_already_exist?
@@ -1225,10 +1221,10 @@ EOH
 
           server_def[:block_device_mapping] =
             [{
-               "DeviceName" => ami_map["deviceName"],
-               "Ebs.VolumeSize" => ebs_size,
+               "DeviceName"              => ami_map["deviceName"],
+               "Ebs.VolumeSize"          => ebs_size,
                "Ebs.DeleteOnTermination" => delete_term,
-               "Ebs.VolumeType" => config[:ebs_volume_type],
+               "Ebs.VolumeType"          => config[:ebs_volume_type],
              }]
           server_def[:block_device_mapping].first["Ebs.Iops"] = iops_rate unless iops_rate.empty?
           server_def[:block_device_mapping].first["Ebs.Encrypted"] = true if locate_config_value(:ebs_encrypted)
