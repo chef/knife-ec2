@@ -4,10 +4,8 @@ dist: xenial
 
 matrix:
   include:
-    - rvm: 2.3.8
-    - rvm: 2.4.5
-    - rvm: 2.5.3
-    - rvm: 2.6
+    - rvm: 2.5.5
+    - rvm: 2.6.3
     - rvm: ruby-head
   allow_failures:
     - rvm: ruby-head
@@ -15,6 +13,7 @@ matrix:
 branches:
   only:
     - master
+    - 0-stable
 
 bundler_args: --jobs 7 --without docs debug
 
