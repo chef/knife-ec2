@@ -19,16 +19,12 @@
 
 require "chef/knife/ec2_base"
 require "chef/knife/s3_source"
-require "chef/knife/winrm_base"
-require "chef/knife/bootstrap_windows_base"
 
 class Chef
   class Knife
     class Ec2ServerCreate < Knife
 
       include Knife::Ec2Base
-      include Knife::WinrmBase
-      include Knife::BootstrapWindowsBase
       deps do
         require "tempfile"
         require "uri"

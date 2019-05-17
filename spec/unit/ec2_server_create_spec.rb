@@ -22,8 +22,6 @@ require "net/ssh/proxy/command"
 require "net/ssh/gateway"
 require "fog/aws"
 require "chef/knife/bootstrap"
-require "chef/knife/bootstrap_windows_winrm"
-require "chef/knife/bootstrap_windows_ssh"
 require "chef/util/path_helper"
 
 describe Chef::Knife::Ec2ServerCreate do
