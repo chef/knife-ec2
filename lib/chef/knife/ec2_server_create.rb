@@ -449,30 +449,29 @@ class Chef
 
         # Check if Server is Windows or Linux
         if is_image_windows?
-          protocol = locate_config_value(:bootstrap_protocol)
-          protocol ||= "winrm"
-          if protocol == "winrm"
-            load_winrm_deps
+          connection_port = config_value(:connection_port,
+                            knife_key_for_protocol(connection_protocol, :port))
+          if winrm?
             print "\n#{ui.color("Waiting for winrm access to become available", :magenta)}"
-            print(".") until tcp_test_winrm(ssh_connect_host, locate_config_value(:winrm_port)) do
+            print(".") until tcp_test_winrm(connection_host, connection_port || 5985) do
               sleep 10
               puts("done")
             end
           else
             print "\n#{ui.color("Waiting for sshd access to become available", :magenta)}"
             # If FreeSSHd, winsshd etc are available
-            print(".") until tcp_test_ssh(ssh_connect_host, config[:ssh_port]) do
+            print(".") until tcp_test_ssh(connection_host, connection_port || 22) do
               sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
               puts("done")
             end
             ssh_override_winrm
           end
-          bootstrap_for_windows_node(@server, ssh_connect_host).run
+          bootstrap_for_windows_node(@server, connection_host).run
         else
           print "\n#{ui.color("Waiting for sshd access to become available", :magenta)}"
-          wait_for_sshd(ssh_connect_host)
+          wait_for_sshd(connection_host)
           ssh_override_winrm
-          bootstrap_for_linux_node(@server, ssh_connect_host).run
+          bootstrap_for_linux_node(@server, connection_host).run
         end
 
         puts "\n"
@@ -1193,8 +1192,8 @@ class Chef
         ec2_connection.subnets.get(server.subnet_id).map_public_ip_on_launch
       end
 
-      def ssh_connect_host
-        unless @ssh_connect_host
+      def connection_host
+        unless @connection_host
           if config[:server_connect_attribute]
             connect_attribute = config[:server_connect_attribute]
             server.send(config[:server_connect_attribute])
@@ -1205,11 +1204,11 @@ class Chef
             connect_attribute = server.dns_name ? "dns_name" : "public_ip_address"
             server.send(connect_attribute)
           end
-          @ssh_connect_host = server.send(connect_attribute)
+          @connection_host = server.send(connect_attribute)
         end
 
-        puts "\nSSH Target Address: #{@ssh_connect_host}(#{connect_attribute})"
-        @ssh_connect_host
+        puts "\nSSH Target Address: #{@connection_host}(#{connect_attribute})"
+        @connection_host
       end
 
       def create_tags(hashed_tags)
@@ -1387,14 +1386,6 @@ class Chef
         end
       end
 
-      def load_winrm_deps
-        require "winrm"
-        require "chef/knife/winrm"
-        require "chef/knife/bootstrap_windows_winrm"
-        require "chef/knife/bootstrap_windows_ssh"
-        require "chef/knife/core/windows_bootstrap_context"
-      end
-
       # Returns the name of node after evaluation of server id if %s is present.
       # Eg: "Test-%s" will return "Test-i-12345"  in case the instance id is i-12345
       def evaluate_node_name(node_name)
@@ -1407,6 +1398,55 @@ class Chef
         end
       end
 
+      # url values override CLI flags, if you provide both
+      # we'll use the one that you gave in the URL.
+      def connection_protocol
+        return @connection_protocol if @connection_protocol
+        from_cli = locate_config_value(:connection_protocol)
+        from_knife = Chef::Config[:knife][:connection_protocol]
+        @connection_protocol = from_cli || from_knife || "ssh"
+      end
+
+      # Looks up configuration entries, first in the class member
+      # `config` which contains options populated from CLI flags.
+      # If the entry is not found there, Chef::Config[:knife][KEY]
+      # is checked.
+      #
+      # knife_config_key should be specified if the knife config lookup
+      # key is different from the CLI flag lookup key.
+      #
+      def config_value(key, knife_config_key = nil, default = nil)
+        if config.key? key
+          config[key]
+        else
+          lookup_key = knife_config_key || key
+          if Chef::Config[:knife].key?(lookup_key)
+            Chef::Config[:knife][lookup_key]
+          else
+            default
+          end
+        end
+      end
+
+      # To avoid cluttering the CLI options, some flags (such as port and user)
+      # are shared between protocols.  However, there is still a need to allow the operator
+      # to specify defaults separately, since they may not be the same values for different
+      # protocols.
+
+      # These keys are available in Chef::Config, and are prefixed with the protocol name.
+      # For example, :user CLI option will map to :winrm_user and :ssh_user Chef::Config keys,
+      # based on the connection protocol in use.
+      def knife_key_for_protocol(protocol, option)
+        "#{connection_protocol}_#{option}".to_sym
+      end
+
+      def winrm?
+        connection_protocol == "winrm"
+      end
+
+      def ssh?
+        connection_protocol == "ssh"
+      end
     end
   end
 end
