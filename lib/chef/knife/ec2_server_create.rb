@@ -464,13 +464,11 @@ class Chef
               sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
               puts("done")
             end
-            ssh_override_winrm
           end
           bootstrap_for_windows_node(@server, connection_host).run
         else
           print "\n#{ui.color("Waiting for sshd access to become available", :magenta)}"
           wait_for_sshd(connection_host)
-          ssh_override_winrm
           bootstrap_for_linux_node(@server, connection_host).run
         end
 
@@ -639,12 +637,13 @@ class Chef
       end
 
       def bootstrap_for_windows_node(server, fqdn)
-        if locate_config_value(:bootstrap_protocol) == "winrm" || locate_config_value(:bootstrap_protocol).nil?
+        bootstrap = Chef::Knife::Bootstrap.new
+        if winrm?
           if locate_config_value(:kerberos_realm)
             # Fetch AD/WINS based fqdn if any for Kerberos-based Auth
             fqdn = locate_config_value(:fqdn) || fetch_server_fqdn(server.private_ip_address)
           end
-          bootstrap = Chef::Knife::BootstrapWindowsWinrm.new
+
           bootstrap.config[:winrm_user] = locate_config_value(:winrm_user)
           bootstrap.config[:winrm_password] = windows_password
           bootstrap.config[:winrm_transport] = locate_config_value(:winrm_transport)
@@ -655,8 +654,7 @@ class Chef
           bootstrap.config[:winrm_port] = locate_config_value(:winrm_port)
           bootstrap.config[:auth_timeout] = locate_config_value(:auth_timeout)
           bootstrap.config[:winrm_ssl_verify_mode] = locate_config_value(:winrm_ssl_verify_mode)
-        elsif locate_config_value(:bootstrap_protocol) == "ssh"
-          bootstrap = Chef::Knife::BootstrapWindowsSsh.new
+        elsif ssh?
           bootstrap.config[:ssh_user] = locate_config_value(:ssh_user)
           bootstrap.config[:ssh_password] = locate_config_value(:ssh_password)
           bootstrap.config[:ssh_port] = locate_config_value(:ssh_port)
@@ -664,9 +662,6 @@ class Chef
           bootstrap.config[:ssh_identity_file] = locate_config_value(:identity_file)
           bootstrap.config[:no_host_key_verify] = locate_config_value(:no_host_key_verify)
           bootstrap.config[:forward_agent] = locate_config_value(:forward_agent)
-        else
-          ui.error("Unsupported Bootstrapping Protocol. Supported : winrm, ssh")
-          exit 1
         end
         bootstrap.name_args = [fqdn]
         bootstrap.config[:msi_url] = locate_config_value(:msi_url)
@@ -1269,29 +1264,6 @@ class Chef
         ec2_connection.attach_classic_link_vpc(server.id, vpc_id, security_group_ids)
       end
 
-      def ssh_override_winrm
-        # unchanged ssh_user and changed winrm_user, override ssh_user
-        if locate_config_value(:ssh_user).eql?(options[:ssh_user][:default]) &&
-            !locate_config_value(:winrm_user).eql?(options[:winrm_user][:default])
-          config[:ssh_user] = locate_config_value(:winrm_user)
-        end
-        # unchanged ssh_port and changed winrm_port, override ssh_port
-        if locate_config_value(:ssh_port).eql?(options[:ssh_port][:default]) &&
-            !locate_config_value(:winrm_port).eql?(options[:winrm_port][:default])
-          config[:ssh_port] = locate_config_value(:winrm_port)
-        end
-        # unset ssh_password and set winrm_password, override ssh_password
-        if locate_config_value(:ssh_password).nil? &&
-            !locate_config_value(:winrm_password).nil?
-          config[:ssh_password] = locate_config_value(:winrm_password)
-        end
-        # unset identity_file and set kerberos_keytab_file, override identity_file
-        if locate_config_value(:identity_file).nil? &&
-            !locate_config_value(:kerberos_keytab_file).nil?
-          config[:identity_file] = locate_config_value(:kerberos_keytab_file)
-        end
-      end
-
       def tcp_test_winrm(ip_addr, port)
         tcp_socket = TCPSocket.new(ip_addr, port)
         yield
@@ -1400,11 +1372,13 @@ class Chef
 
       # url values override CLI flags, if you provide both
       # we'll use the one that you gave in the URL.
+      # For windows default is "winrm" and for other default is "ssh"
       def connection_protocol
         return @connection_protocol if @connection_protocol
         from_cli = locate_config_value(:connection_protocol)
         from_knife = Chef::Config[:knife][:connection_protocol]
-        @connection_protocol = from_cli || from_knife || "ssh"
+        default = is_image_windows? ? "winrm" : "ssh"
+        @connection_protocol = from_cli || from_knife || default
       end
 
       # Looks up configuration entries, first in the class member
