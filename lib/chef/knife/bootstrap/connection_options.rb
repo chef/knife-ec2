@@ -22,6 +22,9 @@ class Chef
     class Bootstrap
       module ConnectionOptions
 
+        SUPPORTED_CONNECTION_PROTOCOLS = %w{ssh winrm}.freeze
+        WINRM_AUTH_PROTOCOL_LIST = %w{plaintext kerberos ssl negotiate}.freeze
+
         def self.included(includer)
           includer.class_eval do
 
@@ -50,7 +53,7 @@ class Chef
               short: "-o PROTOCOL",
               long: "--connection-protocol PROTOCOL",
               description: "The protocol to use to connect to the target node.",
-              in: Chef::Knife::Bootstrap::SUPPORTED_CONNECTION_PROTOCOLS
+              in: SUPPORTED_CONNECTION_PROTOCOLS
 
             option :max_wait,
               short: "-W SECONDS",
