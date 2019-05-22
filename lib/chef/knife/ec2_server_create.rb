@@ -306,6 +306,57 @@ class Chef
           Chef::Config[:knife][:aws_tag]
         }
 
+      DEPRECATED_FLAGS = {
+        # deprecated_key: [new_key, deprecated_long]
+        # optional third element: replacement_value - if converting from bool
+        #   (--bool-option) to valued flag (--new-option VALUE)
+        #   this will be the value that is assigned the new flag when the old flag is used.
+        auth_timeout: [:max_wait, "--max-wait SECONDS" ],
+        forward_agent:
+          [:ssh_forward_agent, "--forward-agent"],
+        host_key_verify:
+          [:ssh_verify_host_key, "--[no-]host-key-verify"],
+        prerelease:
+          [:channel, "--prerelease", "current"],
+        ssh_user:
+          [:connection_user, "--ssh-user USER"],
+        ssh_password:
+          [:connection_password, "--ssh-password PASSWORD"],
+        ssh_port:
+          [:connection_port, "--ssh-port"],
+        ssl_peer_fingerprint:
+          [:winrm_ssl_peer_fingerprint, "--ssl-peer-fingerprint FINGERPRINT"],
+        winrm_user:
+          [:connection_user, "--winrm-user USER"],
+        winrm_password:
+          [:connection_password, "--winrm-password"],
+        winrm_port:
+          [:connection_port, "--winrm-port"],
+        winrm_authentication_protocol:
+          [:winrm_auth_method, "--winrm-authentication-protocol PROTOCOL"],
+        winrm_session_timeout:
+          [:session_timeout, "--winrm-session-timeout MINUTES"],
+        winrm_ssl_verify_mode:
+          [:winrm_no_verify_cert, "--winrm-ssl-verify-mode MODE"],
+        winrm_transport:
+          [:winrm_ssl, "--winrm-transport TRANSPORT"],
+      }.freeze
+
+      DEPRECATED_FLAGS.each do |deprecated_key, deprecation_entry|
+        new_key, deprecated_long, replacement_value = deprecation_entry
+        new_long = options[new_key][:long]
+        new_long_desc = if replacement_value.nil?
+                          new_long
+                        else
+                          "#{new_long.split(" ").first} #{replacement_value}"
+                        end
+        option(deprecated_key, long: deprecated_long,
+                               description: "This flag is deprecated. Please use '#{new_long_desc}' instead.",
+                               boolean: options[new_key][:boolean] || !replacement_value.nil?,
+                               # Put deprecated options at the end of the options list
+                               on: :tail)
+      end
+
       def run
         $stdout.sync = true
         validate!
