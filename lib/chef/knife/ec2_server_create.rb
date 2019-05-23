@@ -514,12 +514,11 @@ class Chef
               puts("done")
             end
           end
-          bootstrap_for_windows_node(@server, connection_host).run
         else
           print "\n#{ui.color("Waiting for sshd access to become available", :magenta)}"
           wait_for_sshd(connection_host)
-          bootstrap_for_linux_node(@server, connection_host).run
         end
+        bootstrap_for(@server, connection_host).run
 
         puts "\n"
         msg_pair("Instance ID", @server.id)
@@ -635,14 +634,6 @@ class Chef
       end
 
       def bootstrap_common_params(bootstrap)
-        bootstrap.config[:run_list] = config[:run_list]
-        bootstrap.config[:policy_group] = locate_config_value(:policy_group)
-        bootstrap.config[:policy_name] = locate_config_value(:policy_name)
-        bootstrap.config[:bootstrap_version] = locate_config_value(:bootstrap_version)
-        bootstrap.config[:environment] = locate_config_value(:environment)
-        bootstrap.config[:prerelease] = config[:prerelease]
-        bootstrap.config[:first_boot_attributes] = locate_config_value(:first_boot_attributes)
-        bootstrap.config[:first_boot_attributes_from_file] = locate_config_value(:first_boot_attributes_from_file)
         bootstrap.config[:encrypted_data_bag_secret] = s3_secret || locate_config_value(:secret)
         bootstrap.config[:encrypted_data_bag_secret_file] = locate_config_value(:secret_file)
         # retrieving the secret from S3 is unique to knife-ec2, so we need to set "command line secret" to the value fetched from S3
@@ -650,20 +641,6 @@ class Chef
         # chef's code to check if secret option is passed through command line or not
         Chef::Knife::DataBagSecretOptions.set_cl_secret(s3_secret) if locate_config_value(:s3_secret)
         bootstrap.config[:secret] = s3_secret || locate_config_value(:secret)
-        bootstrap.config[:secret_file] = locate_config_value(:secret_file)
-        bootstrap.config[:node_ssl_verify_mode] = locate_config_value(:node_ssl_verify_mode)
-        bootstrap.config[:node_verify_api_cert] = locate_config_value(:node_verify_api_cert)
-        bootstrap.config[:bootstrap_no_proxy] = locate_config_value(:bootstrap_no_proxy)
-        bootstrap.config[:bootstrap_url] = locate_config_value(:bootstrap_url)
-        bootstrap.config[:bootstrap_install_command] = locate_config_value(:bootstrap_install_command)
-        bootstrap.config[:bootstrap_wget_options] = locate_config_value(:bootstrap_wget_options)
-        bootstrap.config[:bootstrap_curl_options] = locate_config_value(:bootstrap_curl_options)
-        bootstrap.config[:bootstrap_vault_file] = locate_config_value(:bootstrap_vault_file)
-        bootstrap.config[:bootstrap_vault_json] = locate_config_value(:bootstrap_vault_json)
-        bootstrap.config[:bootstrap_vault_item] = locate_config_value(:bootstrap_vault_item)
-        bootstrap.config[:bootstrap_template] = locate_config_value(:bootstrap_template)
-        bootstrap.config[:use_sudo_password] = locate_config_value(:use_sudo_password)
-        bootstrap.config[:yes] = locate_config_value(:yes)
 
         # If --chef-tag is provided then it will be set in chef as single value e.g. --chef-tag "myTag"
         # Otherwise if --tag-node-in-chef is provided then it will tag the chef in key=value pair of --tags option
@@ -685,64 +662,24 @@ class Chef
         Resolv.getname(ip_addr)
       end
 
-      def bootstrap_for_windows_node(server, fqdn)
+      def bootstrap_for(server, fqdn)
         bootstrap = Chef::Knife::Bootstrap.new
+        bootstrap.config = config.dup
+        bootstrap.config[:connection_port] = connection_port
+        bootstrap.config[:connection_protocol] = connection_protocol
         if winrm?
           if locate_config_value(:kerberos_realm)
             # Fetch AD/WINS based fqdn if any for Kerberos-based Auth
             fqdn = locate_config_value(:fqdn) || fetch_server_fqdn(server.private_ip_address)
           end
-
-          bootstrap.config[:winrm_user] = locate_config_value(:winrm_user)
-          bootstrap.config[:winrm_password] = windows_password
-          bootstrap.config[:winrm_transport] = locate_config_value(:winrm_transport)
-          bootstrap.config[:kerberos_keytab_file] = locate_config_value(:kerberos_keytab_file)
-          bootstrap.config[:kerberos_realm] = locate_config_value(:kerberos_realm)
-          bootstrap.config[:kerberos_service] = locate_config_value(:kerberos_service)
-          bootstrap.config[:ca_trust_file] = locate_config_value(:ca_trust_file)
-          bootstrap.config[:winrm_port] = locate_config_value(:winrm_port)
-          bootstrap.config[:auth_timeout] = locate_config_value(:auth_timeout)
-          bootstrap.config[:winrm_ssl_verify_mode] = locate_config_value(:winrm_ssl_verify_mode)
-        elsif ssh?
-          bootstrap.config[:ssh_user] = locate_config_value(:ssh_user)
-          bootstrap.config[:ssh_password] = locate_config_value(:ssh_password)
-          bootstrap.config[:ssh_port] = locate_config_value(:ssh_port)
-          bootstrap.config[:identity_file] = locate_config_value(:identity_file)
-          bootstrap.config[:ssh_identity_file] = locate_config_value(:identity_file)
-          bootstrap.config[:no_host_key_verify] = locate_config_value(:no_host_key_verify)
-          bootstrap.config[:forward_agent] = locate_config_value(:forward_agent)
         end
         bootstrap.name_args = [fqdn]
-        bootstrap.config[:msi_url] = locate_config_value(:msi_url)
-        bootstrap.config[:install_as_service] = locate_config_value(:install_as_service)
-        bootstrap.config[:session_timeout] = locate_config_value(:session_timeout)
 
         if locate_config_value(:chef_node_name)
           bootstrap.config[:chef_node_name] = evaluate_node_name(locate_config_value(:chef_node_name))
         else
           bootstrap.config[:chef_node_name] = server.id
         end
-        bootstrap_common_params(bootstrap)
-      end
-
-      def bootstrap_for_linux_node(server, ssh_host)
-        bootstrap = Chef::Knife::Bootstrap.new
-        bootstrap.name_args = [ssh_host]
-        bootstrap.config[:ssh_user] = config[:ssh_user]
-        bootstrap.config[:ssh_password] = locate_config_value(:ssh_password)
-        bootstrap.config[:ssh_port] = config[:ssh_port]
-        bootstrap.config[:ssh_gateway] = config[:ssh_gateway]
-        bootstrap.config[:identity_file] = config[:identity_file]
-        bootstrap.config[:ssh_identity_file] = locate_config_value(:identity_file)
-
-        if locate_config_value(:chef_node_name)
-          bootstrap.config[:chef_node_name] = evaluate_node_name(locate_config_value(:chef_node_name))
-        else
-          bootstrap.config[:chef_node_name] = server.id
-        end
-        bootstrap.config[:use_sudo] = true unless config[:ssh_user] == "root"
-        # may be needed for vpc_mode
-        bootstrap.config[:host_key_verify] = config[:host_key_verify]
         bootstrap_common_params(bootstrap)
       end
 
