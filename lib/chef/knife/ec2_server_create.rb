@@ -500,18 +500,16 @@ class Chef
 
         # Check if Server is Windows or Linux
         if is_image_windows?
-          connection_port = config_value(:connection_port,
-                            knife_key_for_protocol(connection_protocol, :port))
           if winrm?
             print "\n#{ui.color("Waiting for winrm access to become available", :magenta)}"
-            print(".") until tcp_test_winrm(connection_host, connection_port || 5985) do
+            print(".") until tcp_test_winrm(connection_host, connection_port) do
               sleep 10
               puts("done")
             end
           else
             print "\n#{ui.color("Waiting for sshd access to become available", :magenta)}"
             # If FreeSSHd, winsshd etc are available
-            print(".") until tcp_test_ssh(connection_host, connection_port || 22) do
+            print(".") until tcp_test_ssh(connection_host, connection_port) do
               sleep @initial_sleep_delay ||= (vpc_mode? ? 40 : 10)
               puts("done")
             end
@@ -1133,7 +1131,7 @@ class Chef
 
       def wait_for_sshd(hostname)
         ssh_gateway = get_ssh_gateway_for(hostname)
-        ssh_gateway ? wait_for_tunnelled_sshd(ssh_gateway, hostname) : wait_for_direct_sshd(hostname, config[:ssh_port])
+        ssh_gateway ? wait_for_tunnelled_sshd(ssh_gateway, hostname) : wait_for_direct_sshd(hostname, connection_port)
       end
 
       def get_ssh_gateway_for(hostname)
@@ -1183,7 +1181,7 @@ class Chef
       def tunnel_test_ssh(ssh_gateway, hostname, &block)
         status = false
         gateway = configure_ssh_gateway(ssh_gateway)
-        gateway.open(hostname, config[:ssh_port]) do |local_tunnel_port|
+        gateway.open(hostname, connection_port) do |local_tunnel_port|
           status = tcp_test_ssh("localhost", local_tunnel_port, &block)
         end
         status
@@ -1430,6 +1428,12 @@ class Chef
         from_knife = Chef::Config[:knife][:connection_protocol]
         default = is_image_windows? ? "winrm" : "ssh"
         @connection_protocol = from_cli || from_knife || default
+      end
+
+      def connection_port
+        port = config_value(:connection_port,
+                            knife_key_for_protocol(connection_protocol, :port))
+        port || winrm? ? 5985 : 22
       end
 
       # Looks up configuration entries, first in the class member
