@@ -464,7 +464,7 @@ class Chef
           print "\n#{ui.color("Waiting for sshd access to become available", :magenta)}"
           wait_for_sshd(connection_host)
         end
-        bootstrap_for(@server, connection_host).run
+        bootstrap_for(@server, connection_host)
 
         puts "\n"
         msg_pair("Instance ID", @server.id)
@@ -579,7 +579,7 @@ class Chef
         end
       end
 
-      def bootstrap_common_params(bootstrap)
+      def bootstrap_common_params
         config[:encrypted_data_bag_secret] = s3_secret || config_value(:secret)
         config[:encrypted_data_bag_secret_file] = config_value(:secret_file)
         # retrieving the secret from S3 is unique to knife-ec2, so we need to set "command line secret" to the value fetched from S3
@@ -598,7 +598,6 @@ class Chef
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
         Chef::Config[:knife][:hints]["ec2"] ||= {}
-        bootstrap
       end
 
       def fetch_server_fqdn(ip_addr)
@@ -615,14 +614,22 @@ class Chef
             fqdn = config_value(:fqdn) || fetch_server_fqdn(server.private_ip_address)
           end
         end
-        bootstrap.name_args = [fqdn]
+        name_args = [fqdn]
 
         if config_value(:chef_node_name)
           config[:chef_node_name] = evaluate_node_name(config_value(:chef_node_name))
         else
           config[:chef_node_name] = server.id
         end
-        bootstrap_common_params(bootstrap)
+        bootstrap_common_params
+        register_client
+        connect!
+
+        content = render_template
+        bootstrap_path = upload_bootstrap(content)
+        perform_bootstrap(bootstrap_path)
+        ensure
+        connection.del_file!(bootstrap_path) if connection && bootstrap_path
       end
 
       def vpc_mode?
