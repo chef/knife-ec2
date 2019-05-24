@@ -73,7 +73,7 @@ class Chef
         output_column_count = server_list.length
         begin
           owner = locate_config_value(:owner) || "aws-marketplace"
-          servers = connection.describe_images({ "Owner" => "#{owner}" }) # aws-marketplace, microsoft
+          servers = ec2_connection.describe_images({ "Owner" => "#{owner}" }) # aws-marketplace, microsoft
         rescue Exception => api_error
           raise api_error
         end

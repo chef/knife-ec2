@@ -469,12 +469,12 @@ class Chef
         requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
 
         # For VPC EIP assignment we need the allocation ID so fetch full EIP details
-        elastic_ip = connection.addresses.detect { |addr| addr if addr.public_ip == requested_elastic_ip }
+        elastic_ip = ec2_connection.addresses.detect { |addr| addr if addr.public_ip == requested_elastic_ip }
 
         if locate_config_value(:spot_price)
           server_def = create_server_def
           server_def[:groups] = server_def[:security_group_ids] if vpc_mode?
-          spot_request = connection.spot_requests.create(server_def)
+          spot_request = ec2_connection.spot_requests.create(server_def)
           msg_pair("Spot Request ID", spot_request.id)
           msg_pair("Spot Request Type", spot_request.request_type)
           msg_pair("Spot Price", spot_request.price)
@@ -504,10 +504,10 @@ class Chef
             ready?
           end
           puts("\n")
-          @server = connection.servers.get(spot_request.instance_id)
+          @server = ec2_connection.servers.get(spot_request.instance_id)
         else
           begin
-            @server = connection.servers.create(create_server_def)
+            @server = ec2_connection.servers.create(create_server_def)
           rescue => error
             error.message.sub("download completed, but downloaded file not found", "Verify that you have public internet access.")
             ui.error error.message
@@ -538,7 +538,7 @@ class Chef
         msg_pair("Instance ID", @server.id)
         msg_pair("Flavor", @server.flavor_id)
         msg_pair("Image", @server.image_id)
-        msg_pair("Region", connection.instance_variable_get(:@region))
+        msg_pair("Region", ec2_connection.instance_variable_get(:@region))
         msg_pair("Availability Zone", @server.availability_zone)
 
         # If we don't specify a security group or security group id, Fog will
@@ -636,7 +636,7 @@ class Chef
         msg_pair("Flavor", @server.flavor_id)
         msg_pair("Placement Group", @server.placement_group) unless @server.placement_group.nil?
         msg_pair("Image", @server.image_id)
-        msg_pair("Region", connection.instance_variable_get(:@region))
+        msg_pair("Region", ec2_connection.instance_variable_get(:@region))
         msg_pair("Availability Zone", @server.availability_zone)
         msg_pair("Security Groups", printed_security_groups) unless vpc_mode? || (@server.groups.nil? && @server.security_group_ids)
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? || @server.security_group_ids
@@ -866,7 +866,7 @@ class Chef
       end
 
       def ami
-        @ami ||= connection.images.get(locate_config_value(:image))
+        @ami ||= ec2_connection.images.get(locate_config_value(:image))
       end
 
       def validate!
@@ -906,7 +906,7 @@ class Chef
         end
 
         if config[:associate_eip]
-          eips = connection.addresses.collect { |addr| addr if addr.domain == eip_scope }.compact
+          eips = ec2_connection.addresses.collect { |addr| addr if addr.domain == eip_scope }.compact
 
           unless eips.detect { |addr| addr.public_ip == config[:associate_eip] && addr.server_id.nil? }
             ui.error("Elastic IP requested is not available.")
@@ -1346,7 +1346,7 @@ class Chef
       end
 
       def subnet_public_ip_on_launch?
-        connection.subnets.get(server.subnet_id).map_public_ip_on_launch
+        ec2_connection.subnets.get(server.subnet_id).map_public_ip_on_launch
       end
 
       def ssh_connect_host
@@ -1370,17 +1370,17 @@ class Chef
 
       def create_tags(hashed_tags)
         hashed_tags.each_pair do |key, val|
-          connection.tags.create key: key, value: val, resource_id: @server.id
+          ec2_connection.tags.create key: key, value: val, resource_id: @server.id
         end
       end
 
       def associate_eip(elastic_ip)
-        connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
+        ec2_connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
         @server.wait_for(locate_config_value(:aws_connection_timeout)) { public_ip_address == elastic_ip.public_ip }
       end
 
       def validate_nics!
-        valid_nic_ids = connection.network_interfaces.all(
+        valid_nic_ids = ec2_connection.network_interfaces.all(
           vpc_mode? ? { "vpc-id" => vpc_id } : {}
         ).map(&:network_interface_id)
         invalid_nic_ids =
@@ -1393,7 +1393,7 @@ class Chef
 
       def vpc_id
         @vpc_id ||= begin
-          connection.subnets.get(locate_config_value(:subnet_id)).vpc_id
+          ec2_connection.subnets.get(locate_config_value(:subnet_id)).vpc_id
         end
       end
 
@@ -1403,7 +1403,7 @@ class Chef
             locate_config_value(:network_interfaces).count
           attachment_nics =
             locate_config_value(:network_interfaces).map do |nic_id|
-              connection.network_interfaces.get(nic_id).attachment["status"]
+              ec2_connection.network_interfaces.get(nic_id).attachment["status"]
             end
           attached_nics_count = attachment_nics.grep("attached").count
         end
@@ -1412,7 +1412,7 @@ class Chef
       def attach_nics
         attachments = []
         config[:network_interfaces].each_with_index do |nic_id, index|
-          attachments << connection.attach_network_interface(nic_id,
+          attachments << ec2_connection.attach_network_interface(nic_id,
                                                              server.id,
                                                              index + 1).body
         end
@@ -1423,7 +1423,7 @@ class Chef
       end
 
       def enable_classic_link(vpc_id, security_group_ids)
-        connection.attach_classic_link_vpc(server.id, vpc_id, security_group_ids)
+        ec2_connection.attach_classic_link_vpc(server.id, vpc_id, security_group_ids)
       end
 
       def ssh_override_winrm
@@ -1515,7 +1515,7 @@ class Chef
 
       def check_windows_password_available(server_id)
         sleep 10
-        response = connection.get_password_data(server_id)
+        response = ec2_connection.get_password_data(server_id)
         if not response.body["passwordData"]
           return false
         end
@@ -1528,7 +1528,7 @@ class Chef
             if @server
               print "\n#{ui.color("Waiting for Windows Admin password to be available: ", :magenta)}"
               print(".") until check_windows_password_available(@server.id) { puts("done") }
-              response = connection.get_password_data(@server.id)
+              response = ec2_connection.get_password_data(@server.id)
               data = File.read(locate_config_value(:identity_file))
               config[:winrm_password] = decrypt_admin_password(response.body["passwordData"], data)
             else
@@ -1559,7 +1559,7 @@ class Chef
 
       def create_volume_tags(hashed_volume_tags)
         hashed_volume_tags.each_pair do |key, val|
-          connection.tags.create key: key, value: val, resource_id: @server.block_device_mapping.first["volumeId"]
+          ec2_connection.tags.create key: key, value: val, resource_id: @server.block_device_mapping.first["volumeId"]
         end
       end
 

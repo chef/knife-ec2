@@ -104,7 +104,7 @@ class Chef
           ui.warn "No region was specified in knife.rb/config.rb or as an argument. The default region, us-east-1, will be used:"
         end
 
-        servers = connection.servers
+        servers = ec2_connection.servers
         if config[:format] == "summary"
           servers.each do |server|
             server_list << server.id.to_s
