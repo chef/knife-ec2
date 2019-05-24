@@ -303,7 +303,7 @@ class Chef
         }
 
       def run
-
+        check_license
         $stdout.sync = true
         validate!
 
@@ -607,8 +607,8 @@ class Chef
       end
 
       def bootstrap_for(server, fqdn)
-        bootstrap.config[:connection_port] = connection_port
-        bootstrap.config[:connection_protocol] = connection_protocol
+        config[:connection_port] = connection_port
+        config[:connection_protocol] = connection_protocol
         if winrm?
           if config_value(:kerberos_realm)
             # Fetch AD/WINS based fqdn if any for Kerberos-based Auth
@@ -618,9 +618,9 @@ class Chef
         bootstrap.name_args = [fqdn]
 
         if config_value(:chef_node_name)
-          bootstrap.config[:chef_node_name] = evaluate_node_name(config_value(:chef_node_name))
+          config[:chef_node_name] = evaluate_node_name(config_value(:chef_node_name))
         else
-          bootstrap.config[:chef_node_name] = server.id
+          config[:chef_node_name] = server.id
         end
         bootstrap_common_params(bootstrap)
       end
