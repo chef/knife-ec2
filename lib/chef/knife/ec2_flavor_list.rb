@@ -42,7 +42,7 @@ class Chef
         output_column_count = flavor_list.length
 
         begin
-          flavors = connection.flavors.sort_by(&:id)
+          flavors = ec2_connection.flavors.sort_by(&:id)
         rescue Exception => api_error
           raise api_error
         end

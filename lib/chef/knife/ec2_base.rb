@@ -80,7 +80,7 @@ class Chef
       end
 
       # @return [Fog::Compute]
-      def connection
+      def ec2_connection
         connection_settings = {
           provider: "AWS",
           region: locate_config_value(:region),
@@ -112,7 +112,7 @@ class Chef
 
       # @return [Boolean]
       def is_image_windows?
-        image_info = connection.images.get(@server.image_id)
+        image_info = ec2_connection.images.get(@server.image_id)
         image_info.platform == "windows"
       end
 

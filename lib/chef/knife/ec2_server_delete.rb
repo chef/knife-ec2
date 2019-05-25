@@ -71,13 +71,13 @@ class Chef
         @name_args.each do |instance_id|
 
           begin
-            @server = connection.servers.get(instance_id)
+            @server = ec2_connection.servers.get(instance_id)
 
             msg_pair("Instance ID", @server.id)
             msg_pair("Instance Name", @server.tags["Name"])
             msg_pair("Flavor", @server.flavor_id)
             msg_pair("Image", @server.image_id)
-            msg_pair("Region", connection.instance_variable_get(:@region))
+            msg_pair("Region", ec2_connection.instance_variable_get(:@region))
             msg_pair("Availability Zone", @server.availability_zone)
             msg_pair("Security Groups", @server.groups.join(", "))
             msg_pair("IAM Profile", iam_name_from_profile(@server.iam_instance_profile)) if @server.iam_instance_profile
