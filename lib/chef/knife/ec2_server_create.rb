@@ -302,11 +302,7 @@ class Chef
           Chef::Config[:knife][:aws_tag]
         }
 
-      def run
-        check_license
-        $stdout.sync = true
-        validate!
-
+      def plugin_create_instance!
         requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
 
         # For VPC EIP assignment we need the allocation ID so fetch full EIP details
@@ -357,24 +353,6 @@ class Chef
           end
         end
 
-        hashed_tags = {}
-        tags.map { |t| key, val = t.split("="); hashed_tags[key] = val } unless tags.nil?
-
-        # Always set the Name tag
-        unless hashed_tags.keys.include? "Name"
-          if config_value(:chef_node_name)
-            hashed_tags["Name"] = evaluate_node_name(config_value(:chef_node_name))
-          else
-            hashed_tags["Name"] = server.id
-          end
-        end
-
-        printed_aws_tags = hashed_tags.map { |tag, val| "#{tag}: #{val}" }.join(", ")
-
-        hashed_volume_tags = {}
-        volume_tags = config_value(:volume_tags)
-        volume_tags.map { |t| key, val = t.split("="); hashed_volume_tags[key] = val } unless volume_tags.nil?
-        printed_volume_tags = hashed_volume_tags.map { |tag, val| "#{tag}: #{val}" }.join(", ")
 
         msg_pair("Instance ID", @server.id)
         msg_pair("Flavor", @server.flavor_id)
@@ -382,16 +360,7 @@ class Chef
         msg_pair("Region", ec2_connection.instance_variable_get(:@region))
         msg_pair("Availability Zone", @server.availability_zone)
 
-        # If we don't specify a security group or security group id, Fog will
-        # pick the appropriate default one. In case of a VPC we don't know the
-        # default security group id at this point unless we look it up, hence
-        # 'default' is printed if no id was specified.
-        printed_security_groups = "default"
-        printed_security_groups = @server.groups.join(", ") if @server.groups
         msg_pair("Security Groups", printed_security_groups) unless vpc_mode? || (@server.groups.nil? && @server.security_group_ids)
-
-        printed_security_group_ids = "default"
-        printed_security_group_ids = @server.security_group_ids.join(", ") if @server.security_group_ids
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? || @server.security_group_ids
 
         msg_pair("IAM Profile", config_value(:iam_instance_profile))
@@ -464,8 +433,26 @@ class Chef
           print "\n#{ui.color("Waiting for sshd access to become available", :magenta)}"
           wait_for_sshd(connection_host)
         end
-        bootstrap_for(@server, connection_host)
 
+        config[:connection_port] = connection_port
+        config[:connection_protocol] = connection_protocol
+        if winrm?
+          if config_value(:kerberos_realm)
+            # Fetch AD/WINS based fqdn if any for Kerberos-based Auth
+            fqdn = config_value(:fqdn) || fetch_server_fqdn(server.private_ip_address)
+          end
+        end
+        name_args = [fqdn]
+
+        if config_value(:chef_node_name)
+          config[:chef_node_name] = evaluate_node_name(config_value(:chef_node_name))
+        else
+          config[:chef_node_name] = server.id
+        end
+        bootstrap_common_params
+      end
+
+      def plugin_finalize
         puts "\n"
         msg_pair("Instance ID", @server.id)
         msg_pair("Flavor", @server.flavor_id)
@@ -605,33 +592,6 @@ class Chef
         Resolv.getname(ip_addr)
       end
 
-      def bootstrap_for(server, fqdn)
-        config[:connection_port] = connection_port
-        config[:connection_protocol] = connection_protocol
-        if winrm?
-          if config_value(:kerberos_realm)
-            # Fetch AD/WINS based fqdn if any for Kerberos-based Auth
-            fqdn = config_value(:fqdn) || fetch_server_fqdn(server.private_ip_address)
-          end
-        end
-        name_args = [fqdn]
-
-        if config_value(:chef_node_name)
-          config[:chef_node_name] = evaluate_node_name(config_value(:chef_node_name))
-        else
-          config[:chef_node_name] = server.id
-        end
-        bootstrap_common_params
-        register_client
-        connect!
-
-        content = render_template
-        bootstrap_path = upload_bootstrap(content)
-        perform_bootstrap(bootstrap_path)
-        ensure
-        connection.del_file!(bootstrap_path) if connection && bootstrap_path
-      end
-
       def vpc_mode?
         # Amazon Virtual Private Cloud requires a subnet_id. If
         # present, do a few things differently
@@ -642,14 +602,18 @@ class Chef
         @ami ||= ec2_connection.images.get(locate_config_value(:image))
       end
 
-      def validate!
+      def validate_name_args!
+        # We don't know the name of our instance yet
+      end
+
+      def plugin_validate_options!
         if Chef::Config[:knife].keys.include? :aws_ssh_key_id
           Chef::Config[:knife][:ssh_key_name] = Chef::Config[:knife][:aws_ssh_key_id] if !Chef::Config[:knife][:ssh_key_name]
           Chef::Config[:knife].delete(:aws_ssh_key_id)
           ui.warn("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
         end
 
-        super([:image, :ssh_key_name, :aws_access_key_id, :aws_secret_access_key])
+        validate_aws_config!([:image, :ssh_key_name, :aws_access_key_id, :aws_secret_access_key])
 
         validate_nics! if config_value(:network_interfaces)
 
@@ -1304,22 +1268,70 @@ class Chef
           ec2_connection.tags.create key: key, value: val, resource_id: @server.block_device_mapping.first["volumeId"]
         end
       end
-
-      # url values override CLI flags, if you provide both
-      # we'll use the one that you gave in the URL.
-      # For windows default is "winrm" and for other default is "ssh"
-      def connection_protocol
-        return @connection_protocol if @connection_protocol
-        from_cli = config_value(:connection_protocol)
-        from_knife = Chef::Config[:knife][:connection_protocol]
-        default = is_image_windows? ? "winrm" : "ssh"
-        @connection_protocol = from_cli || from_knife || default
-      end
-
+      # TODO: connection_protocol and connection_port used to choose winrm/ssh or 5985/22 based on the image chosen
       def connection_port
         port = config_value(:connection_port,
                             knife_key_for_protocol(connection_protocol, :port))
         port || winrm? ? 5985 : 22
+      end
+
+			def server_name
+        return nil unless @server
+				@server.dns_name || @server.private_dns_name || @server.private_ip_address
+			end
+
+      alias host_descriptor server_name
+
+      # If we don't specify a security group or security group id, Fog will
+      # pick the appropriate default one. In case of a VPC we don't know the
+      # default security group id at this point unless we look it up, hence
+      # 'default' is printed if no id was specified.
+      def printed_security_groups
+        if @server.groups
+          @server.groups.join(", ")
+        else
+          "default"
+        end
+      end
+
+      def printed_security_group_ids
+        if @server.security_group_ids
+          @server.security_group_ids.join(", ")
+        else
+          "default"
+        end
+      end
+
+      def hashed_volume_tags
+        hvt = {}
+        volume_tags = config_value(:volume_tags)
+        volume_tags.map { |t| key, val = t.split("="); hvt[key] = val } unless volume_tags.nil?
+
+        hvt
+      end
+
+      def printed_volume_tags
+        hashed_volume_tags.map { |tag, val| "#{tag}: #{val}" }.join(", ")
+      end
+
+      def hashed_tags
+        ht = {}
+        tags.map { |t| key, val = t.split("="); ht[key] = val } unless tags.nil?
+
+        # Always set the Name tag
+        unless ht.keys.include? "Name"
+          if config_value(:chef_node_name)
+            ht["Name"] = evaluate_node_name(config_value(:chef_node_name))
+          else
+            ht["Name"] = server.id
+          end
+        end
+
+        ht
+      end
+
+      def printed_aws_tags
+        hashed_tags.map { |tag, val| "#{tag}: #{val}" }.join(", ")
       end
     end
   end
