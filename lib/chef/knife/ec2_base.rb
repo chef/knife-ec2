@@ -93,7 +93,7 @@ class Chef
           connection_settings[:aws_secret_access_key] = locate_config_value(:aws_secret_access_key)
           connection_settings[:aws_session_token] = locate_config_value(:aws_session_token)
         end
-        @connection ||= begin
+        @fog_connection ||= begin
           connection = Fog::Compute.new(connection_settings)
         end
       end
@@ -118,7 +118,7 @@ class Chef
 
       # validate the config options that were passed since some of them cannot be used together
       # also validate the aws configuration file contents if present
-      def validate!(keys = [:aws_access_key_id, :aws_secret_access_key])
+      def validate_aws_config!(keys = [:aws_access_key_id, :aws_secret_access_key])
         errors = [] # track all errors so we report on all of them
 
         validate_aws_config_file! if locate_config_value(:aws_config_file)

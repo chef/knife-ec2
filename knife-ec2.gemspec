@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.files        = %w{LICENSE} + Dir.glob("lib/**/*")
   s.required_ruby_version = ">= 2.5"
 
-  s.add_dependency "chef", ">= 15.0"
+  s.add_dependency "chef", ">= 15.1"
   s.add_dependency "fog-aws", ">= 1", "< 4"
 
   s.require_paths = ["lib"]
