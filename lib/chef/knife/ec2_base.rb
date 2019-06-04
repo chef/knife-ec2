@@ -70,6 +70,11 @@ class Chef
             description: "Your AWS region",
             proc: Proc.new { |key| Chef::Config[:knife][:region] = key }
 
+          option :ec2_api_host,
+            long: "--ec2-api-host HOST",
+            description: "AWS ec2 API host",
+            proc: Proc.new { |key| Chef::Config[:knife][:ec2_api_host] = key }
+
           option :use_iam_profile,
             long: "--use-iam-profile",
             description: "Use IAM profile assigned to current machine",
@@ -86,6 +91,9 @@ class Chef
           region: locate_config_value(:region),
         }
 
+        unless locate_config_value(:ec2_api_host).nil? || locate_config_value(:ec2_api_host).empty?
+	  connection_settings[:host] = locate_config_value(:ec2_api_host)
+        end
         if locate_config_value(:use_iam_profile)
           connection_settings[:use_iam_profile] = true
         else
