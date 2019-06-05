@@ -61,20 +61,6 @@ class Chef
         description: "The security groups for this server; not allowed when using VPC",
         proc: Proc.new { |groups| groups.split(",") }
 
-      option :security_group_ids,
-        long: "--security-group-ids 'X,Y,Z'",
-        description: "The security group ids for this server; required when using VPC. Provide values in format --security-group-ids 'X,Y,Z'. [DEPRECATED] This option will be removed in future release. Use the new --security-group-id option. ",
-        proc: Proc.new { |security_group_ids|
-          ui.warn("[DEPRECATED] This option will be removed in future release. Use the new --security-group-id option multiple times when specifying multiple groups for e.g. -g sg-e985168d -g sg-e7f06383 -g sg-ec1b7e88.")
-          if security_group_ids.delete(" ").split(",").size > 1
-            Chef::Config[:knife][:security_group_ids] = security_group_ids.delete(" ").split(",")
-          else
-            Chef::Config[:knife][:security_group_ids] ||= []
-            Chef::Config[:knife][:security_group_ids].push(security_group_ids)
-            Chef::Config[:knife][:security_group_ids]
-          end
-        }
-
       option :security_group_id,
         short: "-g SECURITY_GROUP_ID",
         long: "--security-group-id ID",
@@ -101,15 +87,6 @@ class Chef
       option :primary_eni,
         long: "--primary-eni ENI_ID",
         description: "Specify a pre-existing eni to use when building the instance."
-
-      option :tags,
-        short: "-T T=V[,T=V,...]",
-        long: "--tags Tag=Value[,Tag=Value...]",
-        description: "The tags for this server. [DEPRECATED] Use --aws-tag instead.",
-        proc: Proc.new { |tags|
-          Chef::Log.warn("[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead.")
-          tags.split(",")
-        }
 
       option :availability_zone,
         short: "-Z ZONE",
@@ -269,16 +246,6 @@ class Chef
         long: "--volume-tags Tag=Value[,Tag=Value...]",
         description: "Tag the Root volume",
         proc: Proc.new { |volume_tags| volume_tags.split(",") }
-
-      option :tag_node_in_chef,
-        long: "--tag-node-in-chef",
-        description: "Flag for tagging node in ec2 and chef both. [DEPRECATED] Use --chef-tag instead.",
-        proc: Proc.new { |v|
-          Chef::Log.warn("[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead.")
-          v
-        },
-        boolean: true,
-        default: false
 
       option :instance_initiated_shutdown_behavior,
         long: "--instance-initiated-shutdown-behavior SHUTDOWN_BEHAVIOR",
@@ -574,10 +541,9 @@ class Chef
         config[:secret] = s3_secret || config_value(:secret)
 
         # If --chef-tag is provided then it will be set in chef as single value e.g. --chef-tag "myTag"
-        # Otherwise if --tag-node-in-chef is provided then it will tag the chef in key=value pair of --tags option
-        # e.g. --tags "key=value"
+        # --tags has been removed from knife-ec2, now it's available in core
         if config_value(:chef_tag)
-          config[:tags] = config_value(:chef_tag)
+          config[:tags] = config_value(:tags) + config_value(:chef_tag)
         end
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
@@ -748,18 +714,10 @@ class Chef
             raise "The input provided is incorrect."
           end
         end
-
-        if config_value(:tag_node_in_chef)
-          ui.warn("[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead.")
-        end
-
-        if config_value(:tags)
-          ui.warn("[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead.")
-        end
       end
 
       def tags
-        tags = config_value(:tags) || config_value(:aws_tag)
+        tags = config_value(:aws_tag)
         if !tags.nil? && (tags.length != tags.to_s.count("="))
           ui.error("AWS Tags should be entered in a key = value pair")
           exit 1
