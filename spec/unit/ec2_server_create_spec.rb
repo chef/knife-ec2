@@ -431,31 +431,6 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
     end
-
-    it "sets the Name tag to the specified name when given --tags Name=NAME" do
-      knife_ec2_create.config[:tags] = ["Name=bobcat"]
-      tags_params = { tags: [ key: "Name", value: "bobcat"], resources: [ec2_server_attribs.id] }
-      expect(ec2_connection).to receive(:create_tags).with(tags_params)
-      expect(knife_ec2_create).to receive(:plugin_validate_options!)
-      knife_ec2_create.run
-    end
-
-    it "sets arbitrary tags" do
-      knife_ec2_create.config[:tags] = ["foo=bar"]
-      tags_params = { tags: [ { key: "foo", value: "bar" }, { key: "Name", value: "i-00fe186450a2e8e97" }], resources: [ec2_server_attribs.id] }
-      expect(ec2_connection).to receive(:create_tags).with(tags_params)
-      expect(knife_ec2_create).to receive(:plugin_validate_options!)
-      knife_ec2_create.run
-    end
-
-    it 'raises deprecated warning "[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead."' do
-      knife_ec2_create.config[:tags] = ["foo=bar"]
-      tags_params = { tags: [ { key: "foo", value: "bar" }, { key: "Name", value: "i-00fe186450a2e8e97" }], resources: [ec2_server_attribs.id] }
-      expect(ec2_connection).to receive(:create_tags).with(tags_params)
-      expect(knife_ec2_create.ui).to receive(:warn).with("[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead.").exactly(2).times
-      knife_ec2_create.plugin_validate_options!
-      knife_ec2_create.run
-    end
   end
 
   describe "when setting volume tags" do
@@ -2482,51 +2457,6 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
-  describe "--security-group-ids option" do
-    before do
-      allow(ec2_server_create).to receive(:validate_aws_config!)
-      allow(ec2_server_create).to receive(:validate_nics!)
-      allow(ec2_server_create).to receive(:ami).and_return(ami)
-      allow(knife_ec2_create).to receive(:msg_pair)
-      allow(knife_ec2_create).to receive(:puts)
-      allow(knife_ec2_create).to receive(:print)
-    end
-
-    context "when comma seprated values are provided from cli" do
-      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--security-group-ids", "sg-aabbccdd,sg-3764sdss,sg-00aa11bb"]) }
-      it "creates array of security group ids" do
-        server_def = ec2_server_create.server_attributes
-        expect(server_def[:security_group_ids]).to eq(["sg-aabbccdd", "sg-3764sdss", "sg-00aa11bb"]) # rubocop:disable Style/WordArray
-      end
-    end
-
-    context "when mulitple values provided from cli for e.g. --security-group-ids sg-aab343ytr --security-group-ids sg-3764sdss" do
-      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--security-group-ids", "sg-aab343ytr", "--security-group-ids", "sg-3764sdss"]) } # rubocop:disable Style/WordArray
-      it "creates array of security group ids" do
-        allow(ec2_server_create.ui).to receive(:warn)
-        server_def = ec2_server_create.server_attributes
-        expect(server_def[:security_group_ids]).to eq(["sg-aab343ytr", "sg-3764sdss"]) # rubocop:disable Style/WordArray
-      end
-    end
-
-    context "when comma seprated input is provided from knife.rb" do
-      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new }
-      it "raises error" do
-        Chef::Config[:knife][:security_group_ids] = "sg-aabbccdd, sg-3764sdss, sg-00aa11bb"
-        expect(ec2_server_create.ui).to receive(:error).with("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb/config.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
-        expect { ec2_server_create.plugin_validate_options! }.to raise_error(SystemExit)
-      end
-    end
-
-    context "when security group ids array is provided from knife.rb" do
-      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new }
-      it "allows --security-group-ids set from an array in knife.rb" do
-        Chef::Config[:knife][:security_group_ids] = ["sg-aabbccdd", "sg-3764sdss", "sg-00aa11bb"] # rubocop:disable Style/WordArray
-        expect { ec2_server_create.plugin_validate_options! }.to_not raise_error(SystemExit)
-      end
-    end
-  end
-
   describe "--security-group-id option" do
     before do
       allow(ec2_server_create).to receive(:validate_aws_config!)
@@ -2593,19 +2523,6 @@ describe Chef::Knife::Ec2ServerCreate do
       it "creates array of aws tag" do
         server_def = ec2_server_create.config
         expect(server_def[:aws_tag]).to eq(["foo=bar"])
-      end
-    end
-  end
-
-  describe "--tag-node-in-chef option" do
-    context "when provided from cli for e.g. --tag-node-in-chef" do
-      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--tag-node-in-chef"]) }
-      it 'raises deprecated warning "[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead."' do
-        allow(ec2_server_create).to receive(:validate_aws_config!)
-        allow(ec2_server_create).to receive(:validate_nics!)
-        allow(ec2_server_create).to receive(:ami).and_return(ami)
-        expect(ec2_server_create.ui).to receive(:warn).with("[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead.")
-        ec2_server_create.plugin_validate_options!
       end
     end
   end
