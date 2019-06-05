@@ -543,7 +543,7 @@ class Chef
         # If --chef-tag is provided then it will be set in chef as single value e.g. --chef-tag "myTag"
         # --tags has been removed from knife-ec2, now it's available in core
         if config_value(:chef_tag)
-          config[:tags] = config_value(:tags) + config_value(:chef_tag)
+          config[:tags] += config_value(:chef_tag)
         end
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
