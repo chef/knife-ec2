@@ -714,6 +714,10 @@ class Chef
             raise "The input provided is incorrect."
           end
         end
+
+        if config_value(:chef_tag)
+          ui.warn("[DEPRECATED] --chef-tag option is deprecated and will be removed in future release. Use --tags TAGS option instead.")
+        end
       end
 
       def tags
