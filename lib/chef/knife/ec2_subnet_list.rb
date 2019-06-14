@@ -64,7 +64,7 @@ class Chef
 
       def subnet_hash
         all_data = {}
-        connection.describe_subnets.first.subnets.each do |s|
+        ec2_connection.describe_subnets.first.subnets.each do |s|
           s_data = {}
           %w{subnet_id availability_zone available_ip_address_count cidr_block default_for_az map_public_ip_on_launch state vpc_id}.each do |id|
             s_data[id] = s.send(id)

@@ -60,7 +60,7 @@ class Chef
 
       def vpc_hash
         all_data = {}
-        connection.describe_vpcs.first.vpcs.each do |v|
+        ec2_connection.describe_vpcs.first.vpcs.each do |v|
           v_data = {}
           %w{vpc_id cidr_block dhcp_options_id instance_tenancy is_default state}.each do |id|
             v_data[id] = v.send(id)

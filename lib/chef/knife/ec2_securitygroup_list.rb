@@ -54,7 +54,7 @@ class Chef
 
       def sg_hash
         all_data = {}
-        connection.describe_security_groups.first.security_groups.each do |s|
+        ec2_connection.describe_security_groups.first.security_groups.each do |s|
           s_data = {}
           %w{group_name group_id vpc_id}.each do |id|
             s_data[id] = s.send(id)

@@ -66,7 +66,7 @@ class Chef
       # @return [Hash]
       def eni_hash
         all_data = {}
-        connection.describe_network_interfaces.first.network_interfaces.each do |eni|
+        ec2_connection.describe_network_interfaces.first.network_interfaces.each do |eni|
           eni_data = {}
           %w{network_interface_id status mac_address availability_zone subnet_id vpc_id ipv_6_addresses}.each do |id|
             eni_data[id] = eni.send(id)
