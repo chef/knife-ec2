@@ -42,7 +42,7 @@ class Chef
         description: "Show the iam profile"
 
       option :az,
-        short: "-z",
+        short: "-a",
         long: "--availability-zone",
         boolean: true,
         default: false,
@@ -147,8 +147,7 @@ class Chef
           end
           puts ui.list(servers_list, :uneven_columns_across, output_column_count)
         else
-          servers = ec2_connection.servers
-          output(format_for_display(servers))
+          output(format_for_display(server_hashes))
         end
       end
 
