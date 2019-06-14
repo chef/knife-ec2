@@ -58,7 +58,7 @@ class Chef
       def run
         $stdout.sync = true
 
-        validate!
+        validate_aws_config!
         custom_warnings!
 
         server_list = [

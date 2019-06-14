@@ -61,7 +61,7 @@ class Chef
       end
 
       def run
-        validate!
+        validate_aws_config!
         if @name_args.empty? && config[:chef_node_name]
           ui.info("no instance id is specific, trying to retrieve it from node name")
           instance_id = fetch_instance_id(config[:chef_node_name])

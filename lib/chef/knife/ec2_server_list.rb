@@ -86,14 +86,14 @@ class Chef
       def run
         $stdout.sync = true
 
-        validate!
+        validate_aws_config!
 
         servers_list = [
           ui.color("Instance ID", :bold),
 
-          # if config[:name]
-          #   ui.color("Name", :bold)
-          # end,
+          if config[:name]
+            ui.color("Name", :bold)
+          end,
 
           ui.color("Public IP", :bold),
           ui.color("Private IP", :bold),
@@ -114,7 +114,7 @@ class Chef
           end,
 
           if config[:iamprofile]
-          	ui.color("IAM Profile", :bold)
+            ui.color("IAM Profile", :bold)
           end,
 
           ui.color("State", :bold)
@@ -129,14 +129,20 @@ class Chef
         if config[:format] == "summary"
           server_hashes.each do |v|
             servers_list << v["instance_id"]
+            servers_list << v["name"] if config[:name]
             servers_list << v["public_ip_address"]
             servers_list << v["private_ip_address"]
             servers_list << v["instance_type"]
             servers_list << v["az"] if config[:az]
             servers_list << v["image_id"]
             servers_list << v["key_name"]
-            servers_list << v["security_groups"].join(',')
-          	servers_list << v["iam_instance_profile"].to_s if config[:iamprofile] # may be nil
+            servers_list << v["security_groups"].join(",")
+            if config[:tags]
+              config[:tags].split(",").collect do |tag_name|
+                servers_list << v["tags"].find { |tag| tag == tag_name }
+              end
+            end
+            servers_list << v["iam_instance_profile"].to_s if config[:iamprofile] # may be nil
             servers_list << v["state"]
           end
           puts ui.list(servers_list, :uneven_columns_across, output_column_count)
@@ -157,32 +163,35 @@ class Chef
             server_data[id] = i.instances[0].send(id)
           end
 
-          if config[:az]
-            server_data['az'] = ui.color(i.instances[0].placement.availability_zone, azcolor(i.instances[0].placement.availability_zone))
+          # dig into tags struct
+          tags = extract_tags(i.instances[0].tags)
+
+          if config[:name]
+            server_data["name"] = tags[0]
           end
 
-          server_data['iam_instance_profile'] = ( i.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[/instance-profile\/(.*)/] )
+          if config[:az]
+            server_data["az"] = ui.color(i.instances[0].placement.availability_zone, azcolor(i.instances[0].placement.availability_zone))
+          end
 
-          server_data['state'] = ui.color(i.instances[0].state.name, state_color(i.instances[0].state.name))
+          server_data["iam_instance_profile"] = ( i.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[/instance-profile\/(.*)/] )
+
+          server_data["state"] = ui.color(i.instances[0].state.name, state_color(i.instances[0].state.name))
 
           if config[:tags]
-            # dig into tags struct
-            server_data['tags'] = extract_tag(i.instances[0].tags)
+            server_data["tags"] = tags
           end
 
           # dig into security_groups struct
-          server_data['security_groups'] = i.instances[0].security_groups.map { |x| x.group_name }
+          server_data["security_groups"] = i.instances[0].security_groups.map { |x| x.group_name }
 
-          #require 'pry'; binding.pry
           all_data << server_data
         end
         all_data
       end
 
-      private
-
-      def extract_tag(name, tag_struct)
-
+      def extract_tags(tags_struct)
+        tags_struct.map { |x| x.value }
       end
     end
   end

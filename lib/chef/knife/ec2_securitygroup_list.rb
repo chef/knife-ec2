@@ -27,7 +27,7 @@ class Chef
       banner "knife ec2 securitygroup list (options)"
 
       def run
-        validate!
+        validate_aws_config!
         custom_warnings!
 
         sg_list = [

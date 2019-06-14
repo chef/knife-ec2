@@ -27,7 +27,7 @@ class Chef
       banner "knife ec2 vpc list (options)"
 
       def run
-        validate!
+        validate_aws_config!
         custom_warnings!
 
         vpcs_list = [
