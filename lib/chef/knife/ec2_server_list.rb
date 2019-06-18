@@ -189,6 +189,7 @@ class Chef
         all_data
       end
 
+      # @return [Array<String>]
       def extract_tags(tags_struct)
         tags_struct.map { |x| x.value }
       end

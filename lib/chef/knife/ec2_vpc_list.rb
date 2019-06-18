@@ -58,6 +58,7 @@ class Chef
 
       private
 
+      # @return [Hash<Hash>]
       def vpc_hash
         all_data = {}
         ec2_connection.describe_vpcs.first.vpcs.each do |v|

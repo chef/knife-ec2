@@ -62,6 +62,7 @@ class Chef
 
       private
 
+      # @return [Hash<Hash>]
       def subnet_hash
         all_data = {}
         ec2_connection.describe_subnets.first.subnets.each do |s|

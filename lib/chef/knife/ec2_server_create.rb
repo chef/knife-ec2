@@ -306,15 +306,14 @@ class Chef
         requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
 
         # For VPC EIP assignment we need the allocation ID so fetch full EIP details
-        elastic_ip = ec2_connection.addresses.detect { |addr| addr if addr.public_ip == requested_elastic_ip }
+        elastic_ip = ec2_connection.describe_addresses.addresses.detect { |addr| addr if addr.public_ip == requested_elastic_ip }
 
         if config_value(:spot_price)
-          server_def = create_server_def
-          server_def[:groups] = server_def[:security_group_ids] if vpc_mode?
-          spot_request = ec2_connection.spot_requests.create(server_def)
-          msg_pair("Spot Request ID", spot_request.id)
-          msg_pair("Spot Request Type", spot_request.request_type)
-          msg_pair("Spot Price", spot_request.price)
+          server_def = spot_instances_attributes
+          spot_request = ec2_connection.request_spot_instances(server_def)
+          msg_pair("Spot Request ID", spot_request.spot_instance_request_id)
+          msg_pair("Spot Request Type", spot_request.type)
+          msg_pair("Spot Price", spot_request.spot_price)
 
           case config[:spot_wait_mode]
           when "prompt", "", nil
@@ -335,16 +334,12 @@ class Chef
           end
 
           print ui.color("Waiting for Spot Request fulfillment:  ", :cyan)
-          spot_request.wait_for do
-            @spinner ||= %w{| / - \\}
-            print "\b" + @spinner.rotate!.first
-            ready?
-          end
-          puts("\n")
-          @server = ec2_connection.servers.get(spot_request.instance_id)
+          spot_response = ec2_spot_instances_wait_until_ready(spot_request.spot_instance_request_id)
+
+          @server = fetch_ec2_instance(spot_response.instance_id, "reserved")
         else
           begin
-            @server = ec2_connection.servers.create(create_server_def)
+            @server = create_ec2_instance
           rescue => error
             error.message.sub("download completed, but downloaded file not found", "Verify that you have public internet access.")
             ui.error error.message
@@ -353,15 +348,16 @@ class Chef
           end
         end
 
-
-        msg_pair("Instance ID", @server.id)
-        msg_pair("Flavor", @server.flavor_id)
-        msg_pair("Image", @server.image_id)
+        msg_pair("Instance ID", @server.instances[0].instance_id)
+        msg_pair("Flavor", @server.instances[0].flavor_id)
+        msg_pair("Image", @server.instances[0].image_id)
         msg_pair("Region", ec2_connection.instance_variable_get(:@region))
-        msg_pair("Availability Zone", @server.availability_zone)
+        msg_pair("Availability Zone", @server.placement.availability_zone)
 
-        msg_pair("Security Groups", printed_security_groups) unless vpc_mode? || (@server.groups.nil? && @server.security_group_ids)
-        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? || @server.security_group_ids
+        groups_ids = extract_security_groups("group_id")
+
+        msg_pair("Security Groups", printed_security_groups)  unless vpc_mode? || (@server.groups.nil? && @server.groups_ids.any?)
+        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? || @server.groups_ids.any?
 
         msg_pair("IAM Profile", config_value(:iam_instance_profile))
 
@@ -599,7 +595,14 @@ class Chef
       end
 
       def ami
-        @ami ||= ec2_connection.images.get(locate_config_value(:image))
+        @ami ||= fetch_ami(locate_config_value(:image))
+      end
+
+      def fetch_ami(image_id)
+        return {} unless image_id
+        ec2_connection.describe_images({
+          image_ids: [image_id],
+        }).first
       end
 
       def validate_name_args!
@@ -859,34 +862,46 @@ class Chef
         script_lines
       end
 
-      def create_server_def
-        server_def = {
+      def spot_instances_attributes
+        attributes = {
+          launch_specification: server_attributes,
+          spot_price: config_value(:spot_price),
+          request_type: config_value(:spot_request_type),
+        }
+      end
+
+      def server_attributes
+        attributes = {
           image_id: config_value(:image),
           groups: config[:security_groups],
           flavor_id: config_value(:flavor),
           key_name: config_value(:ssh_key_name),
-          availability_zone: config_value(:availability_zone),
-          price: config_value(:spot_price),
-          request_type: config_value(:spot_request_type),
+          placement: {
+            availability_zone: config_value(:availability_zone),
+          }
         }
-
+        network_attrs = {}
         if primary_eni = config_value(:primary_eni)
-          server_def[:network_interfaces] = [
-            {
-              NetworkInterfaceId: primary_eni,
-              DeviceIndex: "0",
-            }
-          ]
+          network_attrs[:network_interface_id] = primary_eni
+          network_attrs[:device_index] = 0
         else
-          server_def[:security_group_ids] = config_value(:security_group_ids)
-          server_def[:subnet_id] = config_value(:subnet_id) if vpc_mode?
+          attributes[:security_group_ids] = config_value(:security_group_ids)
+          network_attrs[:subnet_id] = config_value(:subnet_id) if vpc_mode?
         end
 
-        server_def[:private_ip_address] = config_value(:private_ip_address) if vpc_mode?
-        server_def[:placement_group] = config_value(:placement_group)
-        server_def[:iam_instance_profile_name] = config_value(:iam_instance_profile)
-        server_def[:tenancy] = "dedicated" if vpc_mode? && config_value(:dedicated_instance)
-        server_def[:associate_public_ip] = config_value(:associate_public_ip) if vpc_mode? && config[:associate_public_ip]
+        if vpc_mode?
+          network_attrs[:groups] = attributes[:security_group_ids]
+          network_attrs[:private_ip_address] = config_value(:private_ip_address)
+          network_attrs[:associate_public_ip_address] = config_value(:associate_public_ip) if config[:associate_public_ip]
+        end
+
+        if network_attrs.length > 0
+          attributes[:network_interfaces] = [network_attrs]
+        end
+
+        attributes[:placement][:group_name] = config_value(:placement_group)
+        attributes[:placement][:tenancy] = "dedicated" if vpc_mode? && config_value(:dedicated_instance)
+        attributes[:iam_instance_profile][:name] = config_value(:iam_instance_profile)
 
         if config_value(:winrm_transport) == "ssl"
           if config_value(:aws_user_data)
@@ -896,43 +911,43 @@ class Chef
                 user_data = process_user_data(user_data)
               end
               user_data = user_data.join
-              server_def.merge!(user_data: user_data)
+              attributes.merge!(user_data: user_data)
             rescue
               ui.warn("Cannot read #{config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
             end
           else
             if config[:create_ssl_listener]
-              server_def[:user_data] = "<powershell>\n" + ssl_config_user_data + "</powershell>\n"
+              attributes[:user_data] = "<powershell>\n" + ssl_config_user_data + "</powershell>\n"
             end
           end
         else
           if config_value(:aws_user_data)
             begin
-              server_def.merge!(user_data: File.read(config_value(:aws_user_data)))
+              attributes.merge!(user_data: File.read(config_value(:aws_user_data)))
             rescue
               ui.warn("Cannot read #{config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
             end
           end
         end
 
-        if config[:ebs_optimized]
-          server_def[:ebs_optimized] = "true"
-        else
-          server_def[:ebs_optimized] = "false"
-        end
+        attributes[:ebs_optimized] = if config[:ebs_optimized]
+                                       true
+                                     else
+                                       false
+                                      end
 
         if ami.root_device_type == "ebs"
           if config_value(:ebs_encrypted)
-            ami_map = ami.block_device_mapping[1]
+            ami_map = ami.block_device_mappings[1]
           else
-            ami_map = ami.block_device_mapping.first
+            ami_map = ami.block_device_mappings.first
           end
 
           ebs_size = begin
                        if config[:ebs_size]
                          Integer(config[:ebs_size]).to_s
                        else
-                         ami_map["volumeSize"].to_s
+                         ami_map.ebs.volume_size.to_s
                        end
                      rescue ArgumentError
                        puts "--ebs-size must be an integer"
@@ -942,13 +957,13 @@ class Chef
           delete_term = if config[:ebs_no_delete_on_term]
                           "false"
                         else
-                          ami_map["deleteOnTermination"]
+                          ami_map.ebs.delete_on_termination
                         end
           iops_rate = begin
                         if config[:ebs_provisioned_iops]
                           Integer(config[:ebs_provisioned_iops]).to_s
                         else
-                          ami_map["iops"].to_s
+                          ami_map.ebs.iops.to_s
                         end
                       rescue ArgumentError
                         puts "--provisioned-iops must be an integer"
@@ -956,27 +971,60 @@ class Chef
                         exit 1
                       end
 
-          server_def[:block_device_mapping] =
+          attributes[:block_device_mappings] =
             [{
-               "DeviceName"              => ami_map["deviceName"],
-               "Ebs.VolumeSize"          => ebs_size,
-               "Ebs.DeleteOnTermination" => delete_term,
-               "Ebs.VolumeType"          => config[:ebs_volume_type],
+               device_name: ami_map.device_name,
+               ebs: {
+                  delete_on_termination: delete_term,
+                  volume_size: ebs_size,
+                  volume_type: config[:ebs_volume_type], # accepts standard, io1, gp2, sc1, st1
+                },
              }]
-          server_def[:block_device_mapping].first["Ebs.Iops"] = iops_rate unless iops_rate.empty?
-          server_def[:block_device_mapping].first["Ebs.Encrypted"] = true if config_value(:ebs_encrypted)
+          attributes[:block_device_mappings][0][:ebs][:iops] = iops_rate unless iops_rate.empty?
+          attributes[:block_device_mappings][0][:ebs][:encrypted] = true if config_value(:ebs_encrypted)
         end
 
         (config[:ephemeral] || []).each_with_index do |device_name, i|
-          server_def[:block_device_mapping] = (server_def[:block_device_mapping] || []) << { "VirtualName" => "ephemeral#{i}", "DeviceName" => device_name }
+          attributes[:block_device_mappings] = (attributes[:block_device_mappings] || []) << { virtual_name: "ephemeral#{i}", device_name: device_name }
         end
 
         ## cannot pass disable_api_termination option to the API when using spot instances ##
-        server_def[:disable_api_termination] = config_value(:disable_api_termination) if config_value(:spot_price).nil?
+        attributes[:disable_api_termination] = config_value(:disable_api_termination) if config_value(:spot_price).nil?
 
-        server_def[:instance_initiated_shutdown_behavior] = config_value(:instance_initiated_shutdown_behavior)
-        server_def[:chef_tag] = config_value(:chef_tag)
-        server_def
+        attributes[:instance_initiated_shutdown_behavior] = config_value(:instance_initiated_shutdown_behavior)
+        attributes[:chef_tag] = config_value(:chef_tag)
+        attributes
+      end
+
+      def create_ec2_instance
+        ec2_connection.run_instances(server_attributes)
+      end
+
+      def fetch_ec2_instance(instance_id)
+        ec2_connection.describe_instances({
+          instance_ids: [
+            instance_id,
+          ],
+        }).reservations[0]
+      end
+
+      def ec2_spot_instances_wait_until_ready(spot_request_id)
+        begin
+          ec2_connection.wait_until(
+            :spot_instance_request_fulfilled,
+            spot_instance_request_ids:[spot_request_id]
+          ).spot_instance_requests[0]
+        rescue Aws::Waiters::Errors::WaiterFailed => error
+          puts "failed waiting for spot request fulfill: #{error.message}"
+        end
+      end
+
+      def ec2_instances_wait_until_ready(instance_id)
+        begin
+          ec2_connection.wait_until(:instance_running, instance_ids:[instance_id])
+        rescue Aws::Waiters::Errors::WaiterFailed => error
+          puts "failed waiting for instance running: #{error.message}"
+        end
       end
 
       def wait_for_sshd(hostname)
@@ -1268,6 +1316,7 @@ class Chef
           ec2_connection.tags.create key: key, value: val, resource_id: @server.block_device_mapping.first["volumeId"]
         end
       end
+
       # TODO: connection_protocol and connection_port used to choose winrm/ssh or 5985/22 based on the image chosen
       def connection_port
         port = config_value(:connection_port,
@@ -1275,10 +1324,10 @@ class Chef
         port || winrm? ? 5985 : 22
       end
 
-			def server_name
+      def server_name
         return nil unless @server
-				@server.dns_name || @server.private_dns_name || @server.private_ip_address
-			end
+        @server.dns_name || @server.private_dns_name || @server.private_ip_address
+      end
 
       alias host_descriptor server_name
 
@@ -1287,19 +1336,25 @@ class Chef
       # default security group id at this point unless we look it up, hence
       # 'default' is printed if no id was specified.
       def printed_security_groups
-        if @server.groups
-          @server.groups.join(", ")
+        if @server.groups.any?
+          @server.groups.map{|grp| grp.group_name }.join(", ")
+        else
+          "default"
+        end
+        end
+      end
+
+      def printed_security_group_ids
+        groups = extract_security_groups("group_id")
+        if groups.any?
+          groups.join(", ")
         else
           "default"
         end
       end
 
-      def printed_security_group_ids
-        if @server.security_group_ids
-          @server.security_group_ids.join(", ")
-        else
-          "default"
-        end
+      def extract_security_groups(attribute)
+        @server.security_groups.map{ |grp| grp.send(attribute) }
       end
 
       def hashed_volume_tags

@@ -161,8 +161,8 @@ class Chef
         all_data
       end
 
+      # Delete the server instance
       def delete_instance(instance_id)
-        p "delete_instance=================="
         return nil unless instance_id || instance_id.is_a?(String)
         ec2_connection.terminate_instances({
           instance_ids: [
