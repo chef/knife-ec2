@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+require "ostruct"
 require "chef/knife/ec2_base"
 require "chef/knife/s3_source"
 require "chef/knife/bootstrap"
@@ -334,9 +334,9 @@ class Chef
           end
 
           print ui.color("Waiting for Spot Request fulfillment:  ", :cyan)
-          spot_response = ec2_spot_instances_wait_until_ready(spot_request.spot_instance_request_id)
+          spot_response = spot_instances_wait_until_ready(spot_request.spot_instance_request_id)
 
-          @server = fetch_ec2_instance(spot_response.instance_id, "reserved")
+          @server = fetch_ec2_instance(spot_response.instance_id)
         else
           begin
             @server = create_ec2_instance
@@ -348,27 +348,24 @@ class Chef
           end
         end
 
-        msg_pair("Instance ID", @server.instances[0].instance_id)
-        msg_pair("Flavor", @server.instances[0].flavor_id)
-        msg_pair("Image", @server.instances[0].image_id)
+        msg_pair("Instance ID", server.id)
+        msg_pair("Flavor", server.instance_type)
+        msg_pair("Image", server.image_id)
         msg_pair("Region", ec2_connection.instance_variable_get(:@region))
-        msg_pair("Availability Zone", @server.placement.availability_zone)
-
-        groups_ids = extract_security_groups("group_id")
-
-        msg_pair("Security Groups", printed_security_groups)  unless vpc_mode? || (@server.groups.nil? && @server.groups_ids.any?)
-        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? || @server.groups_ids.any?
+        msg_pair("Availability Zone", server.availability_zone)
+        msg_pair("Security Groups", printed_security_groups) unless vpc_mode? || (server.groups && server.security_groups_ids)
+        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? || server.security_groups_ids
 
         msg_pair("IAM Profile", config_value(:iam_instance_profile))
 
         msg_pair("AWS Tags", printed_aws_tags)
         msg_pair("Volume Tags", printed_volume_tags)
-        msg_pair("SSH Key", @server.key_name)
+        msg_pair("SSH Key", server.key_name)
 
         print "\n#{ui.color("Waiting for EC2 to create the instance", :magenta)}"
 
         # wait for instance to come up before acting against it
-        @server.wait_for(config_value(:aws_connection_timeout)) { print "."; ready? }
+        instances_wait_until_ready(server.id)
 
         puts("\n")
 
@@ -377,9 +374,9 @@ class Chef
         begin
           create_tags(hashed_tags) unless hashed_tags.empty?
           create_volume_tags(hashed_volume_tags) unless hashed_volume_tags.empty?
-          associate_eip(elastic_ip) if config[:associate_eip]
+          associate_address(elastic_ip) if config[:associate_eip]
           enable_classic_link(config[:classic_link_vpc_id], config[:classic_link_vpc_security_group_ids]) if config[:classic_link_vpc_id]
-        rescue Fog::Compute::AWS::NotFound, Fog::Errors::Error
+        rescue Aws::EC2::Errors::ServiceError, Aws::EC2::Errors::Error
           raise if (tries -= 1) <= 0
           ui.warn("server not ready, retrying tag application (retries left: #{tries})")
           sleep 5
@@ -389,20 +386,20 @@ class Chef
         attach_nics if config[:network_interfaces]
 
         if vpc_mode?
-          msg_pair("Subnet ID", @server.subnet_id)
-          msg_pair("Tenancy", @server.tenancy)
+          msg_pair("Subnet ID", server.subnet_id)
+          msg_pair("Tenancy", server.tenancy)
           if config[:associate_public_ip]
-            msg_pair("Public DNS Name", @server.dns_name)
+            msg_pair("Public DNS Name", server.public_dns_name)
           end
           if elastic_ip
-            msg_pair("Public IP Address", @server.public_ip_address)
+            msg_pair("Public IP Address", server.public_ip_address)
           end
         else
-          msg_pair("Public DNS Name", @server.dns_name)
-          msg_pair("Public IP Address", @server.public_ip_address)
-          msg_pair("Private DNS Name", @server.private_dns_name)
+          msg_pair("Public DNS Name", server.public_dns_name)
+          msg_pair("Public IP Address", server.public_ip_address)
+          msg_pair("Private DNS Name", server.private_dns_name)
         end
-        msg_pair("Private IP Address", @server.private_ip_address)
+        msg_pair("Private IP Address", server.private_ip_address)
 
         if Chef::Config[:knife][:validation_key_url]
           download_validation_key(validation_key_path)
@@ -450,66 +447,67 @@ class Chef
 
       def plugin_finalize
         puts "\n"
-        msg_pair("Instance ID", @server.id)
-        msg_pair("Flavor", @server.flavor_id)
-        msg_pair("Placement Group", @server.placement_group) unless @server.placement_group.nil?
-        msg_pair("Image", @server.image_id)
+        msg_pair("Instance ID", server.id)
+        msg_pair("Flavor", server.instance_type)
+        msg_pair("Placement Group", server.placement_group) unless server.placement_group.nil?
+        msg_pair("Image", server.image_id)
         msg_pair("Region", ec2_connection.instance_variable_get(:@region))
-        msg_pair("Availability Zone", @server.availability_zone)
-        msg_pair("Security Groups", printed_security_groups) unless vpc_mode? || (@server.groups.nil? && @server.security_group_ids)
-        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? || @server.security_group_ids
+        msg_pair("Availability Zone", server.availability_zone)
+        msg_pair("Security Groups", printed_security_groups) unless vpc_mode? || (server.groups.nil? && server.security_group_ids)
+        msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? || server.security_group_ids
         msg_pair("IAM Profile", config_value(:iam_instance_profile)) if config_value(:iam_instance_profile)
         msg_pair("Primary ENI", config_value(:primary_eni)) if config_value(:primary_eni)
         msg_pair("AWS Tags", printed_aws_tags)
         msg_pair("Chef Tags", config_value(:chef_tag)) if config_value(:chef_tag)
-        msg_pair("SSH Key", @server.key_name)
-        msg_pair("Root Device Type", @server.root_device_type)
+        msg_pair("SSH Key", server.key_name)
+        msg_pair("Root Device Type", server.root_device_type)
         msg_pair("Root Volume Tags", printed_volume_tags)
-        if @server.root_device_type == "ebs"
-          device_map = @server.block_device_mapping.first
-          msg_pair("Root Volume ID", device_map["volumeId"])
-          msg_pair("Root Device Name", device_map["deviceName"])
-          msg_pair("Root Device Delete on Terminate", device_map["deleteOnTermination"])
-          msg_pair("Standard or Provisioned IOPS", device_map["volumeType"])
-          msg_pair("IOPS rate", device_map["iops"])
+        if server.root_device_type == "ebs"
+          device_map = server.block_device_mappings.first
+          msg_pair("Root Device Name", device_map.device_name)
+          msg_pair("Root Volume ID", device_map.ebs.volume_id)
+          msg_pair("Root Device Delete on Terminate", device_map.ebs.delete_on_termination)
+          msg_pair("Standard or Provisioned IOPS", device_map.ebs.volume_type)
+          msg_pair("IOPS rate", device_map.ebs.iops)
 
           print "\n#{ui.color("Block devices", :magenta)}\n"
           print "#{ui.color("===========================", :magenta)}\n"
-          @server.block_device_mapping.each do |device_map|
-            msg_pair("Device Name", device_map["deviceName"])
-            msg_pair("Volume ID", device_map["volumeId"])
-            msg_pair("Delete on Terminate", device_map["deleteOnTermination"].to_s)
-            msg_pair("Standard or Provisioned IOPS", device_map["volumeType"])
-            msg_pair("IOPS rate", device_map["iops"])
+          server.block_device_mapping.each do |device_map|
+            msg_pair("Device Name", device_map.device_name)
+            msg_pair("Volume ID", device_map.ebs.volume_id)
+            msg_pair("Delete on Terminate", device_map.ebs.delete_on_termination.to_s)
+            msg_pair("Standard or Provisioned IOPS", device_map.ebs.volume_type)
+            msg_pair("IOPS rate", device_map.ebs.iops)
             print "\n"
           end
           print "#{ui.color("===========================", :magenta)}\n"
 
           if config[:ebs_size]
-            if ami.block_device_mapping.first["volumeSize"].to_i < config[:ebs_size].to_i
+            volume_size = ami.block_device_mappings[0].ebs.volume_size
+            if volume_size.to_i < config[:ebs_size].to_i
               volume_too_large_warning = "#{config[:ebs_size]}GB " +
                 "EBS volume size is larger than size set in AMI of " +
-                "#{ami.block_device_mapping.first['volumeSize']}GB.\n" +
+                "#{volume_size}GB.\n" +
                 "Use file system tools to make use of the increased volume size."
               msg_pair("Warning", volume_too_large_warning, :yellow)
             end
           end
         end
         if config[:ebs_optimized]
-          msg_pair("EBS is Optimized", @server.ebs_optimized.to_s)
+          msg_pair("EBS is Optimized", server.ebs_optimized.to_s)
         end
         if vpc_mode?
-          msg_pair("Subnet ID", @server.subnet_id)
-          msg_pair("Tenancy", @server.tenancy)
+          msg_pair("Subnet ID", server.subnet_id)
+          msg_pair("Tenancy", server.tenancy)
           if config[:associate_public_ip]
-            msg_pair("Public DNS Name", @server.dns_name)
+            msg_pair("Public DNS Name", server.public_dns_name)
           end
         else
-          msg_pair("Public DNS Name", @server.dns_name)
-          msg_pair("Public IP Address", @server.public_ip_address)
-          msg_pair("Private DNS Name", @server.private_dns_name)
+          msg_pair("Public DNS Name", server.public_dns_name)
+          msg_pair("Public IP Address", server.public_ip_address)
+          msg_pair("Private DNS Name", server.private_dns_name)
         end
-        msg_pair("Private IP Address", @server.private_ip_address)
+        msg_pair("Private IP Address", server.private_ip_address)
         msg_pair("Environment", config[:environment] || "_default")
         msg_pair("Run List", (config[:run_list] || []).join(", "))
         if config[:first_boot_attributes] || config[:first_boot_attributes_from_file]
@@ -602,7 +600,7 @@ class Chef
         return {} unless image_id
         ec2_connection.describe_images({
           image_ids: [image_id],
-        }).first
+        }).images.first
       end
 
       def validate_name_args!
@@ -864,18 +862,21 @@ class Chef
 
       def spot_instances_attributes
         attributes = {
+          instance_count: 1,
           launch_specification: server_attributes,
           spot_price: config_value(:spot_price),
-          request_type: config_value(:spot_request_type),
+          type: config_value(:spot_request_type),
         }
       end
 
       def server_attributes
         attributes = {
           image_id: config_value(:image),
+          instance_type: config_value(:flavor),
           groups: config[:security_groups],
-          flavor_id: config_value(:flavor),
           key_name: config_value(:ssh_key_name),
+          max_count: 1,
+          min_count: 1,
           placement: {
             availability_zone: config_value(:availability_zone),
           }
@@ -901,6 +902,7 @@ class Chef
 
         attributes[:placement][:group_name] = config_value(:placement_group)
         attributes[:placement][:tenancy] = "dedicated" if vpc_mode? && config_value(:dedicated_instance)
+        attributes[:iam_instance_profile] = {}
         attributes[:iam_instance_profile][:name] = config_value(:iam_instance_profile)
 
         if config_value(:winrm_transport) == "ssl"
@@ -997,18 +999,20 @@ class Chef
       end
 
       def create_ec2_instance
-        ec2_connection.run_instances(server_attributes)
+        instance = ec2_connection.run_instances(server_attributes)
+        normalize_server_data(instance)
       end
 
       def fetch_ec2_instance(instance_id)
-        ec2_connection.describe_instances({
+        instance = ec2_connection.describe_instances({
           instance_ids: [
             instance_id,
           ],
         }).reservations[0]
+        normalize_server_data(instance)
       end
 
-      def ec2_spot_instances_wait_until_ready(spot_request_id)
+      def spot_instances_wait_until_ready(spot_request_id)
         begin
           ec2_connection.wait_until(
             :spot_instance_request_fulfilled,
@@ -1019,12 +1023,24 @@ class Chef
         end
       end
 
-      def ec2_instances_wait_until_ready(instance_id)
+      def instances_wait_until_ready(instance_id)
         begin
-          ec2_connection.wait_until(:instance_running, instance_ids:[instance_id])
+          ec2_connection.wait_until(:instance_running, instance_ids:[instance_id]) do |w|
+            w.max_attempts = max_attempts
+          end
         rescue Aws::Waiters::Errors::WaiterFailed => error
           puts "failed waiting for instance running: #{error.message}"
         end
+      end
+
+      def max_attempts
+        delay = 15 # Default Delay for waiter
+        attempts = 40 # Default max attempts for waiter
+
+        if config_value(:aws_connection_timeout)
+          attempts = (config_value(:aws_connection_timeout).to_f/delay).to_i
+        end
+        attempts
       end
 
       def wait_for_sshd(hostname)
@@ -1143,7 +1159,7 @@ class Chef
             connect_attribute = "private_ip_address"
             server.private_ip_address
           else
-            connect_attribute = server.dns_name ? "dns_name" : "public_ip_address"
+            connect_attribute = server.public_dns_name ? "public_dns_name" : "public_ip_address"
             server.send(connect_attribute)
           end
           @connection_host = server.send(connect_attribute)
@@ -1154,14 +1170,22 @@ class Chef
       end
 
       def create_tags(hashed_tags)
+        request_tags = []
         hashed_tags.each_pair do |key, val|
-          ec2_connection.tags.create key: key, value: val, resource_id: @server.id
+          request_tags << { key: key, value: val }
+        end
+
+        if request_tags.length > 0
+          ec2_connection.create_tags(tags: request_tags, resources: [server.id])
         end
       end
 
-      def associate_eip(elastic_ip)
-        ec2_connection.associate_address(server.id, elastic_ip.public_ip, nil, elastic_ip.allocation_id)
-        @server.wait_for(locate_config_value(:aws_connection_timeout)) { public_ip_address == elastic_ip.public_ip }
+      def associate_address(elastic_ip)
+        ec2_connection.associate_address({
+          allocation_id: elastic_ip.allocation_id,
+          instance_id: server.id,
+          public_ip: elastic_ip.public_ip,
+        })
       end
 
       def validate_nics!
@@ -1208,7 +1232,11 @@ class Chef
       end
 
       def enable_classic_link(vpc_id, security_group_ids)
-        ec2_connection.attach_classic_link_vpc(server.id, vpc_id, security_group_ids)
+        ec2_connection.attach_classic_link_vpc({
+          instance_id: server.id,
+          groups: security_group_ids,
+          vpc_id: vpc_id,
+        })
       end
 
       def tcp_test_winrm(ip_addr, port)
@@ -1287,10 +1315,10 @@ class Chef
       def windows_password
         if not config_value(:winrm_password)
           if config_value(:identity_file)
-            if @server
+            if server
               print "\n#{ui.color("Waiting for Windows Admin password to be available: ", :magenta)}"
-              print(".") until check_windows_password_available(@server.id) { puts("done") }
-              response = ec2_connection.get_password_data(@server.id)
+              print(".") until check_windows_password_available(server.id) { puts("done") }
+              response = ec2_connection.get_password_data(server.id)
               data = File.read(locate_config_value(:identity_file))
               config[:winrm_password] = decrypt_admin_password(response.body["passwordData"], data)
             else
@@ -1312,8 +1340,13 @@ class Chef
       end
 
       def create_volume_tags(hashed_volume_tags)
+        request_tags = []
         hashed_volume_tags.each_pair do |key, val|
-          ec2_connection.tags.create key: key, value: val, resource_id: @server.block_device_mapping.first["volumeId"]
+          request_tags << { key: key, value: val }
+        end
+
+        if request_tags.length > 0
+          ec2_connection.create_tags(tags: request_tags, resources: [server.volume_id])
         end
       end
 
@@ -1325,36 +1358,60 @@ class Chef
       end
 
       def server_name
-        return nil unless @server
-        @server.dns_name || @server.private_dns_name || @server.private_ip_address
+        return nil unless server
+        server.public_dns_name || server.private_dns_name || server.private_ip_address
       end
 
       alias host_descriptor server_name
+
+      # @return [Hash]
+      def server_hashes(server_obj)
+        server_data = {}
+        %w{ebs_optimized image_id instance_id instance_type key_name platform public_dns_name public_ip_address private_dns_name private_ip_address root_device_type}.each do |id|
+          server_data[id] = server_obj.instances[0].send(id)
+        end
+
+        server_data["availability_zone"] = server_obj.instances[0].placement.availability_zone
+        server_data["groups"] = server_obj.groups.map{ |grp| grp.name }
+        server_data["iam_instance_profile"] = ( server_obj.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[/instance-profile\/(.*)/] )
+        server_data["id"] = server_data["instance_id"]
+
+        tags = server_obj.instances[0].tags.map { |x| x.value }
+        server_data["name"] = tags[0]
+        server_data["placement_group"] = server_obj.instances[0].placement.group_name
+        server_data["security_groups"] = server_obj.instances[0].security_groups.map { |x| x.group_name }
+        server_data["security_group_ids"] = server_obj.instances[0].security_groups.map { |x| x.group_id }
+        server_data["state"] = server_obj.instances[0].state.name
+        server_data["subnet_id"] = server_obj.instances[0].network_interfaces[0].subnet_id
+        server_data["tags"] = tags
+        server_data["tenancy"] = server_obj.instances[0].placement.tenancy
+        server_data["volume_id"] = server_obj.instances[0].block_device_mappings[0]&.ebs&.volume_id
+        server_data["block_device_mappings"] = server_obj.instances[0].block_device_mappings
+        server_data
+      end
+
+      def normalize_server_data(instance)
+        OpenStruct.new(server_hashes(instance))
+      end
 
       # If we don't specify a security group or security group id, Fog will
       # pick the appropriate default one. In case of a VPC we don't know the
       # default security group id at this point unless we look it up, hence
       # 'default' is printed if no id was specified.
       def printed_security_groups
-        if @server.groups.any?
-          @server.groups.map{|grp| grp.group_name }.join(", ")
+        if server.groups
+          server.groups.join(", ")
         else
           "default"
-        end
         end
       end
 
       def printed_security_group_ids
-        groups = extract_security_groups("group_id")
-        if groups.any?
+        if server.security_group_ids
           groups.join(", ")
         else
           "default"
         end
-      end
-
-      def extract_security_groups(attribute)
-        @server.security_groups.map{ |grp| grp.send(attribute) }
       end
 
       def hashed_volume_tags

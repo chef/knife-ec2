@@ -105,8 +105,8 @@ class Chef
 
       # @return [Boolean]
       def is_image_windows?
-        image_info = ec2_connection.images.get(@server.image_id)
-        image_info.platform == "windows"
+        raise unless @server
+        @server.platform && @server.platform == "windows"
       end
 
       # validate the config options that were passed since some of them cannot be used together
