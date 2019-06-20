@@ -26,13 +26,16 @@ class Chef
       end
 
       def body
-        bucket_obj.files.get(path).body
+        bucket_obj.body
       end
 
       private
 
       def bucket_obj
-        @bucket_obj ||= fog.directories.get(bucket)
+        s3_connection.get_object({
+          bucket: bucket,
+          key: path,
+        })
       end
 
       # @return [URI]
@@ -55,13 +58,18 @@ class Chef
         end
       end
 
-      # @return [Fog::Storage::AWS]
-      def fog
-        require "fog/aws" # lazy load the fog library to speed up the knife run
-        @fog ||= Fog::Storage::AWS.new(
-          aws_access_key_id: Chef::Config[:knife][:aws_access_key_id],
-          aws_secret_access_key: Chef::Config[:knife][:aws_secret_access_key]
-        )
+      # @return [Aws::S3::Client]
+      def s3_connection
+        require "aws-sdk" # lazy load the aws sdk to speed up the knife run
+        @s3_connection ||= begin
+          conn = {}
+          conn[:credentials] = Aws::Credentials.new(
+            Chef::Config[:knife][:aws_access_key_id],
+            Chef::Config[:knife][:aws_secret_access_key]
+          )
+          conn[:region] = Chef::Config[:knife][:region]
+          Aws::S3::Client.new(conn)
+        end
       end
     end
   end

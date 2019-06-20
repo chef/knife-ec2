@@ -113,7 +113,7 @@ class Chef
         }).network_interfaces[0]
       end
 
-      def fetch_passowrd_data(server_id)
+      def fetch_password_data(server_id)
         ec2_connection.get_password_data({
           instance_id: server_id,
         })

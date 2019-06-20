@@ -1306,7 +1306,7 @@ class Chef
 
       def check_windows_password_available(server_id)
         sleep 10
-        response = fetch_passowrd_data(server_id)
+        response = fetch_password_data(server_id)
         return false unless response.password_data
         true
       end
