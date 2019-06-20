@@ -91,6 +91,77 @@ class Chef
         end
       end
 
+      def fetch_ami(image_id)
+        return {} unless image_id
+        ec2_connection.describe_images({
+          image_ids: [image_id],
+        }).images.first
+      end
+
+      def fetch_ec2_instance(instance_id)
+        instance = ec2_connection.describe_instances({
+          instance_ids: [
+            instance_id,
+          ],
+        }).reservations[0]
+        normalize_server_data(server_hashes(instance))
+      end
+
+      def fetch_network_interfaces(nic_id)
+        ec2_connection.describe_network_interfaces({
+          network_interface_ids: [nic_id],
+        }).network_interfaces[0]
+      end
+
+      def fetch_passowrd_data(server_id)
+        ec2_connection.get_password_data({
+          instance_id: server_id,
+        })
+      end
+
+      # @return [String]
+      def fetch_region
+        ec2_connection.instance_variable_get(:@config).region
+      end
+
+      def fetch_subnet(subnet_id)
+        ec2_connection.describe_subnets({
+          subnet_ids: [subnet_id]
+        }).subnets[0]
+      end
+
+      # @return [Hash]
+      def server_hashes(server_obj)
+        server_data = {}
+        %w{ebs_optimized image_id instance_id instance_type key_name platform public_dns_name public_ip_address private_dns_name private_ip_address root_device_type}.each do |id|
+          server_data[id] = server_obj.instances[0].send(id)
+        end
+
+        server_data["availability_zone"] = server_obj.instances[0].placement.availability_zone
+        server_data["groups"] = server_obj.groups.map { |grp| grp.name }
+        server_data["iam_instance_profile"] = ( server_obj.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[/instance-profile\/(.*)/] )
+        server_data["id"] = server_data["instance_id"]
+
+        tags = server_obj.instances[0].tags.map { |x| x.value }
+        server_data["name"] = tags[0]
+        server_data["placement_group"] = server_obj.instances[0].placement.group_name
+        server_data["security_groups"] = server_obj.instances[0].security_groups.map { |x| x.group_name }
+        server_data["security_group_ids"] = server_obj.instances[0].security_groups.map { |x| x.group_id }
+        server_data["state"] = server_obj.instances[0].state.name
+        server_data["subnet_id"] = server_obj.instances[0].network_interfaces[0].subnet_id
+        server_data["tags"] = tags
+        server_data["tenancy"] = server_obj.instances[0].placement.tenancy
+        server_data["volume_id"] = server_obj.instances[0].block_device_mappings[0]&.ebs&.volume_id
+        server_data["block_device_mappings"] = server_obj.instances[0].block_device_mappings
+        server_data
+      end
+
+      # @return [Struct]
+      def normalize_server_data(server_hashes)
+        require "ostruct"
+        OpenStruct.new(server_hashes)
+      end
+
       # @return [String]
       def locate_config_value(key)
         key = key.to_sym
