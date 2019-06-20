@@ -339,7 +339,13 @@ class Chef
           @server = fetch_ec2_instance(spot_response.instance_id)
         else
           begin
-            @server = create_ec2_instance
+            response_obj = create_ec2_instance(server_attributes)
+            instance_id = response_obj.instances[0].instance_id
+            print "\n#{ui.color("Waiting for EC2 to create the instance\n", :magenta)}"
+
+            # wait for instance to come up before acting against it
+            instances_wait_until_ready(instance_id)
+            @server = fetch_ec2_instance(instance_id)
           rescue => error
             error.message.sub("download completed, but downloaded file not found", "Verify that you have public internet access.")
             ui.error error.message
@@ -361,11 +367,6 @@ class Chef
         msg_pair("AWS Tags", printed_aws_tags)
         msg_pair("Volume Tags", printed_volume_tags)
         msg_pair("SSH Key", server.key_name)
-
-        print "\n#{ui.color("Waiting for EC2 to create the instance", :magenta)}"
-
-        # wait for instance to come up before acting against it
-        instances_wait_until_ready(server.id)
 
         puts("\n")
 
@@ -467,17 +468,17 @@ class Chef
           msg_pair("Root Device Name", device_map.device_name)
           msg_pair("Root Volume ID", device_map.ebs.volume_id)
           msg_pair("Root Device Delete on Terminate", device_map.ebs.delete_on_termination)
-          msg_pair("Standard or Provisioned IOPS", device_map.ebs.volume_type)
-          msg_pair("IOPS rate", device_map.ebs.iops)
+          msg_pair("Standard or Provisioned IOPS", device_map.ebs.volume_type) if device_map.ebs.respond_to?('volume_type')
+          msg_pair("IOPS rate", device_map.ebs.iops) if device_map.ebs.respond_to?('iops')
 
           print "\n#{ui.color("Block devices", :magenta)}\n"
           print "#{ui.color("===========================", :magenta)}\n"
-          server.block_device_mapping.each do |device_map|
+          server.block_device_mappings.each do |device_map|
             msg_pair("Device Name", device_map.device_name)
             msg_pair("Volume ID", device_map.ebs.volume_id)
             msg_pair("Delete on Terminate", device_map.ebs.delete_on_termination.to_s)
-            msg_pair("Standard or Provisioned IOPS", device_map.ebs.volume_type)
-            msg_pair("IOPS rate", device_map.ebs.iops)
+            msg_pair("Standard or Provisioned IOPS", device_map.ebs.volume_type) if device_map.ebs.respond_to?('volume_type')
+            msg_pair("IOPS rate", device_map.ebs.iops) if device_map.ebs.respond_to?('iops')
             print "\n"
           end
           print "#{ui.color("===========================", :magenta)}\n"
@@ -998,9 +999,8 @@ class Chef
         attributes
       end
 
-      def create_ec2_instance
-        instance = ec2_connection.run_instances(server_attributes)
-        normalize_server_data(instance)
+      def create_ec2_instance(attributes)
+        ec2_connection.run_instances(attributes)
       end
 
       def fetch_ec2_instance(instance_id)
@@ -1408,7 +1408,7 @@ class Chef
 
       def printed_security_group_ids
         if server.security_group_ids
-          groups.join(", ")
+          server.security_group_ids.join(", ")
         else
           "default"
         end

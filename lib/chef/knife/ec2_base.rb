@@ -105,7 +105,7 @@ class Chef
 
       # @return [Boolean]
       def is_image_windows?
-        raise unless @server
+        raise "Instance not created yet." unless @server
         @server.platform && @server.platform == "windows"
       end
 
