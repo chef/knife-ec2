@@ -26,7 +26,7 @@ class Chef
       end
 
       def body
-        bucket_obj.body
+        bucket_obj.body.string
       end
 
       private

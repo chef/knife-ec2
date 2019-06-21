@@ -6,7 +6,7 @@ require File.expand_path("../../spec_helper", __FILE__)
 describe "Check Dependencies", exclude: Object.constants.include?(:Aws) do
   it "should not load Aws::S3::Client by default" do
     begin
-      Aws::S3::Client.new(conn)
+      Aws::S3::Client.new
     rescue Exception => e
       expect(e).to be_a_kind_of(NameError)
     end
