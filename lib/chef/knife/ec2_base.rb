@@ -73,7 +73,7 @@ class Chef
 
       def connection_string
         conn = {}
-        conn[:region] = locate_config_value(:region) if locate_config_value(:region)
+        conn[:region] = locate_config_value(:region) || "us-east-1" # Default region us-east-1
         conn[:credentials] = if locate_config_value(:use_iam_profile)
                                Aws::InstanceProfileCredentials.new
                              elsif locate_config_value(:aws_session_token)

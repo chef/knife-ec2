@@ -67,7 +67,7 @@ class Chef
             Chef::Config[:knife][:aws_access_key_id],
             Chef::Config[:knife][:aws_secret_access_key]
           )
-          conn[:region] = Chef::Config[:knife][:region]
+          conn[:region] = Chef::Config[:knife][:region] || "us-east-1" # Default region us-east-1
           Aws::S3::Client.new(conn)
         end
       end
