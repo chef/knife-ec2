@@ -24,41 +24,47 @@ describe Chef::Knife::Ec2AmiList do
     Chef::Config[:knife][:region] = "test-region"
 
     let(:knife_ec2_ami_list) { Chef::Knife::Ec2AmiList.new }
-    ebs = OpenStruct.new(volume_size: 30)
-    block_device_mappings = OpenStruct.new(ebs: ebs)
-    image1 = OpenStruct.new(
-      architecture: "x86_64",
-      image_id: "im-34243rew32",
-      platform: "windows",
-      name: "image-test",
-      description: "test windows winrm image",
-      block_device_mappings: [block_device_mappings]
-    )
+    let(:ebs) { OpenStruct.new(volume_size: 30) }
+    let(:block_device_mappings) { OpenStruct.new(ebs: ebs) }
+    let(:image1) do
+      OpenStruct.new(
+        architecture: "x86_64",
+        image_id: "im-34243rew32",
+        platform: "windows",
+        name: "image-test",
+        description: "test windows winrm image",
+        block_device_mappings: [block_device_mappings]
+      )
+    end
 
-    image2 = OpenStruct.new(
-      architecture: "x86_64",
-      image_id: "im-2532521",
-      platform: "ubuntu",
-      name: "ubuntu",
-      description: "test ubuntu 14.04 image",
-      block_device_mappings: [block_device_mappings]
-    )
+    let(:image2) do
+      OpenStruct.new(
+        architecture: "x86_64",
+        image_id: "im-2532521",
+        platform: "ubuntu",
+        name: "ubuntu",
+        description: "test ubuntu 14.04 image",
+        block_device_mappings: [block_device_mappings]
+      )
+    end
 
-    image3 = OpenStruct.new(
-      architecture: "x86_64",
-      image_id: "im-435r54",
-      platform: "fedora",
-      name: "fedora",
-      description: "test fedora image",
-      block_device_mappings: [block_device_mappings]
-    )
+    let(:image3) do
+      OpenStruct.new(
+        architecture: "x86_64",
+        image_id: "im-435r54",
+        platform: "fedora",
+        name: "fedora",
+        description: "test fedora image",
+        block_device_mappings: [block_device_mappings]
+      )
+    end
 
-    let(:ami_images) { OpenStruct.new( images: [image1, image2, image3])}
-    let(:window_ami_images) { OpenStruct.new( images: [image1]) }
-    let(:ubuntu_ami_images) { OpenStruct.new( images: [image2]) }
-    let(:fedora_ami_images) { OpenStruct.new( images: [image3]) }
-    let(:empty_images) { OpenStruct.new( images: []) }
-    let(:ec2_connection) { Aws::EC2::Client.new(stub_responses: { describe_images: ami_images }) }
+    let(:ami_images)        { OpenStruct.new(images: [image1, image2, image3]) }
+    let(:window_ami_images) { OpenStruct.new(images: [image1]) }
+    let(:ubuntu_ami_images) { OpenStruct.new(images: [image2]) }
+    let(:fedora_ami_images) { OpenStruct.new(images: [image3]) }
+    let(:empty_images)      { OpenStruct.new(images: []) }
+    let(:ec2_connection)    { Aws::EC2::Client.new(stub_responses: { describe_images: ami_images }) }
 
     before (:each) do
       knife_ec2_ami_list.config[:format] = "summary"
