@@ -60,7 +60,7 @@ class Chef
 
       # @return [Aws::S3::Client]
       def s3_connection
-        require "aws-sdk" # lazy load the aws sdk to speed up the knife run
+        require "aws-sdk-s3" # lazy load the aws sdk to speed up the knife run
         @s3_connection ||= begin
           conn = {}
           conn[:credentials] = Aws::Credentials.new(

@@ -14,7 +14,7 @@
   #
 
 require File.expand_path("../../spec_helper", __FILE__)
-require "aws-sdk"
+require "aws-sdk-ec2"
 
 describe Chef::Knife::Ec2AmiList do
 

@@ -14,7 +14,7 @@
 #
 
 require File.expand_path("../../spec_helper", __FILE__)
-require "aws-sdk"
+require "aws-sdk-ec2"
 
 describe Chef::Knife::Ec2ServerList do
 
@@ -31,7 +31,7 @@ describe Chef::Knife::Ec2ServerList do
         architecture: "x86_64",
         image_id: "ami-005bdb005fb00e791",
         instance_id: "i-00fe186450a2e8e97",
-        instance_type: "t2.micro"
+        instance_type: "t2.micro",
         platform: "windows",
         name: "image-test",
         description: "test windows winrm image",
@@ -44,7 +44,7 @@ describe Chef::Knife::Ec2ServerList do
         architecture: "x86_64",
         image_id: "ami-005bdb005fb00e345",
         instance_id: "i-0ad66b86ff0db7ed0",
-        instance_type: "t2.micro"
+        instance_type: "t2.micro",
         platform: "ubuntu",
         name: "ubuntu",
         block_device_mappings: [block_device_mappings]
@@ -56,7 +56,7 @@ describe Chef::Knife::Ec2ServerList do
         architecture: "x86_64",
         image_id: "ami-005bdb005fb00e345",
         instance_id: "i-0a22de525e9180bce",
-        instance_type: "t2.micro"
+        instance_type: "t2.micro",
         platform: "fedora",
         block_device_mappings: [block_device_mappings]
       )

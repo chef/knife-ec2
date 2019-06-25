@@ -20,8 +20,8 @@ require File.expand_path("../../spec_helper", __FILE__)
 require "net/ssh/proxy/http"
 require "net/ssh/proxy/command"
 require "net/ssh/gateway"
-require "fog/aws"
 require "chef/util/path_helper"
+require "aws-sdk-ec2"
 
 describe Chef::Knife::Ec2ServerCreate do
   let(:knife_ec2_create) { Chef::Knife::Ec2ServerCreate.new }

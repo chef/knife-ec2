@@ -27,7 +27,7 @@ class Chef
         includer.class_eval do
 
           deps do
-            require "aws-sdk"
+            require "aws-sdk-ec2"
             require "chef/json_compat"
             require "chef/util/path_helper"
           end

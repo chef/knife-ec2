@@ -14,7 +14,7 @@
 #
 
 require File.expand_path("../../spec_helper", __FILE__)
-require "fog/aws"
+require "aws-sdk-ec2"
 
 describe Chef::Knife::Ec2ServerDelete do
   before do

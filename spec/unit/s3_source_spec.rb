@@ -1,5 +1,5 @@
 require File.expand_path("../../spec_helper", __FILE__)
-require "aws-sdk"
+require "aws-sdk-s3"
 
 describe Chef::Knife::S3Source do
   before(:each) do
@@ -7,7 +7,7 @@ describe Chef::Knife::S3Source do
     @test_file_path = "path/file.pem"
     @test_file_content = "TEST CONTENT\n"
     @s3_connection = Aws::S3::Client.new(stub_responses: {
-      list_buckets: { buckets: [{name: @bucket_name }] },
+      list_buckets: { buckets: [{ name: @bucket_name }] },
       get_object: { body: @test_file_content },
     })
 
