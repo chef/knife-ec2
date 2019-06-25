@@ -25,9 +25,10 @@ require "aws-sdk-ec2"
 
 describe Chef::Knife::Ec2ServerCreate do
   let(:knife_ec2_create) { Chef::Knife::Ec2ServerCreate.new }
-  let(:ec2_connection) { double(Fog::Compute::AWS) }
-  let(:ec2_servers) { double() }
-
+  Chef::Config[:knife][:aws_access_key_id] = "aws_access_key_id"
+  Chef::Config[:knife][:aws_secret_access_key] = "aws_secret_access_key"
+  Chef::Config[:knife][:region] = "test-region"
+  let(:ec2_connection)    { Aws::EC2::Client.new(stub_responses: true) }
   let(:new_ec2_server) { double }
   let(:spot_requests) { double }
   let(:new_spot_request) { double }

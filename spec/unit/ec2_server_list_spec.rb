@@ -63,20 +63,15 @@ describe Chef::Knife::Ec2ServerList do
     end
 
     let(:server_instances) { OpenStruct.new(instances: [instance1, instance2, instance3]) }
-    let(:reservations)     { OpenStruct.new(reservations: server_instances) }
-    let(:window_instances) { OpenStruct.new(instances: [instance1]) }
-    let(:ubuntu_instances) { OpenStruct.new(instances: [instance2]) }
-    let(:fedora_instances) { OpenStruct.new(instances: [instance3]) }
-    let(:empty_instances)  { OpenStruct.new(instances: []) }
-    let(:ec2_connection)   { Aws::EC2::Client.new(stub_responses: { describe_instances: reservations }) }
+    let(:ec2_servers)      { OpenStruct.new(reservations: server_instances) }
+    let(:ec2_connection)   { Aws::EC2::Client.new(stub_responses: { describe_instances: ec2_servers }) }
 
     before (:each) do
       allow(knife_ec2_list).to receive(:ec2_connection).and_return ec2_connection
     end
 
     it "invokes validate_aws_config!" do
-      ec2_servers = double()
-      allow(ec2_connection).to receive(:servers).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
       allow(knife_ec2_list.ui).to receive(:warn)
       expect(knife_ec2_list).to receive(:validate_aws_config!)
       knife_ec2_list.run
@@ -86,8 +81,7 @@ describe Chef::Knife::Ec2ServerList do
       it "shows warning that default region will be will be used" do
         knife_ec2_list.config.delete(:region)
         Chef::Config[:knife].delete(:region)
-        ec2_servers = double()
-        allow(ec2_connection).to receive(:servers).and_return(ec2_servers)
+        allow(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
         allow(knife_ec2_list).to receive(:validate_aws_config!)
         expect(knife_ec2_list.ui).to receive(:warn).with("No region was specified in knife.rb/config.rb or as an argument. The default region, us-east-1, will be used:")
         knife_ec2_list.run
@@ -103,9 +97,9 @@ describe Chef::Knife::Ec2ServerList do
 
         it "shows the output without Tags and Availability Zone in summary format" do
           output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
-            "Image", "SSH Key", "Security Groups", "IAM Profile", "State"]
+            "Image", "SSH Key", "Security Groups", "State"]
           output_column_count = output_column.length
-          allow(ec2_connection).to receive(:servers).and_return([])
+          allow(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
           allow(knife_ec2_list).to receive(:validate_aws_config!)
           expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
           knife_ec2_list.run
@@ -119,7 +113,7 @@ describe Chef::Knife::Ec2ServerList do
         end
 
         it "shows the output without Tags and Availability Zone in summary format" do
-          allow(ec2_connection).to receive(:servers).and_return([])
+          allow(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
           allow(knife_ec2_list).to receive(:validate_aws_config!)
           allow(knife_ec2_list).to receive(:format_for_display)
           expect(knife_ec2_list).to receive(:output)
@@ -132,7 +126,7 @@ describe Chef::Knife::Ec2ServerList do
       before do
         knife_ec2_list.config[:format] = "summary"
         allow(knife_ec2_list.ui).to receive(:warn)
-        allow(ec2_connection).to receive(:servers).and_return([])
+        allow(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
         allow(knife_ec2_list).to receive(:validate_aws_config!)
       end
 
@@ -140,7 +134,7 @@ describe Chef::Knife::Ec2ServerList do
         it "shows single tag field in the output" do
           knife_ec2_list.config[:tags] = "tag1"
           output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
-            "Image", "SSH Key", "Security Groups", "Tag:tag1", "IAM Profile", "State"]
+            "Image", "SSH Key", "Security Groups", "Tag:tag1", "State"]
           output_column_count = output_column.length
           expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
           knife_ec2_list.run
@@ -151,7 +145,7 @@ describe Chef::Knife::Ec2ServerList do
         it "shows multiple tags fields in the output" do
           knife_ec2_list.config[:tags] = "tag1,tag2"
           output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
-            "Image", "SSH Key", "Security Groups", "Tag:tag1", "Tag:tag2", "IAM Profile", "State"]
+            "Image", "SSH Key", "Security Groups", "Tag:tag1", "Tag:tag2", "State"]
           output_column_count = output_column.length
           expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
           knife_ec2_list.run
@@ -170,7 +164,7 @@ describe Chef::Knife::Ec2ServerList do
       it "shows the availability zones in the output" do
         knife_ec2_list.config[:az] = true
         output_column = ["Instance ID", "Public IP", "Private IP", "Flavor", "AZ",
-            "Image", "SSH Key", "Security Groups", "IAM Profile", "State"]
+            "Image", "SSH Key", "Security Groups", "State"]
         output_column_count = output_column.length
         expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
         knife_ec2_list.run
