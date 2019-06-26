@@ -854,6 +854,12 @@ class Chef
         script_lines
       end
 
+      # base64-encoded text
+      def encode_data(text)
+        require 'base64'
+        Base64.encode64(text)
+      end
+
       def spot_instances_attributes
         attributes = {
           instance_count: 1,
@@ -907,7 +913,7 @@ class Chef
                 user_data = process_user_data(user_data)
               end
               user_data = user_data.join
-              attributes.merge!(user_data: user_data)
+              attributes.merge!(user_data: encode_data(user_data))
             rescue
               ui.warn("Cannot read #{config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
             end
@@ -919,7 +925,8 @@ class Chef
         else
           if config_value(:aws_user_data)
             begin
-              attributes.merge!(user_data: File.read(config_value(:aws_user_data)))
+              user_data = File.read(config_value(:aws_user_data))
+              attributes.merge!(user_data: encode_data(user_data))
             rescue
               ui.warn("Cannot read #{config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
             end
