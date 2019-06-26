@@ -77,7 +77,7 @@ class Chef
           msg_pair("Instance Name", h["name"])
           msg_pair("Flavor", h["instance_type"])
           msg_pair("Image", h["image_id"])
-          msg_pair("Region", ec2_connection.instance_variable_get(:@region))
+          msg_pair("Region", fetch_region)
           msg_pair("Availability Zone", h["az"])
           msg_pair("Security Groups", h["security_groups"])
           msg_pair("IAM Profile", h["iam_instance_profile"])
@@ -141,6 +141,7 @@ class Chef
       # @return [Array<Hash>]
       def server_hashes
         all_data = []
+
         servers_list = ec2_connection.describe_instances({
           instance_ids: @name_args,
         })

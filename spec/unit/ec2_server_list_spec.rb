@@ -19,10 +19,6 @@ require "aws-sdk-ec2"
 describe Chef::Knife::Ec2ServerList do
 
   describe "#run" do
-    Chef::Config[:knife][:aws_access_key_id] = "aws_access_key_id"
-    Chef::Config[:knife][:aws_secret_access_key] = "aws_secret_access_key"
-    Chef::Config[:knife][:region] = "test-region"
-
     let(:knife_ec2_list) { Chef::Knife::Ec2ServerList.new }
     let(:ebs) { OpenStruct.new(volume_size: 30) }
     let(:block_device_mappings) { OpenStruct.new(ebs: ebs) }

@@ -22,16 +22,51 @@ require "net/ssh/proxy/command"
 require "net/ssh/gateway"
 require "chef/util/path_helper"
 require "aws-sdk-ec2"
+Chef::Knife::Bootstrap.load_deps
 
 describe Chef::Knife::Ec2ServerCreate do
   let(:knife_ec2_create) { Chef::Knife::Ec2ServerCreate.new }
-  Chef::Config[:knife][:aws_access_key_id] = "aws_access_key_id"
-  Chef::Config[:knife][:aws_secret_access_key] = "aws_secret_access_key"
-  Chef::Config[:knife][:region] = "test-region"
-  let(:ec2_connection)    { Aws::EC2::Client.new(stub_responses: true) }
-  let(:new_ec2_server) { double }
-  let(:spot_requests) { double }
-  let(:new_spot_request) { double }
+  let(:ec2_connection)   { Aws::EC2::Client.new(stub_responses: true) }
+  let(:ebs)              { OpenStruct.new(volume_size: 30) }
+  let(:groups)           { [OpenStruct.new(name: "grp-646rswg")] }
+  let(:placement)        { OpenStruct.new(tenancy: "default") }
+  let(:state)            { OpenStruct.new(name: "running") }
+  let(:security_groups)  { [OpenStruct.new(group_id: "s-gr446f", group_name: "default-vpc")] }
+  let(:tags)             { [OpenStruct.new(key: "Name", value: "ec2-test")] }
+  let(:block_device_mappings) { OpenStruct.new(ebs: ebs) }
+  let(:network_interfaces)    { OpenStruct.new(subnet_id: "subnet-9d4a7b6") }
+  let(:instance1) do
+    OpenStruct.new(
+      architecture: "x86_64",
+      image_id: "ami-005bdb005fb00e791",
+      instance_id: "i-00fe186450a2e8e97",
+      instance_type: "t2.micro",
+      platform: "windows",
+      name: "image-test",
+      description: "test windows winrm image",
+      block_device_mappings: [block_device_mappings],
+      network_interfaces: [network_interfaces],
+      groups: groups,
+      placement: placement,
+      state: state,
+      security_groups: security_groups,
+      tags: tags,
+    )
+  end
+
+  let(:ami) do
+    OpenStruct.new(
+      architecture: "x86_64",
+      image_id: "ami-005bdb005fb00e791",
+      platform: "windows",
+      name: "image-test",
+      description: "test windows winrm image",
+      block_device_mappings: [block_device_mappings]
+    )
+  end
+
+  let(:server_instances)  { OpenStruct.new(groups: groups, instances: [instance1]) }
+  let(:ec2_servers)       { OpenStruct.new(reservations: [server_instances]) }
 
   let(:ec2_server_attribs) do
     { id: "i-39382318",
@@ -68,22 +103,11 @@ describe Chef::Knife::Ec2ServerCreate do
 
   before(:each) do
     knife_ec2_create.initial_sleep_delay = 0
+    allow(knife_ec2_create).to receive(:ec2_connection).and_return ec2_connection
     allow(knife_ec2_create).to receive(:tcp_test_ssh).and_return(true)
-
-    {
-      image: "image",
-      ssh_key_name: "ssh_key_name",
-      aws_access_key_id: "aws_access_key_id",
-      aws_secret_access_key: "aws_secret_access_key",
-      network_interfaces: ["eni-12345678",
-                              "eni-87654321"],
-    }.each do |key, value|
-      Chef::Config[:knife][key] = value
-    end
 
     allow(ec2_connection).to receive(:tags).and_return double("create", create: true)
     allow(ec2_connection).to receive(:volume_tags).and_return double("create", create: true)
-    allow(ec2_connection).to receive_message_chain(:images, :get).and_return double("ami", root_device_type: "not_ebs", platform: "linux")
     allow(ec2_connection).to receive(:addresses).and_return [double("addesses", {
             domain: "standard",
             public_ip: "111.111.111.111",
@@ -96,17 +120,6 @@ describe Chef::Knife::Ec2ServerCreate do
       double("network_interfaces", network_interface_id: "eni-87654321")
     ]
 
-    ec2_server_attribs.each_pair do |attrib, value|
-      allow(new_ec2_server).to receive(attrib).and_return(value)
-    end
-
-    spot_request_attribs.each_pair do |attrib, value|
-      allow(new_spot_request).to receive(attrib).and_return(value)
-    end
-
-    @bootstrap = Chef::Knife::Bootstrap.new
-    allow(Chef::Knife::Bootstrap).to receive(:new).and_return(@bootstrap)
-
     @validation_key_url = "s3://bucket/foo/bar"
     @validation_key_file = "/tmp/a_good_temp_file"
     @validation_key_body = "TEST VALIDATION KEY\n"
@@ -115,67 +128,87 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "Spot Instance creation" do
+    let(:server_attributes) do
+      {
+        image_id: "ami-005bdb005fb00e791",
+        instance_type: "m1.small",
+        groups: nil,
+        key_name: "ssh_key_name",
+        max_count: 1,
+        min_count: 1,
+        placement: {
+          availability_zone: "us-west-2a",
+          group_name: nil
+        },
+        security_group_ids: nil,
+        root_device_type: "ebs",
+        request_type: "persistent",
+        placement_group: nil,
+        iam_instance_profile: {name: nil},
+        ebs_optimized: false,
+        instance_initiated_shutdown_behavior: nil,
+        chef_tag: nil
+      }
+    end
+
+    let(:spot_instance_server_def) do
+      {
+        instance_count: 1,
+        launch_specification: server_attributes,
+        spot_price: 0.001,
+            type: "persistent",
+      }
+    end
+
+    let(:spot_response) do
+      OpenStruct.new(
+        spot_instance_request_id: "sp-00653ds54543",
+        instance_id: "i-00fe186450a2e8e97",
+        type: "persistent",
+        spot_price: 0.001
+      )
+    end
+
     before do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
       knife_ec2_create.config[:spot_price] = 0.001
       knife_ec2_create.config[:spot_request_type] = "persistent"
       allow(knife_ec2_create).to receive(:puts)
       allow(knife_ec2_create).to receive(:msg_pair)
       allow(knife_ec2_create.ui).to receive(:color).and_return("")
       allow(knife_ec2_create).to receive(:confirm)
-      @spot_instance_server_def = {
-          image_id: "image",
-          groups: nil,
-          flavor_id: nil,
-          key_name: "ssh_key_name",
-          availability_zone: nil,
-          security_group_ids: nil,
-          price: 0.001,
-          request_type: "persistent",
-          placement_group: nil,
-          iam_instance_profile_name: nil,
-          ebs_optimized: "false",
-          instance_initiated_shutdown_behavior: nil,
-          chef_tag: nil,
-        }
       allow(@bootstrap).to receive(:run)
     end
 
     it "creates a new spot instance request with request type as persistent" do
-      expect(ec2_connection).to receive(
-        :spot_requests).and_return(spot_requests)
-      expect(spot_requests).to receive(
-        :create).with(@spot_instance_server_def).and_return(new_spot_request)
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:spot_instances_attributes).and_return(spot_instance_server_def)
+      expect(ec2_connection).to receive(:request_spot_instances).with(spot_instance_server_def).and_return(spot_response)
       knife_ec2_create.config[:yes] = true
-      allow(new_spot_request).to receive(:wait_for).and_return(true)
-      allow(ec2_connection).to receive(:servers).and_return(ec2_servers)
-      allow(ec2_servers).to receive(
-        :get).with(new_spot_request.instance_id).and_return(new_ec2_server)
-      allow(new_ec2_server).to receive(:wait_for).and_return(true)
+      allow(knife_ec2_create).to receive(:spot_instances_wait_until_ready).with("sp-00653ds54543").and_return(spot_response)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
       knife_ec2_create.run
-      expect(new_spot_request.request_type).to eq("persistent")
+      expect(spot_response.request_type).to eq("persistent")
     end
 
     it "successfully creates a new spot instance" do
-      allow(ec2_connection).to receive(
-        :spot_requests).and_return(spot_requests)
-      allow(spot_requests).to receive(
-        :create).with(@spot_instance_server_def).and_return(new_spot_request)
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:spot_instances_attributes).and_return(spot_instance_server_def)
+      expect(ec2_connection).to receive(:request_spot_instances).with(spot_instance_server_def).and_return(spot_response)
       knife_ec2_create.config[:yes] = true
-      expect(new_spot_request).to receive(:wait_for).and_return(true)
-      expect(ec2_connection).to receive(:servers).and_return(ec2_servers)
-      expect(ec2_servers).to receive(
-        :get).with(new_spot_request.instance_id).and_return(new_ec2_server)
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
+      allow(knife_ec2_create).to receive(:spot_instances_wait_until_ready).with("sp-00653ds54543").and_return(spot_response)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
       knife_ec2_create.run
     end
 
     it "does not create the spot instance request and creates a regular instance" do
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.config.delete(:spot_price)
-      expect(ec2_connection).to receive(:servers).and_return(ec2_servers)
-      expect(ec2_servers).to receive(
-        :create).and_return(new_ec2_server)
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      expect(ec2_connection).to receive(:run_instances).and_return(server_instances)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
       knife_ec2_create.run
     end
 
@@ -183,6 +216,8 @@ describe Chef::Knife::Ec2ServerCreate do
       context "when spot-price is not given" do
         context "spot-wait-mode option is not given" do
           before do
+            allow(knife_ec2_create).to receive(:validate_aws_config!)
+            allow(knife_ec2_create).to receive(:validate_nics!)
             knife_ec2_create.config.delete(:spot_price)
           end
 
@@ -190,7 +225,7 @@ describe Chef::Knife::Ec2ServerCreate do
             expect(knife_ec2_create.ui).to_not receive(:error).with(
               "spot-wait-mode option requires that a spot-price option is set."
             )
-            expect { knife_ec2_create.validate! }.to_not raise_error
+            expect { knife_ec2_create.plugin_validate_options! }.to_not raise_error
           end
         end
 
@@ -204,7 +239,7 @@ describe Chef::Knife::Ec2ServerCreate do
             expect(knife_ec2_create.ui).to receive(:error).with(
               "spot-wait-mode option requires that a spot-price option is set."
             )
-            expect { knife_ec2_create.validate! }.to raise_error(SystemExit)
+            expect { knife_ec2_create.plugin_validate_options! }.to raise_error(SystemExit)
           end
         end
       end

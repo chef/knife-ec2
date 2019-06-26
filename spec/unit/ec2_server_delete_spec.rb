@@ -18,12 +18,11 @@ require "aws-sdk-ec2"
 
 describe Chef::Knife::Ec2ServerDelete do
   describe "run" do
-    Chef::Config[:knife][:aws_access_key_id] = "aws_access_key_id"
-    Chef::Config[:knife][:aws_secret_access_key] = "aws_secret_access_key"
-    Chef::Config[:knife][:region] = "test-region"
-
     let(:knife_ec2_delete) { Chef::Knife::Ec2ServerDelete.new }
     let(:ebs) { OpenStruct.new(volume_size: 30) }
+    let(:placement) { OpenStruct.new(tenancy: "default") }
+    let(:security_groups) { [OpenStruct.new(group_id: "s-gr446f", group_name: "default-vpc")] }
+    let(:tags) { [OpenStruct.new(key: "Name", value: "ec2-test")] }
     let(:block_device_mappings) { OpenStruct.new(ebs: ebs) }
     let(:instance1) do
       OpenStruct.new(
@@ -34,39 +33,19 @@ describe Chef::Knife::Ec2ServerDelete do
         platform: "windows",
         name: "image-test",
         description: "test windows winrm image",
-        block_device_mappings: [block_device_mappings]
+        block_device_mappings: [block_device_mappings],
+        placement: placement,
+        security_groups: security_groups,
+        tags: tags,
       )
     end
 
-    let(:instance2) do
-      OpenStruct.new(
-        architecture: "x86_64",
-        image_id: "ami-005bdb005fb00e345",
-        instance_id: "i-0ad66b86ff0db7ed0",
-        instance_type: "t2.micro",
-        platform: "ubuntu",
-        name: "ubuntu",
-        block_device_mappings: [block_device_mappings]
-      )
-    end
-
-    let(:instance3) do
-      OpenStruct.new(
-        architecture: "x86_64",
-        image_id: "ami-005bdb005fb00e345",
-        instance_id: "i-0a22de525e9180bce",
-        instance_type: "t2.micro",
-        platform: "fedora",
-        block_device_mappings: [block_device_mappings]
-      )
-    end
-
-    let(:server_instances) { OpenStruct.new(instances: [instance1, instance2, instance3]) }
-    let(:ec2_servers)      { OpenStruct.new(reservations: server_instances) }
-    let(:ec2_connection)   { Aws::EC2::Client.new(stub_responses: true) } # { describe_instances: ec2_servers }) }
+    let(:server_instances)  { OpenStruct.new(instances: [instance1]) }
+    let(:ec2_servers)       { OpenStruct.new(reservations: [server_instances]) }
+    let(:ec2_connection)    { Aws::EC2::Client.new(stub_responses: true) }
 
     before(:each) do
-      allow(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
+      allow(knife_ec2_delete).to receive(:ec2_connection).and_return ec2_connection
       allow(knife_ec2_delete.ui).to receive(:confirm)
       allow(knife_ec2_delete).to receive(:msg_pair)
       allow(knife_ec2_delete.ui).to receive(:warn)
@@ -75,42 +54,40 @@ describe Chef::Knife::Ec2ServerDelete do
     it "should invoke validate_aws_config!" do
       allow(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
       expect(knife_ec2_delete).to receive(:validate_aws_config!)
-      expect(knife_ec2_delete).to receive(:validate_instances!)
+      allow(knife_ec2_delete).to receive(:validate_instances!)
       knife_ec2_delete.run
     end
 
     it "should use invoke aws api to delete instance if instance id is passed" do
-      expect(ec2_connection).to receive(:describe_instances).with("foo").and_return(ec2_servers)
-      knife_ec2_delete.name_args = ["foo"]
+      expect(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"]).and_return(ec2_servers)
+      knife_ec2_delete.name_args = ["i-00fe186450a2e8e97"]
       expect(knife_ec2_delete).to receive(:validate_aws_config!)
       expect(knife_ec2_delete).to receive(:validate_instances!)
       expect(ec2_connection).to receive(:terminate_instances)
-      @knife_ec2_delete.run
+      knife_ec2_delete.run
     end
 
     it "should use node_name to figure out instance id if not specified explicitly" do
-      expect(ec2_connection).to receive(:describe_instances).with("foo").and_return(ec2_servers)
-      expect(@knife_ec2_delete).to receive(:validate_aws_config!)
-      expect(knife_ec2_delete).to receive(:validate_instances!)
-      expect(@ec2_server).to receive(:destroy)
+      expect(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
+      expect(knife_ec2_delete).to receive(:validate_aws_config!)
+      expect(knife_ec2_delete.ui).to receive(:info)
       knife_ec2_delete.config[:purge] = false
       knife_ec2_delete.config[:chef_node_name] = "baz"
       double_node = double(Chef::Node)
       expect(double_node).to receive(:attribute?).with("ec2").and_return(true)
-      expect(double_node).to receive(:[]).with("ec2").and_return("instance_id" => "foo")
+      expect(double_node).to receive(:[]).with("ec2").and_return("instance_id" => "i-00fe186450a2e8e97")
       double_search = double(Chef::Search::Query)
       expect(double_search).to receive(:search).with(:node, "name:baz").and_return([[double_node], nil, nil])
       expect(Chef::Search::Query).to receive(:new).and_return(double_search)
-      @knife_ec2_delete.name_args = []
-      @knife_ec2_delete.run
+      knife_ec2_delete.name_args = []
+      knife_ec2_delete.run
     end
 
     describe "when --purge is passed" do
       it "should use the node name if its set" do
-        expect(ec2_connection).to receive(:describe_instances).with("foo").and_return(ec2_servers)
-        knife_ec2_delete.name_args = ["foo"]
+        expect(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"]).and_return(ec2_servers)
+        knife_ec2_delete.name_args = ["i-00fe186450a2e8e97"]
         expect(knife_ec2_delete).to receive(:validate_aws_config!)
-        expect(knife_ec2_delete).to receive(:validate_instances!)
         expect(ec2_connection).to receive(:terminate_instances)
         knife_ec2_delete.config[:purge] = true
         knife_ec2_delete.config[:chef_node_name] = "baz"
@@ -120,10 +97,9 @@ describe Chef::Knife::Ec2ServerDelete do
       end
 
       it "should search for the node name using the instance id when node name is not specified" do
-        expect(ec2_connection).to receive(:describe_instances).with("foo").and_return(ec2_servers)
-        knife_ec2_delete.name_args = ["i-foo"]
+        expect(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"]).and_return(ec2_servers)
+        knife_ec2_delete.name_args = ["i-00fe186450a2e8e97"]
         expect(knife_ec2_delete).to receive(:validate_aws_config!)
-        expect(knife_ec2_delete).to receive(:validate_instances!)
         expect(ec2_connection).to receive(:terminate_instances)
         knife_ec2_delete.config[:purge] = true
         knife_ec2_delete.config[:chef_node_name] = nil
@@ -132,23 +108,22 @@ describe Chef::Knife::Ec2ServerDelete do
         expect(double_node).to receive(:name).and_return("baz")
         expect(Chef::Node).to receive(:load).with("baz").and_return(double(destroy: true))
         expect(Chef::ApiClient).to receive(:load).with("baz").and_return(double(destroy: true))
-        expect(double_search).to receive(:search).with(:node, "ec2_instance_id:i-foo").and_return([[double_node], nil, nil])
+        expect(double_search).to receive(:search).with(:node, "ec2_instance_id:i-00fe186450a2e8e97").and_return([[double_node], nil, nil])
         expect(Chef::Search::Query).to receive(:new).and_return(double_search)
         knife_ec2_delete.run
       end
 
       it "should use  the instance id if search does not return anything" do
-        expect(ec2_connection).to receive(:describe_instances).with("foo").and_return(ec2_servers)
-        knife_ec2_delete.name_args = ["i-foo"]
-        expect(@knife_ec2_delete).to receive(:validate_aws_config!)
-        expect(knife_ec2_delete).to receive(:validate_instances!)
+        expect(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"]).and_return(ec2_servers)
+        knife_ec2_delete.name_args = ["i-00fe186450a2e8e97"]
+        expect(knife_ec2_delete).to receive(:validate_aws_config!)
         expect(ec2_connection).to receive(:terminate_instances)
         knife_ec2_delete.config[:purge] = true
         knife_ec2_delete.config[:chef_node_name] = nil
-        expect(Chef::Node).to receive(:load).with("i-foo").and_return(double(destroy: true))
-        expect(Chef::ApiClient).to receive(:load).with("i-foo").and_return(double(destroy: true))
+        expect(Chef::Node).to receive(:load).with("i-00fe186450a2e8e97").and_return(double(destroy: true))
+        expect(Chef::ApiClient).to receive(:load).with("i-00fe186450a2e8e97").and_return(double(destroy: true))
         double_search = double(Chef::Search::Query)
-        expect(double_search).to receive(:search).with(:node, "ec2_instance_id:i-foo").and_return([[], nil, nil])
+        expect(double_search).to receive(:search).with(:node, "ec2_instance_id:i-00fe186450a2e8e97").and_return([[], nil, nil])
         expect(Chef::Search::Query).to receive(:new).and_return(double_search)
         knife_ec2_delete.run
       end
