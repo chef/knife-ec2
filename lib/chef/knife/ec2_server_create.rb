@@ -429,8 +429,8 @@ class Chef
         end
 
         fqdn = connection_host
-        config[:connection_port] = connection_port
-        config[:connection_protocol] = connection_protocol
+        config[:connection_port] ||= connection_port
+        config[:connection_protocol] ||= connection_protocol
         if winrm?
           if config_value(:kerberos_realm)
             # Fetch AD/WINS based fqdn if any for Kerberos-based Auth

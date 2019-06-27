@@ -620,7 +620,6 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:validate_aws_config!)
       allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
-      allow(knife_ec2_create).to receive(:evaluate_node_name).and_return("blarf")
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
       allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
@@ -629,10 +628,12 @@ describe Chef::Knife::Ec2ServerCreate do
 
       knife_ec2_create.config[:connection_user] = "ubuntu"
       knife_ec2_create.config[:ssh_identity_file] = "~/.ssh/aws-key.pem"
+      knife_ec2_create.config[:connection_protocol] = "ssh"
       knife_ec2_create.config[:connection_port] = 22
       knife_ec2_create.config[:ssh_gateway] = "bastion.host.com"
       knife_ec2_create.config[:chef_node_name] = "blarf"
       knife_ec2_create.config[:run_list] = ["role[base]"]
+      knife_ec2_create.config[:use_sudo] = true
       knife_ec2_create.config[:first_boot_attributes] = "{'my_attributes':{'foo':'bar'}"
       knife_ec2_create.config[:first_boot_attributes_from_file] = "{'my_attributes':{'foo':'bar'}"
       knife_ec2_create.plugin_create_instance!
@@ -643,55 +644,35 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "should set the bootstrap 'first_boot_attributes' correctly" do
-      expect(@bootstrap.config[:first_boot_attributes]).to eq("{'my_attributes':{'foo':'bar'}")
+      expect(knife_ec2_create.config[:first_boot_attributes]).to eq("{'my_attributes':{'foo':'bar'}")
     end
 
     it "should set the bootstrap 'first_boot_attributes_from_file' correctly" do
-      expect(@bootstrap.config[:first_boot_attributes_from_file]).to eq("{'my_attributes':{'foo':'bar'}")
+      expect(knife_ec2_create.config[:first_boot_attributes_from_file]).to eq("{'my_attributes':{'foo':'bar'}")
     end
 
     it "configures sets the bootstrap's run_list" do
-      expect(@bootstrap.config[:run_list]).to eq(["role[base]"])
+      expect(knife_ec2_create.config[:run_list]).to eq(["role[base]"])
     end
 
-    it "configures the bootstrap to use the correct ssh_user login" do
-      expect(@bootstrap.config[:ssh_user]).to eq("ubuntu")
+    it "configures the bootstrap to use the correct connection_user login" do
+      expect(knife_ec2_create.config[:connection_user]).to eq("ubuntu")
     end
 
     it "configures the bootstrap to use the correct ssh_gateway host" do
-      expect(@bootstrap.config[:ssh_gateway]).to eq("bastion.host.com")
+      expect(knife_ec2_create.config[:ssh_gateway]).to eq("bastion.host.com")
     end
 
     it "configures the bootstrap to use the correct ssh identity file" do
-      expect(@bootstrap.config[:identity_file]).to eq("~/.ssh/aws-key.pem")
+      expect(knife_ec2_create.config[:ssh_identity_file]).to eq("~/.ssh/aws-key.pem")
     end
 
-    it "configures the bootstrap to use the correct ssh_port number" do
-      expect(@bootstrap.config[:ssh_port]).to eq(22)
-    end
-
-    it "configures the bootstrap to use the configured node name if provided" do
-      expect(@bootstrap.config[:chef_node_name]).to eq("blarf")
-    end
-
-    it "configures the bootstrap to use the EC2 server id if no explicit node name is set" do
-      knife_ec2_create.config[:chef_node_name] = nil
-
-      bootstrap = knife_ec2_create.bootstrap_for_linux_node(new_ec2_server, new_ec2_server.dns_name)
-      expect(bootstrap.config[:chef_node_name]).to eq(new_ec2_server.id)
-    end
-
-    it "configures the bootstrap to use prerelease versions of chef if specified" do
-      expect(@bootstrap.config[:prerelease]).to be_falsey
-
-      knife_ec2_create.config[:prerelease] = true
-
-      bootstrap = knife_ec2_create.bootstrap_for_linux_node(new_ec2_server, new_ec2_server.dns_name)
-      expect(bootstrap.config[:prerelease]).to eq(true)
+    it "configures the bootstrap to use the correct connection_port number" do
+      expect(knife_ec2_create.config[:connection_port]).to eq(22)
     end
 
     it "configures the bootstrap to use sudo" do
-      expect(@bootstrap.config[:use_sudo]).to eq(true)
+      expect(knife_ec2_create.config[:use_sudo]).to eq(true)
     end
 
     it "configured the bootstrap to set an ec2 hint (via Chef::Config)" do
@@ -699,28 +680,52 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
+  describe "when configuring chef node name for the bootstrap process" do
+    before do
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
+      allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
+      expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
+      allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+    end
+    it "configures the bootstrap to use the configured node name if provided" do
+      knife_ec2_create.config[:chef_node_name] = "blarf"
+      knife_ec2_create.plugin_create_instance!
+      expect(knife_ec2_create.config[:chef_node_name]).to eq("blarf")
+    end
+
+    it "configures the bootstrap to use the EC2 server id if no explicit node name is set" do
+      knife_ec2_create.config[:chef_node_name] = nil
+      knife_ec2_create.plugin_create_instance!
+      expect(knife_ec2_create.config[:chef_node_name]).to eq(ec2_server_attribs.id)
+    end
+  end
+
   describe "when configuring the ssh bootstrap process for windows" do
     before do
-      allow(knife_ec2_create).to receive(:fetch_server_fqdn).and_return("SERVERNAME")
-      knife_ec2_create.config[:ssh_user] = "administrator"
-      knife_ec2_create.config[:ssh_password] = "password"
-      knife_ec2_create.config[:ssh_port] = 22
+      knife_ec2_create.config[:connection_user] = "administrator"
+      knife_ec2_create.config[:connection_password] = "password"
+      knife_ec2_create.config[:connection_port] = 22
       knife_ec2_create.config[:forward_agent] = true
-      knife_ec2_create.config[:bootstrap_protocol] = "ssh"
-      knife_ec2_create.config[:image] = "12345"
+      knife_ec2_create.config[:connection_protocol] = "ssh"
+      knife_ec2_create.config[:image] = "ami-005bdb005fb00e791"
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
       allow(knife_ec2_create).to receive(:is_image_windows?).and_return(true)
-      @bootstrap = knife_ec2_create.bootstrap_for_windows_node(new_ec2_server, new_ec2_server.dns_name)
     end
 
     it "sets the bootstrap 'forward_agent' correctly" do
-      expect(@bootstrap.config[:forward_agent]).to eq(true)
+      knife_ec2_create.plugin_validate_options!
+      expect(knife_ec2_create.config[:forward_agent]).to eq(true)
     end
   end
 
   describe "when configuring the winrm bootstrap process for windows" do
     before do
-      allow(knife_ec2_create).to receive(:fetch_server_fqdn).and_return("SERVERNAME")
-      allow(knife_ec2_create).to receive(:evaluate_node_name).and_return(server)
       knife_ec2_create.config[:winrm_user] = "Administrator"
       knife_ec2_create.config[:winrm_password] = "password"
       knife_ec2_create.config[:winrm_port] = 12345
@@ -735,79 +740,79 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.config[:msi_url] = "https://opscode-omnibus-packages.s3.amazonaws.com/windows/2008r2/x86_64/chef-client-12.3.0-1.msi"
       knife_ec2_create.config[:install_as_service] = true
       knife_ec2_create.config[:session_timeout] = "90"
-      @bootstrap = knife_ec2_create.bootstrap_for_windows_node(new_ec2_server, new_ec2_server.dns_name)
-    end
 
-    include_examples "generic bootstrap configurations" do
-      subject { knife_ec2_create }
-      let(:bootstrap) { knife_ec2_create.bootstrap_for_linux_node(new_ec2_server, new_ec2_server.dns_name) }
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
+      expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
+      allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+      allow(knife_ec2_create).to receive(:msg_pair)
+      allow(knife_ec2_create).to receive(:puts)
+      allow(knife_ec2_create).to receive(:print)
+      knife_ec2_create.plugin_create_instance!
     end
 
     it "should set the winrm username correctly" do
-      expect(@bootstrap.config[:winrm_user]).to eq(knife_ec2_create.config[:winrm_user])
+      expect(knife_ec2_create.config[:winrm_user]).to eq("Administrator")
     end
     it "should set the winrm password correctly" do
-      expect(@bootstrap.config[:winrm_password]).to eq(knife_ec2_create.config[:winrm_password])
+      expect(knife_ec2_create.config[:winrm_password]).to eq("password")
     end
 
     it "should set the winrm port correctly" do
-      expect(@bootstrap.config[:winrm_port]).to eq(knife_ec2_create.config[:winrm_port])
+      expect(knife_ec2_create.config[:winrm_port]).to eq(12345)
     end
 
     it "should set the winrm transport layer correctly" do
-      expect(@bootstrap.config[:winrm_transport]).to eq(knife_ec2_create.config[:winrm_transport])
+      expect(knife_ec2_create.config[:winrm_transport]).to eq(knife_ec2_create.config[:winrm_transport])
     end
 
     it "should set the kerberos realm correctly" do
-      expect(@bootstrap.config[:kerberos_realm]).to eq(knife_ec2_create.config[:kerberos_realm])
+      expect(knife_ec2_create.config[:kerberos_realm]).to eq(knife_ec2_create.config[:kerberos_realm])
     end
 
     it "should set the kerberos service correctly" do
-      expect(@bootstrap.config[:kerberos_service]).to eq(knife_ec2_create.config[:kerberos_service])
+      expect(knife_ec2_create.config[:kerberos_service]).to eq(knife_ec2_create.config[:kerberos_service])
     end
 
     it "should set the bootstrap 'name argument' to the Windows/AD hostname of the EC2 server" do
-      expect(@bootstrap.name_args).to eq(["SERVERNAME"])
+      expect(knife_ec2_create.name_args).to eq(["ec2-75.101.253.10.compute-1.amazonaws.com"])
     end
 
     it "should set the bootstrap 'name argument' to the hostname of the EC2 server when AD/Kerberos is not used" do
       knife_ec2_create.config[:kerberos_realm] = nil
-      @bootstrap = knife_ec2_create.bootstrap_for_windows_node(new_ec2_server, new_ec2_server.dns_name)
-      expect(@bootstrap.name_args).to eq(["ec2-75.101.253.10.compute-1.amazonaws.com"])
+      expect(knife_ec2_create.name_args).to eq(["ec2-75.101.253.10.compute-1.amazonaws.com"])
     end
 
     it "should set the bootstrap 'first_boot_attributes' correctly" do
-      expect(@bootstrap.config[:first_boot_attributes]).to eq("{'my_attributes':{'foo':'bar'}")
+      expect(knife_ec2_create.config[:first_boot_attributes]).to eq("{'my_attributes':{'foo':'bar'}")
     end
 
     it "should set the bootstrap 'winrm_ssl_verify_mode' correctly" do
-      expect(@bootstrap.config[:winrm_ssl_verify_mode]).to eq("verify_peer")
+      expect(knife_ec2_create.config[:winrm_ssl_verify_mode]).to eq("verify_peer")
     end
 
     it "should set the bootstrap 'msi_url' correctly" do
-      expect(@bootstrap.config[:msi_url]).to eq("https://opscode-omnibus-packages.s3.amazonaws.com/windows/2008r2/x86_64/chef-client-12.3.0-1.msi")
+      expect(knife_ec2_create.config[:msi_url]).to eq("https://opscode-omnibus-packages.s3.amazonaws.com/windows/2008r2/x86_64/chef-client-12.3.0-1.msi")
     end
 
     it "should set the bootstrap 'install_as_service' correctly" do
-      expect(@bootstrap.config[:install_as_service]).to eq(knife_ec2_create.config[:install_as_service])
+      expect(knife_ec2_create.config[:install_as_service]).to eq(knife_ec2_create.config[:install_as_service])
     end
 
     it "should set the bootstrap 'session_timeout' correctly" do
-      expect(@bootstrap.config[:session_timeout]).to eq(knife_ec2_create.config[:session_timeout])
+      expect(knife_ec2_create.config[:session_timeout]).to eq(knife_ec2_create.config[:session_timeout])
     end
 
     it "configures sets the bootstrap's run_list" do
-      expect(@bootstrap.config[:run_list]).to eq(["role[base]"])
+      expect(knife_ec2_create.config[:run_list]).to eq(["role[base]"])
     end
 
-    it "configures auth_timeout for bootstrap to default to 25 minutes" do
-      expect(knife_ec2_create.options[:auth_timeout][:default]).to eq(25)
-    end
-
-    it "configures auth_timeout for bootstrap according to plugin auth_timeout config" do
-      knife_ec2_create.config[:auth_timeout] = 5
-      bootstrap = knife_ec2_create.bootstrap_for_windows_node(new_ec2_server, new_ec2_server.dns_name)
-      expect(bootstrap.config[:auth_timeout]).to eq(5)
+    it "configures aws_connection_timeout for bootstrap to default to 10 minutes" do
+      expect(knife_ec2_create.options[:aws_connection_timeout][:default]).to eq(600)
     end
   end
 
@@ -831,7 +836,7 @@ describe Chef::Knife::Ec2ServerCreate do
       it "reads UNIX Line endings" do
         allow(File).to receive(:read)
           .and_return("AWSAccessKeyId=#{@access_key_id}\nAWSSecretKey=#{@secret_key}")
-        knife_ec2_create.validate!
+        knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
       end
@@ -839,7 +844,7 @@ describe Chef::Knife::Ec2ServerCreate do
       it "reads DOS Line endings" do
         allow(File).to receive(:read)
           .and_return("AWSAccessKeyId=#{@access_key_id}\r\nAWSSecretKey=#{@secret_key}")
-        knife_ec2_create.validate!
+        knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
       end
@@ -847,7 +852,7 @@ describe Chef::Knife::Ec2ServerCreate do
       it "reads UNIX Line endings for new format" do
         allow(File).to receive(:read)
           .and_return("[default]\naws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
-        knife_ec2_create.validate!
+        knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
       end
@@ -855,7 +860,7 @@ describe Chef::Knife::Ec2ServerCreate do
       it "reads DOS Line endings for new format" do
         allow(File).to receive(:read)
           .and_return("[default]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
-        knife_ec2_create.validate!
+        knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
       end
@@ -864,7 +869,7 @@ describe Chef::Knife::Ec2ServerCreate do
         Chef::Config[:knife][:aws_profile] = "other"
         allow(File).to receive(:read)
           .and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET\n\n[other]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
-        knife_ec2_create.validate!
+        knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
       end
@@ -873,7 +878,7 @@ describe Chef::Knife::Ec2ServerCreate do
         it "raises exception" do
           Chef::Config[:knife][:aws_profile] = "xyz"
           allow(File).to receive(:read).and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET")
-          expect { knife_ec2_create.validate! }.to raise_error("The provided --aws-profile 'xyz' is invalid.")
+          expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws-profile 'xyz' is invalid.")
         end
       end
 
@@ -881,7 +886,7 @@ describe Chef::Knife::Ec2ServerCreate do
         it "raises exception" do
           Chef::Config[:knife][:aws_credential_file] = "/foo/bar"
           allow(File).to receive(:exist?).and_return(false)
-          expect { knife_ec2_create.validate! }.to raise_error("The provided --aws_credential_file (/foo/bar) cannot be found on disk.")
+          expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws_credential_file (/foo/bar) cannot be found on disk.")
         end
       end
     end
@@ -896,27 +901,28 @@ describe Chef::Knife::Ec2ServerCreate do
       it "reads UNIX Line endings" do
         allow(File).to receive(:read)
           .and_return("[default]\r\nregion=#{@region}")
-        knife_ec2_create.validate!
+        knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:region]).to eq(@region)
       end
 
       it "reads DOS Line endings" do
         allow(File).to receive(:read)
           .and_return("[default]\r\nregion=#{@region}")
-        knife_ec2_create.validate!
+        knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:region]).to eq(@region)
       end
+
       it "reads UNIX Line endings for new format" do
         allow(File).to receive(:read)
          .and_return("[default]\nregion=#{@region}")
-        knife_ec2_create.validate!
+        knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:region]).to eq(@region)
       end
 
       it "reads DOS Line endings for new format" do
         allow(File).to receive(:read)
          .and_return("[default]\nregion=#{@region}")
-        knife_ec2_create.validate!
+        knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:region]).to eq(@region)
       end
 
@@ -924,7 +930,7 @@ describe Chef::Knife::Ec2ServerCreate do
         Chef::Config[:knife][:aws_profile] = "other"
         allow(File).to receive(:read)
           .and_return("[default]\nregion=TESTREGION\n\n[profile other]\nregion=#{@region}")
-        knife_ec2_create.validate!
+        knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:region]).to eq(@region)
       end
 
@@ -940,7 +946,7 @@ describe Chef::Knife::Ec2ServerCreate do
         it "raises exception" do
           Chef::Config[:knife][:aws_config_file] = "/foo/bar"
           allow(File).to receive(:exist?).and_return(false)
-          expect { knife_ec2_create.validate! }.to raise_error("The provided --aws_config_file (/foo/bar) cannot be found on disk.")
+          expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws_config_file (/foo/bar) cannot be found on disk.")
         end
       end
 
@@ -948,7 +954,7 @@ describe Chef::Knife::Ec2ServerCreate do
         it "loads the default profile successfully" do
           Chef::Config[:knife][:aws_profile] = "default"
           allow(File).to receive(:read).and_return("[default]\nregion=#{@region}\n\n[profile other]\nregion=TESTREGION")
-          knife_ec2_create.validate!
+          knife_ec2_create.validate_aws_config!
           expect(Chef::Config[:knife][:region]).to eq(@region)
         end
       end
