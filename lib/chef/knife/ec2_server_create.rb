@@ -428,6 +428,7 @@ class Chef
           wait_for_sshd(connection_host)
         end
 
+        fqdn = connection_host
         config[:connection_port] = connection_port
         config[:connection_protocol] = connection_protocol
         if winrm?
@@ -435,8 +436,9 @@ class Chef
             # Fetch AD/WINS based fqdn if any for Kerberos-based Auth
             fqdn = config_value(:fqdn) || fetch_server_fqdn(server.private_ip_address)
           end
+          config[:winrm_password] = windows_password
         end
-        name_args = [fqdn]
+        @name_args = [fqdn]
 
         if config_value(:chef_node_name)
           config[:chef_node_name] = evaluate_node_name(config_value(:chef_node_name))
@@ -725,9 +727,11 @@ class Chef
           exit 1
         end
 
-        if config_value(:spot_price).nil? && !config_value(:spot_wait_mode).casecmp("prompt") == 0
-          ui.error("spot-wait-mode option requires that a spot-price option is set.")
-          exit 1
+        if config_value(:spot_price).nil? && config_value(:spot_wait_mode)
+         if !(config_value(:spot_wait_mode).casecmp("prompt") == 0)
+            ui.error("spot-wait-mode option requires that a spot-price option is set.")
+            exit 1
+          end
         end
 
         volume_tags = config_value(:volume_tags)
@@ -1320,12 +1324,12 @@ class Chef
 
       def windows_password
         if not config_value(:winrm_password)
-          if config_value(:identity_file)
+          if config_value(:ssh_identity_file)
             if server
               print "\n#{ui.color("Waiting for Windows Admin password to be available: ", :magenta)}"
               print(".") until check_windows_password_available(server.id) { puts("done") }
-              response = fetch_passowrd_data(server.id)
-              data = File.read(locate_config_value(:identity_file))
+              response = fetch_password_data(server.id)
+              data = File.read(locate_config_value(:ssh_identity_file))
               config[:winrm_password] = decrypt_admin_password(response.password_data, data)
             else
               print "\n#{ui.color("Fetchig instance details: \n", :magenta)}"

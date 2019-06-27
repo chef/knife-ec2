@@ -41,6 +41,7 @@ describe Chef::Knife::Ec2ServerCreate do
       image_id: "ami-005bdb005fb00e791",
       instance_id: "i-00fe186450a2e8e97",
       instance_type: "t2.micro",
+      key_name: "ssh_key_name",
       platform: "windows",
       name: "image-test",
       description: "test windows winrm image",
@@ -65,47 +66,86 @@ describe Chef::Knife::Ec2ServerCreate do
     )
   end
 
+  let(:elastic_address) do
+    OpenStruct.new(
+      allocation_id: "eipalloc-12345678",
+      association_id: "eipassoc-12345678",
+      domain: "vpc",
+      instance_id: "i-00fe186450a2e8e97",
+      network_interface_id: "eni-12345678",
+      network_interface_owner_id: "123456789012",
+      private_ip_address: "10.0.1.241",
+      public_ip: "111.111.111.111",
+    )
+  end
+
+  let(:elastic_address_response) do
+    OpenStruct.new(
+      addresses: [elastic_address]
+    )
+  end
+
   let(:server_instances)  { OpenStruct.new(groups: groups, instances: [instance1]) }
   let(:ec2_servers)       { OpenStruct.new(reservations: [server_instances]) }
 
+  let(:server_attributes) do
+    {
+      image_id: "ami-005bdb005fb00e791",
+      instance_type: "m1.small",
+      groups: nil,
+      key_name: "ssh_key_name",
+      max_count: 1,
+      min_count: 1,
+      placement: {
+        availability_zone: "us-west-2a",
+        group_name: nil
+      },
+      security_group_ids: nil,
+      root_device_type: "ebs",
+      request_type: "persistent",
+      placement_group: nil,
+      iam_instance_profile: {name: nil},
+      ebs_optimized: false,
+      instance_initiated_shutdown_behavior: nil,
+      chef_tag: nil
+    }
+  end
+
   let(:ec2_server_attribs) do
-    { id: "i-39382318",
+    OpenStruct.new(id: "i-00fe186450a2e8e97",
       flavor_id: "m1.small",
-      image_id: "ami-47241231",
+      image_id: "ami-005bdb005fb00e791",
       placement_group: "some_placement_group",
-      availability_zone: "us-west-1",
-      key_name: "my_ssh_key",
-      groups: %w{group1 group2},
+      availability_zone: "us-west-2a",
+      key_name: "ssh_key_name",
+      groups: nil,
       security_group_ids: ["sg-00aa11bb"],
-      dns_name: "ec2-75.101.253.10.compute-1.amazonaws.com",
+      public_dns_name: "ec2-75.101.253.10.compute-1.amazonaws.com",
       public_ip_address: "75.101.253.10",
       private_dns_name: "ip-10-251-75-20.ec2.internal",
       private_ip_address: "10.251.75.20",
-      root_device_type: "not_ebs",
-      block_device_mapping: [{ "volumeId" => "456" }] } end
+      root_device_type: "ebs",
+      block_device_mapping: [{ volume_id: 456 }],
+      volume_id: "v-006eub006") end
 
-  let (:server) { double(id: "i-123" ) }
-
-  let(:spot_request_attribs) do
-    { id: "test_spot_request_id",
-      price: 0.001,
-      request_type: "persistent",
-      created_at: "2015-07-14 09:53:11 UTC",
-      instance_count: nil,
-      instance_id: "test_spot_instance_id",
-      state: "open",
-      key_name: "ssh_key_name",
-      availability_zone: nil,
-      flavor_id: "m1.small",
-      image_id: "image" } end
 
   let(:my_vpc) { "vpc-12345678" }
 
   before(:each) do
     knife_ec2_create.initial_sleep_delay = 0
+    allow(knife_ec2_create).to receive(:check_license)
+    allow(knife_ec2_create).to receive(:connect!)
+    allow(knife_ec2_create).to receive(:register_client)
+    allow(knife_ec2_create).to receive(:render_template)
+    allow(knife_ec2_create).to receive(:upload_bootstrap)
+    allow(knife_ec2_create).to receive(:perform_bootstrap)
+    allow(knife_ec2_create).to receive(:plugin_finalize)
     allow(knife_ec2_create).to receive(:ec2_connection).and_return ec2_connection
     allow(knife_ec2_create).to receive(:tcp_test_ssh).and_return(true)
-
+    allow(knife_ec2_create).to receive(:msg_pair)
+    allow(knife_ec2_create).to receive(:puts)
+    allow(knife_ec2_create).to receive(:print)
+    allow(ec2_connection).to receive(:describe_addresses).and_return(elastic_address_response)
     allow(ec2_connection).to receive(:tags).and_return double("create", create: true)
     allow(ec2_connection).to receive(:volume_tags).and_return double("create", create: true)
     allow(ec2_connection).to receive(:addresses).and_return [double("addesses", {
@@ -128,29 +168,6 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "Spot Instance creation" do
-    let(:server_attributes) do
-      {
-        image_id: "ami-005bdb005fb00e791",
-        instance_type: "m1.small",
-        groups: nil,
-        key_name: "ssh_key_name",
-        max_count: 1,
-        min_count: 1,
-        placement: {
-          availability_zone: "us-west-2a",
-          group_name: nil
-        },
-        security_group_ids: nil,
-        root_device_type: "ebs",
-        request_type: "persistent",
-        placement_group: nil,
-        iam_instance_profile: {name: nil},
-        ebs_optimized: false,
-        instance_initiated_shutdown_behavior: nil,
-        chef_tag: nil
-      }
-    end
-
     let(:spot_instance_server_def) do
       {
         instance_count: 1,
@@ -172,11 +189,12 @@ describe Chef::Knife::Ec2ServerCreate do
     before do
       knife_ec2_create.config[:spot_price] = 0.001
       knife_ec2_create.config[:spot_request_type] = "persistent"
+      knife_ec2_create.config[:spot_wait_mode] = "prompt"
       allow(knife_ec2_create).to receive(:puts)
       allow(knife_ec2_create).to receive(:msg_pair)
+      allow(knife_ec2_create).to receive(:print)
       allow(knife_ec2_create.ui).to receive(:color).and_return("")
       allow(knife_ec2_create).to receive(:confirm)
-      allow(@bootstrap).to receive(:run)
     end
 
     it "creates a new spot instance request with request type as persistent" do
@@ -188,7 +206,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:spot_instances_wait_until_ready).with("sp-00653ds54543").and_return(spot_response)
       allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
       knife_ec2_create.run
-      expect(spot_response.request_type).to eq("persistent")
+      expect(spot_response.type).to eq("persistent")
     end
 
     it "successfully creates a new spot instance" do
@@ -213,11 +231,14 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     context "spot-wait-mode option" do
+      before do
+        allow(knife_ec2_create).to receive(:ami).and_return(ami)
+        allow(knife_ec2_create).to receive(:validate_aws_config!)
+        allow(knife_ec2_create).to receive(:validate_nics!)
+      end
       context "when spot-price is not given" do
         context "spot-wait-mode option is not given" do
           before do
-            allow(knife_ec2_create).to receive(:validate_aws_config!)
-            allow(knife_ec2_create).to receive(:validate_nics!)
             knife_ec2_create.config.delete(:spot_price)
           end
 
@@ -254,7 +275,7 @@ describe Chef::Knife::Ec2ServerCreate do
             expect(knife_ec2_create.ui).to_not receive(:error).with(
               "spot-wait-mode option requires that a spot-price option is set."
             )
-            expect { knife_ec2_create.validate! }.to_not raise_error
+            expect { knife_ec2_create.plugin_validate_options! }.to_not raise_error
           end
         end
 
@@ -268,7 +289,7 @@ describe Chef::Knife::Ec2ServerCreate do
             expect(knife_ec2_create.ui).to_not receive(:error).with(
               "spot-wait-mode option requires that a spot-price option is set."
             )
-            expect { knife_ec2_create.validate! }.to_not raise_error
+            expect { knife_ec2_create.plugin_validate_options! }.to_not raise_error
           end
         end
       end
@@ -277,85 +298,30 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "run" do
     before do
-      expect(ec2_servers).to receive(:create).and_return(new_ec2_server)
-      expect(ec2_connection).to receive(:servers).and_return(ec2_servers)
-      expect(ec2_connection).to receive(:addresses)
-
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
+      expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
+      knife_ec2_create.config[:yes] = true
+      allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+      allow(knife_ec2_create).to receive(:msg_pair)
       @eip = "111.111.111.111"
-      expect(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-
       allow(knife_ec2_create).to receive(:puts)
       allow(knife_ec2_create).to receive(:print)
-      knife_ec2_create.config[:image] = "12345"
-      expect(@bootstrap).to receive(:run)
+      knife_ec2_create.config[:image] = "ami-005bdb005fb00e791"
     end
 
     it "creates an EC2 instance and bootstraps it" do
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      expect(knife_ec2_create).to receive(:ssh_override_winrm)
       knife_ec2_create.run
       expect(knife_ec2_create.server).to_not be_nil
-    end
-
-    it "set ssh_user value by using -x option for ssh bootstrap protocol or linux image" do
-      # Currently -x option set config[:winrm_user]
-      # default value of config[:ssh_user] is root
-      knife_ec2_create.config[:winrm_user] = "ubuntu"
-      knife_ec2_create.config[:ssh_user] = "root"
-
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      knife_ec2_create.run
-      expect(knife_ec2_create.config[:ssh_user]).to eq("ubuntu")
-      expect(knife_ec2_create.server).to_not be_nil
-    end
-
-    it "set ssh_password value by using -P option for ssh bootstrap protocol or linux image" do
-      # Currently -P option set config[:winrm_password]
-      # default value of config[:ssh_password] is nil
-      knife_ec2_create.config[:winrm_password] = "winrm_password"
-      knife_ec2_create.config[:ssh_password] = nil
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      knife_ec2_create.run
-      expect(knife_ec2_create.config[:ssh_password]).to eq("winrm_password")
-      expect(knife_ec2_create.server).to_not be_nil
-    end
-
-    it "set ssh_port value by using -p option for ssh bootstrap protocol or linux image" do
-      # Currently -p option set config[:winrm_port]
-      # default value of config[:ssh_port] is 22
-      knife_ec2_create.config[:winrm_port] = "1234"
-      knife_ec2_create.config[:ssh_port] = "22"
-
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      knife_ec2_create.run
-      expect(knife_ec2_create.config[:ssh_port]).to eq("1234")
-      expect(knife_ec2_create.server).to_not be_nil
-    end
-
-    it "set identity_file value by using -i option for ssh bootstrap protocol or linux image" do
-      # Currently -i option set config[:kerberos_keytab_file]
-      # default value of config[:identity_file] is nil
-      knife_ec2_create.config[:kerberos_keytab_file] = "kerberos_keytab_file"
-      knife_ec2_create.config[:identity_file] = nil
-
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      knife_ec2_create.run
-      expect(knife_ec2_create.config[:identity_file]).to eq("kerberos_keytab_file")
-      expect(knife_ec2_create.server).to_not be_nil
-    end
-
-    it "should never invoke windows bootstrap for linux instance" do
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      expect(knife_ec2_create).not_to receive(:bootstrap_for_windows_node)
-      knife_ec2_create.run
     end
 
     it "creates an EC2 instance, assigns existing EIP and bootstraps it" do
       knife_ec2_create.config[:associate_eip] = @eip
-
-      allow(new_ec2_server).to receive(:public_ip_address).and_return(@eip)
-      expect(ec2_connection).to receive(:associate_address).with(ec2_server_attribs[:id], @eip, nil, "")
-      expect(new_ec2_server).to receive(:wait_for).at_least(:twice).and_return(true)
+      allow(ec2_server_attribs).to receive(:public_ip_address).and_return(@eip)
+      expect(ec2_connection).to receive(:associate_address)
 
       knife_ec2_create.run
       expect(knife_ec2_create.server).to_not be_nil
@@ -364,17 +330,13 @@ describe Chef::Knife::Ec2ServerCreate do
     it "creates an EC2 instance, enables ClassicLink and bootstraps it" do
       knife_ec2_create.config[:classic_link_vpc_id] = @vpc_id
       knife_ec2_create.config[:classic_link_vpc_security_group_ids] = @vpc_security_group_ids
-
-      expect(ec2_connection).to receive(:attach_classic_link_vpc).with(ec2_server_attribs[:id], @vpc_id, @vpc_security_group_ids)
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-
+      expect(ec2_connection).to receive(:attach_classic_link_vpc).with(instance_id: ec2_server_attribs[:id], groups: @vpc_security_group_ids, vpc_id: @vpc_id)
       knife_ec2_create.run
       expect(knife_ec2_create.server).to_not be_nil
     end
 
-    it "retries if it receives Fog::Compute::AWS::NotFound" do
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      expect(knife_ec2_create).to receive(:create_tags).and_raise(Fog::Compute::AWS::NotFound)
+    it "retries if it receives Aws::EC2::Errors::Error" do
+      expect(knife_ec2_create).to receive(:create_tags).and_raise(Aws::EC2::Errors::Error.new(self, "Default"))
       expect(knife_ec2_create).to receive(:create_tags).and_return(true)
       expect(knife_ec2_create).to receive(:sleep).and_return(true)
       expect(knife_ec2_create.ui).to receive(:warn).with(/retrying/)
@@ -382,7 +344,6 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "actually writes to the validation key tempfile" do
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
       Chef::Config[:knife][:validation_key_url] = @validation_key_url
       knife_ec2_create.config[:validation_key_url] = @validation_key_url
 
@@ -395,163 +356,120 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "run for EC2 Windows instance" do
     before do
-      expect(ec2_servers).to receive(:create).and_return(new_ec2_server)
-      expect(ec2_connection).to receive(:servers).and_return(ec2_servers)
-      expect(ec2_connection).to receive(:addresses)
-
-      expect(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-
-      allow(knife_ec2_create).to receive(:puts)
-      allow(knife_ec2_create).to receive(:print)
-      knife_ec2_create.config[:identity_file] = "~/.ssh/aws-key.pem"
-      knife_ec2_create.config[:image] = "12345"
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
+      expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
+      allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+      allow(knife_ec2_create).to receive(:msg_pair)
+      knife_ec2_create.config[:image] = "ami-005bdb005fb00e791"
       allow(knife_ec2_create).to receive(:is_image_windows?).and_return(true)
       allow(knife_ec2_create).to receive(:tcp_test_winrm).and_return(true)
     end
 
-    it "bootstraps via the WinRM protocol" do
-      knife_ec2_create.config[:winrm_password] = "winrm-password"
-      knife_ec2_create.config[:bootstrap_protocol] = "winrm"
-      @bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
-      allow(Chef::Knife::BootstrapWindowsWinrm).to receive(:new).and_return(@bootstrap_winrm)
-      expect(@bootstrap_winrm).to receive(:run)
-      expect(knife_ec2_create).not_to receive(:ssh_override_winrm)
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      knife_ec2_create.run
-    end
-
-    it "bootstraps via the SSH protocol" do
-      knife_ec2_create.config[:bootstrap_protocol] = "ssh"
-      bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
-      allow(Chef::Knife::BootstrapWindowsSsh).to receive(:new).and_return(bootstrap_win_ssh)
-      expect(bootstrap_win_ssh).to receive(:run)
-      expect(knife_ec2_create).to receive(:ssh_override_winrm)
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      knife_ec2_create.run
-    end
-
-    it "should use configured SSH port" do
-      knife_ec2_create.config[:bootstrap_protocol] = "ssh"
-      knife_ec2_create.config[:ssh_port] = 422
-
-      expect(knife_ec2_create).to receive(:tcp_test_ssh).with("ec2-75.101.253.10.compute-1.amazonaws.com", 422).and_return(true)
-
-      bootstrap_win_ssh = Chef::Knife::BootstrapWindowsSsh.new
-      allow(Chef::Knife::BootstrapWindowsSsh).to receive(:new).and_return(bootstrap_win_ssh)
-      expect(bootstrap_win_ssh).to receive(:run)
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      knife_ec2_create.run
-    end
-
-    it "should never invoke linux bootstrap" do
-      knife_ec2_create.config[:bootstrap_protocol] = "winrm"
-      allow(knife_ec2_create).to receive(:windows_password).and_return("")
-      expect(knife_ec2_create).not_to receive(:bootstrap_for_linux_node)
-      expect(new_ec2_server).to receive(:wait_for).and_return(true)
-      allow(knife_ec2_create).to receive(:bootstrap_for_windows_node).and_return double("bootstrap", run: true)
-      knife_ec2_create.run
-    end
-
     it "waits for EC2 to generate password if not supplied" do
-      knife_ec2_create.config[:bootstrap_protocol] = "winrm"
+      knife_ec2_create.config[:connection_protocol] = "winrm"
       knife_ec2_create.config[:winrm_password] = nil
       expect(knife_ec2_create).to receive(:windows_password).and_return("")
-      allow(new_ec2_server).to receive(:wait_for).and_return(true)
       allow(knife_ec2_create).to receive(:check_windows_password_available).and_return(true)
-      bootstrap_winrm = Chef::Knife::BootstrapWindowsWinrm.new
-      allow(Chef::Knife::BootstrapWindowsWinrm).to receive(:new).and_return(bootstrap_winrm)
-      expect(bootstrap_winrm).to receive(:run)
       knife_ec2_create.run
     end
   end
 
   describe "when setting tags" do
     before do
-      expect(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-      allow(knife_ec2_create).to receive(:bootstrap_for_linux_node).and_return double("bootstrap", run: true)
-      allow(ec2_connection).to receive(:servers).and_return(ec2_servers)
-      expect(ec2_connection).to receive(:addresses)
-      allow(new_ec2_server).to receive(:wait_for).and_return(true)
-      allow(ec2_servers).to receive(:create).and_return(new_ec2_server)
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
+      expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
+      allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+      allow(knife_ec2_create).to receive(:msg_pair)
       allow(knife_ec2_create).to receive(:puts)
       allow(knife_ec2_create).to receive(:print)
-      allow(knife_ec2_create.ui).to receive(:error)
-      allow(knife_ec2_create.ui).to receive(:msg)
     end
 
     it "sets the Name tag to the instance id by default" do
-      expect(ec2_connection.tags).to receive(:create).with(key: "Name",
-                                                           value: new_ec2_server.id,
-                                                           resource_id: new_ec2_server.id)
+      tags_params = { tags:[ key: "Name", value: ec2_server_attribs.id], resources: [ec2_server_attribs.id] }
+      expect(ec2_connection).to receive(:create_tags).with(tags_params)
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
     end
 
     it "sets the Name tag to the chef_node_name when given" do
       knife_ec2_create.config[:chef_node_name] = "wombat"
-      expect(ec2_connection.tags).to receive(:create).with(key: "Name",
-                                                           value: "wombat",
-                                                           resource_id: new_ec2_server.id)
+      tags_params = { tags:[ key: "Name", value: "wombat"], resources: [ec2_server_attribs.id] }
+      expect(ec2_connection).to receive(:create_tags).with(tags_params)
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
     end
 
     it "sets the Name tag to the specified name when given --aws-tag Name=NAME" do
       knife_ec2_create.config[:aws_tag] = ["Name=bobcat"]
-      expect(ec2_connection.tags).to receive(:create).with(key: "Name",
-                                                           value: "bobcat",
-                                                           resource_id: new_ec2_server.id)
+      tags_params = { tags:[ key: "Name", value: "bobcat"], resources: [ec2_server_attribs.id] }
+      expect(ec2_connection).to receive(:create_tags).with(tags_params)
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
     end
 
     it "sets arbitrary aws tags" do
       knife_ec2_create.config[:aws_tag] = ["foo=bar"]
-      expect(ec2_connection.tags).to receive(:create).with(key: "foo",
-                                                           value: "bar",
-                                                           resource_id: new_ec2_server.id)
+      tags_params = { tags:[ { key: "foo", value: "bar" }, { key: "Name", value: "i-00fe186450a2e8e97"}], resources: [ec2_server_attribs.id] }
+      expect(ec2_connection).to receive(:create_tags).with(tags_params)
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
     end
 
     it "sets the Name tag to the specified name when given --tags Name=NAME" do
       knife_ec2_create.config[:tags] = ["Name=bobcat"]
-      expect(ec2_connection.tags).to receive(:create).with(key: "Name",
-                                                           value: "bobcat",
-                                                           resource_id: new_ec2_server.id)
+      tags_params = { tags:[ key: "Name", value: "bobcat"], resources: [ec2_server_attribs.id] }
+      expect(ec2_connection).to receive(:create_tags).with(tags_params)
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
     end
 
     it "sets arbitrary tags" do
       knife_ec2_create.config[:tags] = ["foo=bar"]
-      expect(ec2_connection.tags).to receive(:create).with(key: "foo",
-                                                           value: "bar",
-                                                           resource_id: new_ec2_server.id)
+      tags_params = { tags:[ { key: "foo", value: "bar" }, { key: "Name", value: "i-00fe186450a2e8e97"}], resources: [ec2_server_attribs.id] }
+      expect(ec2_connection).to receive(:create_tags).with(tags_params)
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
     end
 
     it 'raises deprecated warning "[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead."' do
       knife_ec2_create.config[:tags] = ["foo=bar"]
-      expect(ec2_connection.tags).to receive(:create).with(key: "foo",
-                                                           value: "bar",
-                                                           resource_id: new_ec2_server.id)
+      tags_params = { tags:[ { key: "foo", value: "bar" }, { key: "Name", value: "i-00fe186450a2e8e97"}], resources: [ec2_server_attribs.id] }
+      expect(ec2_connection).to receive(:create_tags).with(tags_params)
       expect(knife_ec2_create.ui).to receive(:warn).with("[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead.").exactly(2).times
-      knife_ec2_create.validate!
+      knife_ec2_create.plugin_validate_options!
       knife_ec2_create.run
     end
   end
 
   describe "when setting volume tags" do
     before do
-      expect(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-      allow(knife_ec2_create).to receive(:bootstrap_for_linux_node).and_return double("bootstrap", run: true)
-      allow(ec2_connection).to receive(:servers).and_return(ec2_servers)
-      allow(ec2_servers).to receive(:create).and_return(new_ec2_server)
-      allow(new_ec2_server).to receive(:wait_for).and_return(true)
-      allow(knife_ec2_create.ui).to receive(:error)
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
+      expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
+      allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+      allow(knife_ec2_create).to receive(:msg_pair)
+      allow(knife_ec2_create).to receive(:puts)
+      allow(knife_ec2_create).to receive(:print)
     end
 
     it "sets the volume tags as specified when given --volume-tags Key=Value" do
       knife_ec2_create.config[:volume_tags] = ["VolumeTagKey=TestVolumeTagValue"]
-      expect(ec2_connection.tags).to receive(:create).with(key: "VolumeTagKey",
-                                                           value: "TestVolumeTagValue",
-                                                           resource_id: new_ec2_server.block_device_mapping.first["volumeId"])
+      tags_params = { tags:[ { key: "VolumeTagKey", value: "TestVolumeTagValue" }], resources: [ec2_server_attribs.volume_id] }
+      allow(knife_ec2_create).to receive(:create_tags)
+      expect(ec2_connection).to receive(:create_tags).with(tags_params)
       knife_ec2_create.run
     end
   end
@@ -618,13 +536,11 @@ describe Chef::Knife::Ec2ServerCreate do
         "s3://test.bucket/folder/encrypted_data_bag_secret"
       @secret_content = "TEST DATA BAG SECRET\n"
       allow(knife_ec2_create).to receive(:s3_secret).and_return(@secret_content)
-      allow(Chef::Knife).to receive(:Bootstrap)
-      @bootstrap = knife_ec2_create.bootstrap_for_linux_node(new_ec2_server, new_ec2_server.dns_name)
     end
 
     context "when s3 secret option is passed" do
       it "sets the s3 secret value to cl_secret key" do
-        knife_ec2_create.bootstrap_common_params(@bootstrap)
+        knife_ec2_create.bootstrap_common_params
         expect(Chef::Config[:knife][:cl_secret]).to eql(@secret_content)
       end
     end
@@ -633,7 +549,7 @@ describe Chef::Knife::Ec2ServerCreate do
       it "sets the cl_secret value to nil" do
         Chef::Config[:knife].delete(:s3_secret)
         Chef::Config[:knife].delete(:cl_secret)
-        knife_ec2_create.bootstrap_common_params(@bootstrap)
+        knife_ec2_create.bootstrap_common_params
         expect(Chef::Config[:knife][:cl_secret]).to eql(nil)
       end
     end
@@ -644,13 +560,14 @@ describe Chef::Knife::Ec2ServerCreate do
       Chef::Config[:knife][:aws_ssh_key_id] = "mykey"
       Chef::Config[:knife].delete(:ssh_key_name)
       @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
-      allow(knife_ec2_create).to receive(:ami).and_return(false)
-      allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!)
     end
 
     it "gives warning message and creates the attribute with the required name" do
       expect(knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
-      knife_ec2_create.validate!
+      knife_ec2_create.plugin_validate_options!
       expect(Chef::Config[:knife][:ssh_key_name]).to eq(@aws_key)
     end
   end
@@ -659,14 +576,15 @@ describe Chef::Knife::Ec2ServerCreate do
     before do
       Chef::Config[:knife][:aws_ssh_key_id] = "mykey"
       @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
-      allow(knife_ec2_create).to receive(:ami).and_return(false)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
       allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
     end
 
     it "gives warning message and gives preference to CLI value over knife config's value" do
       expect(knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
-      knife_ec2_create.validate!
-      expect(Chef::Config[:knife][:ssh_key_name]).to_not eq(@aws_key)
+      knife_ec2_create.plugin_validate_options!
+      expect(Chef::Config[:knife][:ssh_key_name]).to eq(@aws_key)
     end
   end
 
@@ -674,49 +592,54 @@ describe Chef::Knife::Ec2ServerCreate do
     before do
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       allow(knife_ec2_create).to receive(:ami).and_return(false)
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
       allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
     end
 
     it "does nothing" do
-      knife_ec2_create.validate!
+      knife_ec2_create.plugin_validate_options!
     end
   end
 
   context "when ssh_key_name option is used in knife config also it is passed on the CLI" do
     before do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
     end
 
     it "ssh-key passed over CLI gets preference over knife config value" do
-      server_def = knife_ec2_create.create_server_def
-      expect(server_def[:key_name]).to eq(knife_ec2_create.config[:ssh_key_name])
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      server_def = knife_ec2_create.fetch_ec2_instance("i-00fe186450a2e8e97")
+      expect(server_def.key_name).to eq(knife_ec2_create.config[:ssh_key_name])
     end
   end
 
   describe "when configuring the bootstrap process" do
     before do
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
       allow(knife_ec2_create).to receive(:evaluate_node_name).and_return("blarf")
-      knife_ec2_create.config[:ssh_user] = "ubuntu"
-      knife_ec2_create.config[:identity_file] = "~/.ssh/aws-key.pem"
-      knife_ec2_create.config[:ssh_port] = 22
+      allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
+      expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
+      allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+
+      knife_ec2_create.config[:connection_user] = "ubuntu"
+      knife_ec2_create.config[:ssh_identity_file] = "~/.ssh/aws-key.pem"
+      knife_ec2_create.config[:connection_port] = 22
       knife_ec2_create.config[:ssh_gateway] = "bastion.host.com"
       knife_ec2_create.config[:chef_node_name] = "blarf"
       knife_ec2_create.config[:run_list] = ["role[base]"]
       knife_ec2_create.config[:first_boot_attributes] = "{'my_attributes':{'foo':'bar'}"
       knife_ec2_create.config[:first_boot_attributes_from_file] = "{'my_attributes':{'foo':'bar'}"
-
-      @bootstrap = knife_ec2_create.bootstrap_for_linux_node(new_ec2_server, new_ec2_server.dns_name)
-    end
-
-    include_examples "generic bootstrap configurations" do
-      subject { knife_ec2_create }
-      let(:bootstrap) { knife_ec2_create.bootstrap_for_linux_node(new_ec2_server, new_ec2_server.dns_name) }
+      knife_ec2_create.plugin_create_instance!
     end
 
     it "should set the bootstrap 'name argument' to the hostname of the EC2 server" do
-      expect(@bootstrap.name_args).to eq(["ec2-75.101.253.10.compute-1.amazonaws.com"])
+      expect(knife_ec2_create.name_args).to eq(["ec2-75.101.253.10.compute-1.amazonaws.com"])
     end
 
     it "should set the bootstrap 'first_boot_attributes' correctly" do
@@ -890,7 +813,6 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "when validating the command-line parameters" do
     before do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
       allow(knife_ec2_create.ui).to receive(:error)
       allow(knife_ec2_create.ui).to receive(:msg)
     end
@@ -1226,9 +1148,6 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "when creating the server definition" do
-    before do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-    end
 
     it "sets the specified placement_group" do
       knife_ec2_create.config[:placement_group] = ["some_placement_group"]
