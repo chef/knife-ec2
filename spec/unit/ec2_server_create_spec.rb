@@ -103,7 +103,7 @@ describe Chef::Knife::Ec2ServerCreate do
       security_group_ids: nil,
       root_device_type: "ebs",
       request_type: "persistent",
-      placement_group: nil,
+      placement_group: ["some_placement_group"],
       iam_instance_profile: {name: nil},
       ebs_optimized: false,
       instance_initiated_shutdown_behavior: nil,
@@ -115,10 +115,10 @@ describe Chef::Knife::Ec2ServerCreate do
     OpenStruct.new(id: "i-00fe186450a2e8e97",
       flavor_id: "m1.small",
       image_id: "ami-005bdb005fb00e791",
-      placement_group: "some_placement_group",
+      placement_group: ["some_placement_group"],
       availability_zone: "us-west-2a",
       key_name: "ssh_key_name",
-      groups: nil,
+      groups: ["groupname"],
       security_group_ids: ["sg-00aa11bb"],
       public_dns_name: "ec2-75.101.253.10.compute-1.amazonaws.com",
       public_ip_address: "75.101.253.10",
@@ -850,6 +850,7 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "reads UNIX Line endings for new format" do
+        Chef::Config[:knife][:aws_profile] = "default"
         allow(File).to receive(:read)
           .and_return("[default]\naws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
         knife_ec2_create.validate_aws_config!
@@ -858,6 +859,7 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "reads DOS Line endings for new format" do
+        Chef::Config[:knife][:aws_profile] = "default"
         allow(File).to receive(:read)
           .and_return("[default]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
         knife_ec2_create.validate_aws_config!
@@ -894,7 +896,11 @@ describe Chef::Knife::Ec2ServerCreate do
     describe "when reading aws_config_file" do
       before do
         Chef::Config[:knife][:aws_config_file] = "/apple/pear"
-        allow(File).to receive(:exist?).with("/apple/pear").and_return(true)
+        Chef::Config[:knife][:aws_access_key_id] = "aws_access_key_id"
+        Chef::Config[:knife][:aws_secret_access_key] = "aws_secret_access_key"
+
+        allow(File).to receive(:exist?).and_return(true)
+        allow(knife_ec2_create).to receive(:aws_cred_file_location).and_return(nil)
         @region = "region"
       end
 
@@ -938,7 +944,7 @@ describe Chef::Knife::Ec2ServerCreate do
         it "raises exception" do
           Chef::Config[:knife][:aws_profile] = "xyz"
           allow(File).to receive(:read).and_return("[default]\nregion=TESTREGION")
-          expect { knife_ec2_create.validate! }.to raise_error("The provided --aws-profile 'profile xyz' is invalid.")
+          expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws-profile 'profile xyz' is invalid.")
         end
       end
 
@@ -981,13 +987,13 @@ describe Chef::Knife::Ec2ServerCreate do
 
       allow(ec2_connection).to receive_message_chain(:subnets, :get).with(@subnet_1_id).and_return(@subnet_1)
 
-      expect { knife_ec2_create.validate! }.to raise_error(SystemExit)
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error(SystemExit)
     end
 
     it "disallows invalid network interface ids" do
       knife_ec2_create.config[:network_interfaces] = ["INVALID_ID"]
 
-      expect { knife_ec2_create.validate! }.to raise_error(SystemExit)
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error(SystemExit)
     end
 
     it "disallows network interfaces not in the right VPC" do
@@ -1002,13 +1008,13 @@ describe Chef::Knife::Ec2ServerCreate do
         double("network_interfaces", network_interface_id: "eni-87654321", vpc_id: my_vpc)
       ]
 
-      expect { knife_ec2_create.validate! }.to raise_error SystemExit
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
     end
 
     it "disallows private ips when not using a VPC" do
       knife_ec2_create.config[:private_ip_address] = "10.0.0.10"
 
-      expect { knife_ec2_create.validate! }.to raise_error SystemExit
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
     end
 
     it "disallows specifying credentials file and aws keys" do
@@ -1016,21 +1022,21 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(File).to receive(:exist?).with("/apple/pear").and_return(true)
       allow(File).to receive(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
 
-      expect { knife_ec2_create.validate! }.to raise_error SystemExit
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
     end
 
     it "disallows associate public ip option when not using a VPC" do
       knife_ec2_create.config[:associate_public_ip] = true
       knife_ec2_create.config[:subnet_id] = nil
 
-      expect { knife_ec2_create.validate! }.to raise_error SystemExit
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
     end
 
     it "disallows setting only one of the two ClassicLink options" do
       knife_ec2_create.config[:classic_link_vpc_id] = @vpc_id
       knife_ec2_create.config[:classic_link_vpc_security_group_ids] = nil
 
-      expect { knife_ec2_create.validate! }.to raise_error SystemExit
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
     end
 
     it "disallows ClassicLink with VPC" do
@@ -1040,44 +1046,49 @@ describe Chef::Knife::Ec2ServerCreate do
 
       allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
 
-      expect { knife_ec2_create.validate! }.to raise_error SystemExit
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
     end
 
     it "disallows ebs provisioned iops option when not using ebs volume type" do
       knife_ec2_create.config[:ebs_provisioned_iops] = "123"
       knife_ec2_create.config[:ebs_volume_type] = nil
 
-      expect { knife_ec2_create.validate! }.to raise_error SystemExit
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
     end
 
     it "disallows ebs provisioned iops option when not using ebs volume type 'io1'" do
       knife_ec2_create.config[:ebs_provisioned_iops] = "123"
       knife_ec2_create.config[:ebs_volume_type] = "standard"
 
-      expect { knife_ec2_create.validate! }.to raise_error SystemExit
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
     end
 
     it "disallows ebs volume type if its other than 'io1' or 'gp2' or 'standard'" do
       knife_ec2_create.config[:ebs_provisioned_iops] = "123"
       knife_ec2_create.config[:ebs_volume_type] = "invalid"
 
-      expect { knife_ec2_create.validate! }.to raise_error SystemExit
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
     end
 
     it "disallows 'io1' ebs volume type when not using ebs provisioned iops" do
       knife_ec2_create.config[:ebs_provisioned_iops] = nil
       knife_ec2_create.config[:ebs_volume_type] = "io1"
 
-      expect { knife_ec2_create.validate! }.to raise_error SystemExit
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
     end
 
     context "when ebs_encrypted option specified" do
+      before do
+        allow(knife_ec2_create).to receive(:ami).and_return(ami)
+        allow(knife_ec2_create).to receive(:validate_aws_config!)
+        allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
+      end
       it "not raise any validation error if valid ebs_size specified" do
         knife_ec2_create.config[:ebs_size] = "8"
         knife_ec2_create.config[:flavor] = "m3.medium"
         knife_ec2_create.config[:ebs_encrypted] = true
         expect(knife_ec2_create.ui).to_not receive(:error).with(" --ebs-encrypted option requires valid --ebs-size to be specified.")
-        knife_ec2_create.validate!
+        knife_ec2_create.plugin_validate_options!
       end
 
       it "raise error on missing ebs_size" do
@@ -1085,7 +1096,7 @@ describe Chef::Knife::Ec2ServerCreate do
         knife_ec2_create.config[:flavor] = "m3.medium"
         knife_ec2_create.config[:ebs_encrypted] = true
         expect(knife_ec2_create.ui).to receive(:error).with(" --ebs-encrypted option requires valid --ebs-size to be specified.")
-        expect { knife_ec2_create.validate! }.to raise_error SystemExit
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
       end
 
       it "raise error if invalid ebs_size specified for 'standard' VolumeType" do
@@ -1094,7 +1105,7 @@ describe Chef::Knife::Ec2ServerCreate do
         knife_ec2_create.config[:flavor] = "m3.medium"
         knife_ec2_create.config[:ebs_encrypted] = true
         expect(knife_ec2_create.ui).to receive(:error).with(" --ebs-size should be in between 1-1024 for 'standard' ebs volume type.")
-        expect { knife_ec2_create.validate! }.to raise_error SystemExit
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
       end
 
       it "raise error on invalid ebs_size specified for 'gp2' VolumeType" do
@@ -1103,7 +1114,7 @@ describe Chef::Knife::Ec2ServerCreate do
         knife_ec2_create.config[:flavor] = "m3.medium"
         knife_ec2_create.config[:ebs_encrypted] = true
         expect(knife_ec2_create.ui).to receive(:error).with(" --ebs-size should be in between 1-16384 for 'gp2' ebs volume type.")
-        expect { knife_ec2_create.validate! }.to raise_error SystemExit
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
       end
 
       it "raise error on invalid ebs_size specified for 'io1' VolumeType" do
@@ -1113,91 +1124,74 @@ describe Chef::Knife::Ec2ServerCreate do
         knife_ec2_create.config[:flavor] = "m3.medium"
         knife_ec2_create.config[:ebs_encrypted] = true
         expect(knife_ec2_create.ui).to receive(:error).with(" --ebs-size should be in between 4-16384 for 'io1' ebs volume type.")
-        expect { knife_ec2_create.validate! }.to raise_error SystemExit
-      end
-    end
-  end
-
-  describe "when creating the connection" do
-    before(:each) do
-      Chef::Config[:knife].delete(:aws_access_key_id)
-      Chef::Config[:knife].delete(:aws_secret_access_key)
-    end
-
-    describe "when no keys or credential file is specified" do
-      it "it loads credentials from the default credentials file" do
-        default_cred_file = Chef::Util::PathHelper.home(".aws", "credentials")
-        allow(File).to receive(:exist?).and_call_original
-        allow(File).to receive(:exist?).with(default_cred_file).and_return(true)
-        allow(File).to receive(:read).with(default_cred_file).and_return("[default]\naws_access_key_id=abc\naws_secret_access_key=abc")
-        expect(Fog::Compute::AWS).to receive(:new).with(hash_including(aws_access_key_id: "abc", aws_secret_access_key: "abc")).and_return(ec2_connection)
-        knife_ec2_create.validate!
-        knife_ec2_create.connection
-      end
-    end
-
-    describe "when use_iam_profile is true" do
-      it "creates a connection without access keys" do
-        knife_ec2_create.config[:use_iam_profile] = true
-        expect(Fog::Compute::AWS).to receive(:new).with(hash_including(use_iam_profile: true)).and_return(ec2_connection)
-        knife_ec2_create.connection
-      end
-    end
-
-    describe "when aws_session_token is present" do
-      it "creates a connection using the session token" do
-        knife_ec2_create.config[:aws_session_token] = "session-token"
-        expect(Fog::Compute::AWS).to receive(:new).with(hash_including(aws_session_token: "session-token")).and_return(ec2_connection)
-        knife_ec2_create.connection
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
       end
     end
   end
 
   describe "when creating the server definition" do
+    before do
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
+      expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
+      allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+      allow(knife_ec2_create).to receive(:msg_pair)
+      allow(knife_ec2_create).to receive(:puts)
+      allow(knife_ec2_create).to receive(:print)
+    end    
 
     it "sets the specified placement_group" do
       knife_ec2_create.config[:placement_group] = ["some_placement_group"]
-      server_def = knife_ec2_create.create_server_def
-
+      knife_ec2_create.create_ec2_instance(server_attributes)
+      server_def = knife_ec2_create.server
       expect(server_def[:placement_group]).to eq(["some_placement_group"])
     end
 
     it "sets the specified security group names" do
       knife_ec2_create.config[:security_groups] = ["groupname"]
-      server_def = knife_ec2_create.create_server_def
+      knife_ec2_create.create_ec2_instance(server_attributes)
+      server_def = knife_ec2_create.server
 
       expect(server_def[:groups]).to eq(["groupname"])
     end
 
     it "sets the specified security group ids" do
-      knife_ec2_create.config[:security_group_ids] = ["sg-aabbccdd", "sg-3764sdss", "sg-aab343ytre"]
-      server_def = knife_ec2_create.create_server_def
+      knife_ec2_create.config[:security_group_ids] = ["sg-00aa11bb"]
+      knife_ec2_create.create_ec2_instance(server_attributes)
+      server_def = knife_ec2_create.server
 
-      expect(server_def[:security_group_ids]).to eq(["sg-aabbccdd", "sg-3764sdss", "sg-aab343ytre"])
+      expect(server_def[:security_group_ids]).to eq(["sg-00aa11bb"])
     end
 
     it "sets the image id from CLI arguments over knife config" do
-      knife_ec2_create.config[:image] = "ami-aaa"
-      Chef::Config[:knife][:image] = "ami-zzz"
-      server_def = knife_ec2_create.create_server_def
+      knife_ec2_create.config[:image] = "ami-005bdb005fb00e791"
+      Chef::Config[:knife][:image] = "ami-54354"
+      knife_ec2_create.create_ec2_instance(server_attributes)
+      server_def = knife_ec2_create.server
 
-      expect(server_def[:image_id]).to eq("ami-aaa")
+      expect(server_def[:image_id]).to eq("ami-005bdb005fb00e791")
     end
 
     it "sets the flavor id from CLI arguments over knife config" do
-      knife_ec2_create.config[:flavor] = "massive"
+      knife_ec2_create.config[:flavor] = "m1.small"
       Chef::Config[:knife][:flavor] = "bitty"
-      server_def = knife_ec2_create.create_server_def
+      knife_ec2_create.create_ec2_instance(server_attributes)
+      server_def = knife_ec2_create.server
 
-      expect(server_def[:flavor_id]).to eq("massive")
+      expect(server_def[:flavor_id]).to eq("m1.small")
     end
 
     it "sets the availability zone from CLI arguments over knife config" do
-      knife_ec2_create.config[:availability_zone] = "dis-one"
+      knife_ec2_create.config[:availability_zone] = "us-west-2a"
       Chef::Config[:knife][:availability_zone] = "dat-one"
-      server_def = knife_ec2_create.create_server_def
+      knife_ec2_create.create_ec2_instance(server_attributes)
+      server_def = knife_ec2_create.server
 
-      expect(server_def[:availability_zone]).to eq("dis-one")
+      expect(server_def[:availability_zone]).to eq("us-west-2a")
     end
 
     it "adds the specified ephemeral device mappings" do
@@ -1395,7 +1389,6 @@ describe Chef::Knife::Ec2ServerCreate do
     before do
       allow(new_ec2_server).to receive_messages(subnet_id: "subnet-1a2b3c4d")
       allow(knife_ec2_create).to receive_messages(server: new_ec2_server)
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
     end
 
     context "when auto_assign_public_ip is enabled" do
@@ -1423,7 +1416,6 @@ describe Chef::Knife::Ec2ServerCreate do
         subnet_id: "subnet-1a2b3c4d"
       )
       allow(knife_ec2_create).to receive_messages(server: new_ec2_server)
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
     end
 
     describe "by default" do
@@ -1794,7 +1786,6 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "attach ssl config into user data when transport is ssl" do
     before(:each) do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
       knife_ec2_create.config[:winrm_transport] = "ssl"
@@ -2326,7 +2317,6 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "do not attach ssl config into user data when transport is plaintext" do
     before(:each) do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
       knife_ec2_create.config[:winrm_transport] = "plaintext"
@@ -2391,7 +2381,6 @@ describe Chef::Knife::Ec2ServerCreate do
     context "spot instance" do
       context "disable_api_termination is not passed on CLI or in knife config" do
         before do
-          allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
           knife_ec2_create.config[:spot_price] = 0.001
         end
 
@@ -2404,13 +2393,12 @@ describe Chef::Knife::Ec2ServerCreate do
           expect(knife_ec2_create.ui).to_not receive(:error).with(
             "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
           )
-          expect { knife_ec2_create.validate! }.to_not raise_error
+          expect { knife_ec2_create.plugin_validate_options! }.to_not raise_error
         end
       end
 
       context "disable_api_termination is passed on CLI" do
         before do
-          allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
           knife_ec2_create.config[:spot_price] = 0.001
           knife_ec2_create.config[:disable_api_termination] = true
         end
@@ -2419,13 +2407,12 @@ describe Chef::Knife::Ec2ServerCreate do
           expect(knife_ec2_create.ui).to receive(:error).with(
             "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
           )
-          expect { knife_ec2_create.validate! }.to raise_error(SystemExit)
+          expect { knife_ec2_create.plugin_validate_options! }.to raise_error(SystemExit)
         end
       end
 
       context "disable_api_termination is passed in knife config" do
         before do
-          allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
           knife_ec2_create.config[:spot_price] = 0.001
           Chef::Config[:knife][:disable_api_termination] = true
         end
@@ -2434,16 +2421,13 @@ describe Chef::Knife::Ec2ServerCreate do
           expect(knife_ec2_create.ui).to receive(:error).with(
             "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
           )
-          expect { knife_ec2_create.validate! }.to raise_error(SystemExit)
+          expect { knife_ec2_create.plugin_validate_options! }.to raise_error(SystemExit)
         end
       end
     end
 
     context "non-spot instance" do
       context "when disable_api_termination option is not passed on the CLI or in the knife config" do
-        before do
-          allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-        end
 
         it "sets disable_api_termination option in server_def with value as false" do
           server_def = knife_ec2_create.create_server_def
@@ -2454,13 +2438,12 @@ describe Chef::Knife::Ec2ServerCreate do
           expect(knife_ec2_create.ui).to_not receive(:error).with(
             "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
           )
-          expect { knife_ec2_create.validate! }.to_not raise_error
+          expect { knife_ec2_create.plugin_validate_options! }.to_not raise_error
         end
       end
 
       context "when disable_api_termination option is passed on the CLI" do
         before do
-          allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
           knife_ec2_create.config[:disable_api_termination] = true
         end
 
@@ -2473,13 +2456,12 @@ describe Chef::Knife::Ec2ServerCreate do
           expect(knife_ec2_create.ui).to_not receive(:error).with(
             "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
           )
-          expect { knife_ec2_create.validate! }.to_not raise_error
+          expect { knife_ec2_create.plugin_validate_options! }.to_not raise_error
         end
       end
 
       context "when disable_api_termination option is passed in the knife config" do
         before do
-          allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
           Chef::Config[:knife][:disable_api_termination] = true
         end
 
@@ -2492,17 +2474,13 @@ describe Chef::Knife::Ec2ServerCreate do
           expect(knife_ec2_create.ui).to_not receive(:error).with(
             "spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances."
           )
-          expect { knife_ec2_create.validate! }.to_not raise_error
+          expect { knife_ec2_create.plugin_validate_options! }.to_not raise_error
         end
       end
     end
   end
 
   describe "--security-group-ids option" do
-    before do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-    end
-
     context "when comma seprated values are provided from cli" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--security-group-ids", "sg-aabbccdd,sg-3764sdss,sg-00aa11bb"]) }
       it "creates array of security group ids" do
@@ -2522,22 +2500,19 @@ describe Chef::Knife::Ec2ServerCreate do
     context "when comma seprated input is provided from knife.rb" do
       it "raises error" do
         Chef::Config[:knife][:security_group_ids] = "sg-aabbccdd, sg-3764sdss, sg-00aa11bb"
-        expect { knife_ec2_create.validate! }.to raise_error(SystemExit)
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error(SystemExit)
       end
     end
 
     context "when security group ids array is provided from knife.rb" do
       it "allows --security-group-ids set from an array in knife.rb" do
         Chef::Config[:knife][:security_group_ids] = ["sg-aabbccdd", "sg-3764sdss", "sg-00aa11bb"]
-        expect { knife_ec2_create.validate! }.to_not raise_error(SystemExit)
+        expect { knife_ec2_create.plugin_validate_options! }.to_not raise_error(SystemExit)
       end
     end
   end
 
   describe "--security-group-id option" do
-    before do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-    end
 
     context "when mulitple values provided from cli for e.g. -g sg-aab343ytr -g sg-3764sdss" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["-g", "sg-aab343ytr", "-g", "sg-3764sdss"]) }
@@ -2557,9 +2532,6 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "--chef-tag option" do
-    before do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-    end
 
     context 'when mulitple values provided from cli for e.g. --chef-tag "foo" --chef-tag "bar"' do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--chef-tag", "foo", "--chef-tag", "bar"]) }
@@ -2579,9 +2551,6 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "--aws-tag option" do
-    before do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-    end
 
     context 'when mulitple values provided from cli for e.g. --aws-tag "foo=bar" --aws-tag "foo1=bar1"' do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--aws-tag", "foo=bar", "--aws-tag", "foo1=bar1"]) }
@@ -2601,15 +2570,12 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "--tag-node-in-chef option" do
-    before do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-    end
 
     context "when provided from cli for e.g. --tag-node-in-chef" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--tag-node-in-chef"]) }
       it 'raises deprecated warning "[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead."' do
         expect(ec2_server_create.ui).to receive(:warn).with("[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead.")
-        ec2_server_create.validate!
+        ec2_server_create.plugin_validate_options!
       end
     end
   end
@@ -2634,7 +2600,6 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "Handle password greater than 14 characters" do
     before do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
       knife_ec2_create.config[:winrm_user] = "domain\\ec2"
       knife_ec2_create.config[:winrm_password] = "LongPassword@123"
     end
@@ -2645,7 +2610,7 @@ describe Chef::Knife::Ec2ServerCreate do
       end
       it "user addition command is executed forcefully" do
         expect(knife_ec2_create.ui).to receive(:warn).with("The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):")
-        knife_ec2_create.validate!
+        knife_ec2_create.plugin_validate_options!
         expect(knife_ec2_create.instance_variable_get(:@allow_long_password)).to eq ("/yes")
       end
     end
@@ -2656,7 +2621,7 @@ describe Chef::Knife::Ec2ServerCreate do
       end
       it "operation exits" do
         expect(knife_ec2_create.ui).to receive(:warn).with("The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):")
-        expect { knife_ec2_create.validate! }.to raise_error("Exiting as operation with password greater than 14 characters not accepted")
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error("Exiting as operation with password greater than 14 characters not accepted")
       end
     end
 
@@ -2666,15 +2631,12 @@ describe Chef::Knife::Ec2ServerCreate do
       end
       it "operation exits" do
         expect(knife_ec2_create.ui).to receive(:warn).with("The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):")
-        expect { knife_ec2_create.validate! }.to raise_error("The input provided is incorrect.")
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error("The input provided is incorrect.")
       end
     end
 
   end
   describe "--primary_eni option" do
-    before do
-      allow(Fog::Compute::AWS).to receive(:new).and_return(ec2_connection)
-    end
 
     context "when a preexisting eni is specified eg. eni-12345678 use that eni for device index 0" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--primary-eni", "eni-12345678"]) }

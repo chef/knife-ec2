@@ -300,7 +300,7 @@ class Chef
       raise ArgumentError, "The provided --aws_config_file (#{config_file}) cannot be found on disk." unless File.exist?(config_file)
 
       aws_config = ini_parse(File.read(config_file))
-      profile = if locate_config_value(:aws_profile) == "default"
+      profile = if !locate_config_value(:aws_profile) || locate_config_value(:aws_profile) == "default"
                   "default"
                 else
                   "profile #{locate_config_value(:aws_profile)}"
