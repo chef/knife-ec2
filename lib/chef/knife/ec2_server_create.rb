@@ -954,7 +954,7 @@ class Chef
                        if config[:ebs_size]
                          Integer(config[:ebs_size]).to_s
                        else
-                         ami_map.ebs.volume_size.to_s
+                         ami_map.ebs.volume_size.to_s if ami_map.ebs.respond_to?(:volume_size)
                        end
                      rescue ArgumentError
                        puts "--ebs-size must be an integer"
@@ -964,13 +964,13 @@ class Chef
           delete_term = if config[:ebs_no_delete_on_term]
                           "false"
                         else
-                          ami_map.ebs.delete_on_termination
+                          ami_map.ebs.delete_on_termination if ami_map.ebs.respond_to?(:delete_on_termination)
                         end
           iops_rate = begin
                         if config[:ebs_provisioned_iops]
                           Integer(config[:ebs_provisioned_iops]).to_s
                         else
-                          ami_map.ebs.iops.to_s
+                          ami_map.ebs.iops.to_s if ami_map.ebs.respond_to?(:iops)
                         end
                       rescue ArgumentError
                         puts "--provisioned-iops must be an integer"
