@@ -27,9 +27,9 @@ Chef::Knife::Bootstrap.load_deps
 describe Chef::Knife::Ec2ServerCreate do
   let(:knife_ec2_create) { Chef::Knife::Ec2ServerCreate.new }
   let(:ec2_connection)   { Aws::EC2::Client.new(stub_responses: true) }
-  let(:ebs)              { OpenStruct.new(volume_size: 30) }
+  let(:ebs)              { OpenStruct.new(volume_size: 30, iops: 123) }
   let(:groups)           { [OpenStruct.new(name: "grp-646rswg")] }
-  let(:placement)        { OpenStruct.new(tenancy: "default") }
+  let(:placement)        { OpenStruct.new(tenancy: "default", group_name: "some_placement_group") }
   let(:state)            { OpenStruct.new(name: "running") }
   let(:security_groups)  { [OpenStruct.new(group_id: "s-gr446f", group_name: "default-vpc")] }
   let(:tags)             { [OpenStruct.new(key: "Name", value: "ec2-test")] }
@@ -62,6 +62,7 @@ describe Chef::Knife::Ec2ServerCreate do
       platform: "windows",
       name: "image-test",
       description: "test windows winrm image",
+      root_device_type: "ebs",
       block_device_mappings: [block_device_mappings]
     )
   end
@@ -98,12 +99,9 @@ describe Chef::Knife::Ec2ServerCreate do
       min_count: 1,
       placement: {
         availability_zone: "us-west-2a",
-        group_name: nil
+        group_name: "some_placement_group"
       },
       security_group_ids: nil,
-      root_device_type: "ebs",
-      request_type: "persistent",
-      placement_group: ["some_placement_group"],
       iam_instance_profile: {name: nil},
       ebs_optimized: false,
       instance_initiated_shutdown_behavior: nil,
@@ -115,7 +113,7 @@ describe Chef::Knife::Ec2ServerCreate do
     OpenStruct.new(id: "i-00fe186450a2e8e97",
       flavor_id: "m1.small",
       image_id: "ami-005bdb005fb00e791",
-      placement_group: ["some_placement_group"],
+      placement_group: "some_placement_group",
       availability_zone: "us-west-2a",
       key_name: "ssh_key_name",
       groups: ["groupname"],
@@ -159,6 +157,15 @@ describe Chef::Knife::Ec2ServerCreate do
       double("network_interfaces", network_interface_id: "eni-12345678"),
       double("network_interfaces", network_interface_id: "eni-87654321")
     ]
+
+    {
+      image: "ami-005bdb005fb00e791",
+      ssh_key_name: "ssh_key_name",
+      network_interfaces: ["eni-12345678",
+                              "eni-87654321"],
+    }.each do |key, value|
+      Chef::Config[:knife][key] = value
+    end
 
     @validation_key_url = "s3://bucket/foo/bar"
     @validation_key_file = "/tmp/a_good_temp_file"
@@ -557,7 +564,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
   context "when deprecated aws_ssh_key_id option is used in knife config and no ssh-key is supplied on the CLI" do
     before do
-      Chef::Config[:knife][:aws_ssh_key_id] = "mykey"
+      Chef::Config[:knife][:aws_ssh_key_id] = "ssh_key_name"
       Chef::Config[:knife].delete(:ssh_key_name)
       @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
@@ -574,7 +581,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
   context "when deprecated aws_ssh_key_id option is used in knife config but ssh-key is also supplied on the CLI" do
     before do
-      Chef::Config[:knife][:aws_ssh_key_id] = "mykey"
+      Chef::Config[:knife][:aws_ssh_key_id] = "ssh_key_name"
       @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:validate_aws_config!)
@@ -1131,204 +1138,171 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "when creating the server definition" do
     before do
-      allow(knife_ec2_create).to receive(:validate_aws_config!)
-      allow(knife_ec2_create).to receive(:validate_nics!)
+      allow(knife_ec2_create).to receive(:plugin_validate_options!)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
-      allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
-      expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
-      allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
-      allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
-      allow(knife_ec2_create).to receive(:msg_pair)
-      allow(knife_ec2_create).to receive(:puts)
-      allow(knife_ec2_create).to receive(:print)
     end    
 
     it "sets the specified placement_group" do
-      knife_ec2_create.config[:placement_group] = ["some_placement_group"]
-      knife_ec2_create.create_ec2_instance(server_attributes)
-      server_def = knife_ec2_create.server
-      expect(server_def[:placement_group]).to eq(["some_placement_group"])
+      knife_ec2_create.config[:placement_group] = "some_placement_group"
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:placement][:group_name]).to eq("some_placement_group")
     end
 
     it "sets the specified security group names" do
       knife_ec2_create.config[:security_groups] = ["groupname"]
-      knife_ec2_create.create_ec2_instance(server_attributes)
-      server_def = knife_ec2_create.server
-
+      server_def = knife_ec2_create.server_attributes
       expect(server_def[:groups]).to eq(["groupname"])
     end
 
     it "sets the specified security group ids" do
       knife_ec2_create.config[:security_group_ids] = ["sg-00aa11bb"]
-      knife_ec2_create.create_ec2_instance(server_attributes)
-      server_def = knife_ec2_create.server
-
+      server_def = knife_ec2_create.server_attributes
       expect(server_def[:security_group_ids]).to eq(["sg-00aa11bb"])
     end
 
     it "sets the image id from CLI arguments over knife config" do
       knife_ec2_create.config[:image] = "ami-005bdb005fb00e791"
       Chef::Config[:knife][:image] = "ami-54354"
-      knife_ec2_create.create_ec2_instance(server_attributes)
-      server_def = knife_ec2_create.server
-
+      server_def = knife_ec2_create.server_attributes
       expect(server_def[:image_id]).to eq("ami-005bdb005fb00e791")
     end
 
     it "sets the flavor id from CLI arguments over knife config" do
       knife_ec2_create.config[:flavor] = "m1.small"
       Chef::Config[:knife][:flavor] = "bitty"
-      knife_ec2_create.create_ec2_instance(server_attributes)
-      server_def = knife_ec2_create.server
-
-      expect(server_def[:flavor_id]).to eq("m1.small")
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:instance_type]).to eq("m1.small")
     end
 
     it "sets the availability zone from CLI arguments over knife config" do
       knife_ec2_create.config[:availability_zone] = "us-west-2a"
       Chef::Config[:knife][:availability_zone] = "dat-one"
-      knife_ec2_create.create_ec2_instance(server_attributes)
-      server_def = knife_ec2_create.server
-
-      expect(server_def[:availability_zone]).to eq("us-west-2a")
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:placement][:availability_zone]).to eq("us-west-2a")
     end
 
     it "adds the specified ephemeral device mappings" do
       knife_ec2_create.config[:ephemeral] = [ "/dev/sdb", "/dev/sdc", "/dev/sdd", "/dev/sde" ]
-      server_def = knife_ec2_create.create_server_def
-
-      expect(server_def[:block_device_mapping]).to eq([{ "VirtualName" => "ephemeral0", "DeviceName" => "/dev/sdb" },
-                                                   { "VirtualName" => "ephemeral1", "DeviceName" => "/dev/sdc" },
-                                                   { "VirtualName" => "ephemeral2", "DeviceName" => "/dev/sdd" },
-                                                   { "VirtualName" => "ephemeral3", "DeviceName" => "/dev/sde" }])
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:block_device_mappings]).to eq([{ device_name: nil, ebs: { delete_on_termination: nil, iops: "123", volume_size: "30", volume_type: nil }},
+                                                    { virtual_name: "ephemeral0", device_name: "/dev/sdb" },
+                                                   { virtual_name: "ephemeral1", device_name: "/dev/sdc" },
+                                                   { virtual_name: "ephemeral2", device_name: "/dev/sdd" },
+                                                   { virtual_name: "ephemeral3", device_name: "/dev/sde" }])
     end
 
     it "sets the specified private ip address" do
       knife_ec2_create.config[:subnet_id] = "subnet-1a2b3c4d"
       knife_ec2_create.config[:private_ip_address] = "10.0.0.10"
-      server_def = knife_ec2_create.create_server_def
+      server_def = knife_ec2_create.server_attributes
 
-      expect(server_def[:subnet_id]).to eq("subnet-1a2b3c4d")
-      expect(server_def[:private_ip_address]).to eq("10.0.0.10")
+      expect(server_def[:network_interfaces][0][:subnet_id]).to eq("subnet-1a2b3c4d")
+      expect(server_def[:network_interfaces][0][:private_ip_address]).to eq("10.0.0.10")
     end
 
     it "sets the IAM server role when one is specified" do
       knife_ec2_create.config[:iam_instance_profile] = ["iam-role"]
-      server_def = knife_ec2_create.create_server_def
-
-      expect(server_def[:iam_instance_profile_name]).to eq(["iam-role"])
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:iam_instance_profile][:name]).to eq(["iam-role"])
     end
 
     it "doesn't set an IAM server role by default" do
-      server_def = knife_ec2_create.create_server_def
-
-      expect(server_def[:iam_instance_profile_name]).to eq(nil)
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:iam_instance_profile][:name]).to eq(nil)
     end
 
     it "doesn't use IAM profile by default" do
-      server_def = knife_ec2_create.create_server_def
-
+      server_def = knife_ec2_create.server_attributes
       expect(server_def[:use_iam_profile]).to eq(nil)
     end
 
     it "Set Tenancy Dedicated when both VPC mode and Flag is True" do
       knife_ec2_create.config[:dedicated_instance] = true
       allow(knife_ec2_create).to receive_messages(vpc_mode?: true)
-      server_def = knife_ec2_create.create_server_def
-      expect(server_def[:tenancy]).to eq("dedicated")
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:placement][:tenancy]).to eq("dedicated")
     end
 
     it "Tenancy should be default with no vpc mode even is specified" do
       knife_ec2_create.config[:dedicated_instance] = true
-      server_def = knife_ec2_create.create_server_def
-      expect(server_def[:tenancy]).to eq(nil)
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:placement][:tenancy]).to eq(nil)
     end
 
     it "Tenancy should be default with vpc but not requested" do
       allow(knife_ec2_create).to receive_messages(vpc_mode?: true)
-      server_def = knife_ec2_create.create_server_def
-      expect(server_def[:tenancy]).to eq(nil)
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:placement][:tenancy]).to eq(nil)
     end
 
     it "sets associate_public_ip to true if specified and in vpc_mode" do
       knife_ec2_create.config[:subnet_id] = "subnet-1a2b3c4d"
       knife_ec2_create.config[:associate_public_ip] = true
-      server_def = knife_ec2_create.create_server_def
+      server_def = knife_ec2_create.server_attributes
 
-      expect(server_def[:subnet_id]).to eq("subnet-1a2b3c4d")
-      expect(server_def[:associate_public_ip]).to eq(true)
+      expect(server_def[:network_interfaces][0][:subnet_id]).to eq("subnet-1a2b3c4d")
+      expect(server_def[:network_interfaces][0][:associate_public_ip_address]).to eq(true)
     end
 
     it "sets the spot price" do
       knife_ec2_create.config[:spot_price] = "1.99"
-      server_def = knife_ec2_create.create_server_def
-
-      expect(server_def[:price]).to eq("1.99")
+      server_def = knife_ec2_create.spot_instances_attributes
+      expect(server_def[:spot_price]).to eq("1.99")
     end
 
     it "sets the spot instance request type as persistent" do
       knife_ec2_create.config[:spot_request_type] = "persistent"
-      server_def = knife_ec2_create.create_server_def
-
-      expect(server_def[:request_type]).to eq("persistent")
+      server_def = knife_ec2_create.spot_instances_attributes
+      expect(server_def[:type]).to eq("persistent")
     end
 
     it "sets the spot instance request type as one-time" do
       knife_ec2_create.config[:spot_request_type] = "one-time"
-      server_def = knife_ec2_create.create_server_def
-
-      expect(server_def[:request_type]).to eq("one-time")
+      server_def = knife_ec2_create.spot_instances_attributes
+      expect(server_def[:type]).to eq("one-time")
     end
 
     context "when using ebs volume type and ebs provisioned iops rate options" do
       before do
-        allow(knife_ec2_create).to receive_message_chain(:ami, :root_device_type).and_return("ebs")
-        allow(knife_ec2_create).to receive_message_chain(:ami, :block_device_mapping).and_return([{ "iops" => 123 }])
+        allow(knife_ec2_create).to receive(:ami).and_return(ami)
         allow(knife_ec2_create).to receive(:msg)
         allow(knife_ec2_create).to receive(:puts)
       end
 
       it "sets the specified 'standard' ebs volume type" do
         knife_ec2_create.config[:ebs_volume_type] = "standard"
-        server_def = knife_ec2_create.create_server_def
-
-        expect(server_def[:block_device_mapping].first["Ebs.VolumeType"]).to eq("standard")
+        server_def = knife_ec2_create.server_attributes
+        expect(server_def[:block_device_mappings].first[:ebs][:volume_type]).to eq("standard")
       end
 
       it "sets the specified 'io1' ebs volume type" do
         knife_ec2_create.config[:ebs_volume_type] = "io1"
-        server_def = knife_ec2_create.create_server_def
-
-        expect(server_def[:block_device_mapping].first["Ebs.VolumeType"]).to eq("io1")
+        server_def = knife_ec2_create.server_attributes
+        expect(server_def[:block_device_mappings].first[:ebs][:volume_type]).to eq("io1")
       end
 
       it "sets the specified 'gp2' ebs volume type" do
         knife_ec2_create.config[:ebs_volume_type] = "gp2"
-        server_def = knife_ec2_create.create_server_def
-
-        expect(server_def[:block_device_mapping].first["Ebs.VolumeType"]).to eq("gp2")
+        server_def = knife_ec2_create.server_attributes
+        expect(server_def[:block_device_mappings].first[:ebs][:volume_type]).to eq("gp2")
       end
 
       it "sets the specified ebs provisioned iops rate" do
         knife_ec2_create.config[:ebs_provisioned_iops] = "1234"
         knife_ec2_create.config[:ebs_volume_type] = "io1"
-        server_def = knife_ec2_create.create_server_def
-
-        expect(server_def[:block_device_mapping].first["Ebs.Iops"]).to eq("1234")
+        server_def = knife_ec2_create.server_attributes
+        expect(server_def[:block_device_mappings].first[:ebs][:iops]).to eq("1234")
       end
 
       it "disallows non integer ebs provisioned iops rate" do
         knife_ec2_create.config[:ebs_provisioned_iops] = "123abcd"
-
-        expect { knife_ec2_create.create_server_def }.to raise_error SystemExit
+        expect { knife_ec2_create.server_attributes }.to raise_error SystemExit
       end
 
       it "sets the iops rate from ami" do
         knife_ec2_create.config[:ebs_volume_type] = "io1"
-        server_def = knife_ec2_create.create_server_def
-
-        expect(server_def[:block_device_mapping].first["Ebs.Iops"]).to eq("123")
+        server_def = knife_ec2_create.server_attributes
+        expect(server_def[:block_device_mappings].first[:ebs][:iops]).to eq("123")
       end
     end
   end
@@ -1345,7 +1319,8 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "should wait for direct ssh if a ssh gateway is not provided" do
       allow(knife_ec2_create).to receive(:get_ssh_gateway_for).and_return(nil)
-      knife_ec2_create.config[:ssh_port] = 22
+      knife_ec2_create.config[:connection_port] = 22
+      knife_ec2_create.config[:connection_protocol] = "ssh"
       expect(knife_ec2_create).to receive(:wait_for_direct_sshd).with(hostname, 22)
       knife_ec2_create.wait_for_sshd(hostname)
     end
@@ -1386,30 +1361,41 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "#subnet_public_ip_on_launch?" do
+    let(:subnet_res) do
+      OpenStruct.new(
+        availability_zone: "us-west-2a",
+        map_public_ip_on_launch: false,
+        subnet_id: "subnet-1a2b3c4d"
+      )
+    end 
+    let(:subnets) { OpenStruct.new(subnets: [subnet_res]) }
+
     before do
-      allow(new_ec2_server).to receive_messages(subnet_id: "subnet-1a2b3c4d")
-      allow(knife_ec2_create).to receive_messages(server: new_ec2_server)
+      allow(ec2_connection).to receive(:describe_subnets).and_return(subnets)
+      allow(knife_ec2_create).to receive_message_chain(:server, :subnet_id).and_return("subnet-1a2b3c4d")
     end
 
     context "when auto_assign_public_ip is enabled" do
       it "returns true" do
-        allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( map_public_ip_on_launch: true )
+        allow(knife_ec2_create).to receive(:fetch_subnet).with("subnet-1a2b3c4d").and_return double( map_public_ip_on_launch: true )
         expect(knife_ec2_create.subnet_public_ip_on_launch?).to eq(true)
       end
     end
 
     context "when auto_assign_public_ip is disabled" do
       it "returns false" do
-        allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( map_public_ip_on_launch: false )
         expect(knife_ec2_create.subnet_public_ip_on_launch?).to eq(false)
       end
     end
   end
 
   describe "ssh_connect_host" do
+    let(:new_ec2_server) { double }
+
     before(:each) do
+      allow(knife_ec2_create).to receive(:fetch_ec2_instance).and_return(new_ec2_server)
       allow(new_ec2_server).to receive_messages(
-        dns_name: "public.example.org",
+        public_dns_name: "public.example.org",
         private_ip_address: "192.168.1.100",
         custom: "custom",
         public_ip_address: "111.111.111.111",
@@ -1420,14 +1406,14 @@ describe Chef::Knife::Ec2ServerCreate do
 
     describe "by default" do
       it "should use public dns name" do
-        expect(knife_ec2_create.ssh_connect_host).to eq("public.example.org")
+        expect(knife_ec2_create.connection_host).to eq("public.example.org")
       end
     end
 
     describe "when dns name not exist" do
       it "should use public_ip_address " do
-        allow(new_ec2_server).to receive(:dns_name).and_return(nil)
-        expect(knife_ec2_create.ssh_connect_host).to eq("111.111.111.111")
+        allow(new_ec2_server).to receive(:public_dns_name).and_return(nil)
+        expect(knife_ec2_create.connection_host).to eq("111.111.111.111")
       end
     end
 
@@ -1438,32 +1424,32 @@ describe Chef::Knife::Ec2ServerCreate do
 
       context "subnet_public_ip_on_launch? is true" do
         it "uses the dns_name or public_ip_address" do
-          allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( map_public_ip_on_launch: true )
+          allow(knife_ec2_create).to receive(:fetch_subnet).and_return double( map_public_ip_on_launch: true )
           expect(knife_ec2_create.subnet_public_ip_on_launch?).to eq(true)
-          expect(knife_ec2_create.ssh_connect_host).to eq("public.example.org")
+          expect(knife_ec2_create.connection_host).to eq("public.example.org")
         end
       end
 
       context "--associate-public-ip is specified" do
         it "uses the dns_name or public_ip_address" do
           knife_ec2_create.config[:associate_public_ip] = true
-          allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( map_public_ip_on_launch: false )
-          expect(knife_ec2_create.ssh_connect_host).to eq("public.example.org")
+          allow(knife_ec2_create).to receive(:fetch_subnet).and_return double( map_public_ip_on_launch: false )
+          expect(knife_ec2_create.connection_host).to eq("public.example.org")
         end
       end
 
       context "--associate-eip is specified" do
         it "uses the dns_name or public_ip_address" do
           knife_ec2_create.config[:associate_eip] = "111.111.111.111"
-          allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( map_public_ip_on_launch: false )
-          expect(knife_ec2_create.ssh_connect_host).to eq("public.example.org")
+          allow(knife_ec2_create).to receive(:fetch_subnet).and_return double( map_public_ip_on_launch: false )
+          expect(knife_ec2_create.connection_host).to eq("public.example.org")
         end
       end
 
       context "with no other ip flags" do
         it "uses private_ip_address" do
-          allow(ec2_connection).to receive_message_chain(:subnets, :get).and_return double( map_public_ip_on_launch: false )
-          expect(knife_ec2_create.ssh_connect_host).to eq("192.168.1.100")
+          allow(knife_ec2_create).to receive(:fetch_subnet).and_return double( map_public_ip_on_launch: false )
+          expect(knife_ec2_create.connection_host).to eq("192.168.1.100")
         end
       end
     end
@@ -1471,7 +1457,7 @@ describe Chef::Knife::Ec2ServerCreate do
     describe "with custom server attribute" do
       it "should use custom server attribute" do
         knife_ec2_create.config[:server_connect_attribute] = "custom"
-        expect(knife_ec2_create.ssh_connect_host).to eq("custom")
+        expect(knife_ec2_create.connection_host).to eq("custom")
       end
     end
   end
@@ -1785,7 +1771,12 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "attach ssl config into user data when transport is ssl" do
+    require 'base64'
+
     before(:each) do
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
       knife_ec2_create.config[:winrm_transport] = "ssl"
@@ -1865,9 +1856,9 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "appends ssl config to user supplied user_data after <script> tag section" do
-        server_def = knife_ec2_create.create_server_def
-
-        expect(server_def[:user_data]).to eq(@server_def_user_data)
+        server_def = knife_ec2_create.server_attributes
+        encoded_data = Base64.encode64(@server_def_user_data)
+        expect(server_def[:user_data]).to eq(encoded_data)
       end
 
       after do
@@ -1941,9 +1932,10 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "appends ssl config to user supplied user_data at the end of <powershell> tag section" do
-        server_def = knife_ec2_create.create_server_def
+        encoded_data = Base64.encode64(@server_def_user_data)
+        server_def = knife_ec2_create.server_attributes
 
-        expect(server_def[:user_data]).to eq(@server_def_user_data)
+        expect(server_def[:user_data]).to eq(encoded_data)
       end
 
       after do
@@ -2061,9 +2053,11 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "does no modifications and passes user_data as it is to server_def" do
-        server_def = knife_ec2_create.create_server_def
+        require 'base64'
+        encoded_data = Base64.encode64(@server_def_user_data)
+        server_def = knife_ec2_create.server_attributes
 
-        expect(server_def[:user_data]).to eq(@server_def_user_data)
+        expect(server_def[:user_data]).to eq(encoded_data)
       end
 
       after do
@@ -2093,7 +2087,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
       it "gives error and exits" do
         expect(knife_ec2_create.ui).to receive(:error).with("Provided user_data file is invalid.")
-        expect { knife_ec2_create.create_server_def }.to raise_error SystemExit
+        expect { knife_ec2_create.server_attributes }.to raise_error SystemExit
       end
 
       after do
@@ -2179,9 +2173,10 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "appends ssl config to user supplied user_data at the end of <powershell> tag section" do
-        server_def = knife_ec2_create.create_server_def
+        encoded_data = Base64.encode64(@server_def_user_data)
+        server_def = knife_ec2_create.server_attributes
 
-        expect(server_def[:user_data]).to eq(@server_def_user_data)
+        expect(server_def[:user_data]).to eq(encoded_data)
       end
 
       after do
@@ -2243,8 +2238,7 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "creates user_data only with default ssl configuration" do
-        server_def = knife_ec2_create.create_server_def
-
+        server_def = knife_ec2_create.server_attributes
         expect(server_def[:user_data]).to eq(@server_def_user_data)
       end
     end
@@ -2283,9 +2277,10 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "does not attach ssl config into the user_data supplied by user on cli" do
-        server_def = knife_ec2_create.create_server_def
+        encoded_data = Base64.encode64(@server_def_user_data)
+        server_def = knife_ec2_create.server_attributes
 
-        expect(server_def[:user_data]).to eq(@server_def_user_data)
+        expect(server_def[:user_data]).to eq(encoded_data)
       end
 
       after do
@@ -2301,8 +2296,7 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "creates nil or empty user_data" do
-        server_def = knife_ec2_create.create_server_def
-
+        server_def = knife_ec2_create.server_attributes
         expect(server_def[:user_data]).to eq(@server_def_user_data)
       end
     end
@@ -2317,6 +2311,9 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "do not attach ssl config into user data when transport is plaintext" do
     before(:each) do
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
       Chef::Config[:knife][:ssh_key_name] = "mykey"
       knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
       knife_ec2_create.config[:winrm_transport] = "plaintext"
@@ -2347,9 +2344,9 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "user_data is created only with user's user_data" do
-        server_def = knife_ec2_create.create_server_def
-
-        expect(server_def[:user_data]).to eq(@server_def_user_data)
+        server_def = knife_ec2_create.server_attributes
+        encoded_data = Base64.encode64(@server_def_user_data)
+        expect(server_def[:user_data]).to eq(encoded_data)
       end
 
       after do
@@ -2364,8 +2361,7 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "creates nil or empty user_data" do
-        server_def = knife_ec2_create.create_server_def
-
+        server_def = knife_ec2_create.server_attributes
         expect(server_def[:user_data]).to eq(@server_def_user_data)
       end
     end
@@ -2378,6 +2374,11 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "disable_api_termination option" do
+    before do
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+    end
     context "spot instance" do
       context "disable_api_termination is not passed on CLI or in knife config" do
         before do
@@ -2385,7 +2386,7 @@ describe Chef::Knife::Ec2ServerCreate do
         end
 
         it "does not set disable_api_termination option in server_def" do
-          server_def = knife_ec2_create.create_server_def
+          server_def = knife_ec2_create.server_attributes
           expect(server_def[:disable_api_termination]).to be_nil
         end
 
@@ -2430,7 +2431,8 @@ describe Chef::Knife::Ec2ServerCreate do
       context "when disable_api_termination option is not passed on the CLI or in the knife config" do
 
         it "sets disable_api_termination option in server_def with value as false" do
-          server_def = knife_ec2_create.create_server_def
+          knife_ec2_create.config[:disable_api_termination] = false # Default
+          server_def = knife_ec2_create.server_attributes
           expect(server_def[:disable_api_termination]).to be == false
         end
 
@@ -2448,7 +2450,7 @@ describe Chef::Knife::Ec2ServerCreate do
         end
 
         it "sets disable_api_termination option in server_def with value as true" do
-          server_def = knife_ec2_create.create_server_def
+          server_def = knife_ec2_create.server_attributes
           expect(server_def[:disable_api_termination]).to be == true
         end
 
@@ -2466,7 +2468,7 @@ describe Chef::Knife::Ec2ServerCreate do
         end
 
         it "sets disable_api_termination option in server_def with value as true" do
-          server_def = knife_ec2_create.create_server_def
+          server_def = knife_ec2_create.server_attributes
           expect(server_def[:disable_api_termination]).to be == true
         end
 
@@ -2481,10 +2483,19 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "--security-group-ids option" do
+    before do
+      allow(ec2_server_create).to receive(:validate_aws_config!)
+      allow(ec2_server_create).to receive(:validate_nics!)
+      allow(ec2_server_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:msg_pair)
+      allow(knife_ec2_create).to receive(:puts)
+      allow(knife_ec2_create).to receive(:print)
+    end
+
     context "when comma seprated values are provided from cli" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--security-group-ids", "sg-aabbccdd,sg-3764sdss,sg-00aa11bb"]) }
       it "creates array of security group ids" do
-        server_def = ec2_server_create.create_server_def
+        server_def = ec2_server_create.server_attributes
         expect(server_def[:security_group_ids]).to eq(["sg-aabbccdd", "sg-3764sdss", "sg-00aa11bb"])
       end
     end
@@ -2492,32 +2503,40 @@ describe Chef::Knife::Ec2ServerCreate do
     context "when mulitple values provided from cli for e.g. --security-group-ids sg-aab343ytr --security-group-ids sg-3764sdss" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--security-group-ids", "sg-aab343ytr", "--security-group-ids", "sg-3764sdss"]) }
       it "creates array of security group ids" do
-        server_def = ec2_server_create.create_server_def
+        allow(ec2_server_create.ui).to receive(:warn)
+        server_def = ec2_server_create.server_attributes
         expect(server_def[:security_group_ids]).to eq(["sg-aab343ytr", "sg-3764sdss"])
       end
     end
 
     context "when comma seprated input is provided from knife.rb" do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new }
       it "raises error" do
         Chef::Config[:knife][:security_group_ids] = "sg-aabbccdd, sg-3764sdss, sg-00aa11bb"
-        expect { knife_ec2_create.plugin_validate_options! }.to raise_error(SystemExit)
+        expect(ec2_server_create.ui).to receive(:error).with("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb/config.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
+        expect { ec2_server_create.plugin_validate_options! }.to raise_error(SystemExit)
       end
     end
 
     context "when security group ids array is provided from knife.rb" do
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new }
       it "allows --security-group-ids set from an array in knife.rb" do
         Chef::Config[:knife][:security_group_ids] = ["sg-aabbccdd", "sg-3764sdss", "sg-00aa11bb"]
-        expect { knife_ec2_create.plugin_validate_options! }.to_not raise_error(SystemExit)
+        expect { ec2_server_create.plugin_validate_options! }.to_not raise_error(SystemExit)
       end
     end
   end
 
   describe "--security-group-id option" do
-
+    before do
+      allow(ec2_server_create).to receive(:validate_aws_config!)
+      allow(ec2_server_create).to receive(:validate_nics!)
+      allow(ec2_server_create).to receive(:ami).and_return(ami)
+    end
     context "when mulitple values provided from cli for e.g. -g sg-aab343ytr -g sg-3764sdss" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["-g", "sg-aab343ytr", "-g", "sg-3764sdss"]) }
       it "creates array of security group ids" do
-        server_def = ec2_server_create.create_server_def
+        server_def = ec2_server_create.server_attributes
         expect(server_def[:security_group_ids]).to eq(["sg-aab343ytr", "sg-3764sdss"])
       end
     end
@@ -2525,18 +2544,22 @@ describe Chef::Knife::Ec2ServerCreate do
     context "when single value provided from cli for e.g. --security-group-id 3764sdss" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--security-group-id", "sg-aab343ytr"]) }
       it "creates array of security group ids" do
-        server_def = ec2_server_create.create_server_def
+        server_def = ec2_server_create.server_attributes
         expect(server_def[:security_group_ids]).to eq(["sg-aab343ytr"])
       end
     end
   end
 
   describe "--chef-tag option" do
-
+    before do
+      allow(ec2_server_create).to receive(:validate_aws_config!)
+      allow(ec2_server_create).to receive(:validate_nics!)
+      allow(ec2_server_create).to receive(:ami).and_return(ami)
+    end
     context 'when mulitple values provided from cli for e.g. --chef-tag "foo" --chef-tag "bar"' do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--chef-tag", "foo", "--chef-tag", "bar"]) }
       it "creates array of chef tag" do
-        server_def = ec2_server_create.create_server_def
+        server_def = ec2_server_create.server_attributes
         expect(server_def[:chef_tag]).to eq(%w{foo bar})
       end
     end
@@ -2544,13 +2567,18 @@ describe Chef::Knife::Ec2ServerCreate do
     context "when single value provided from cli for e.g. --chef-tag foo" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--chef-tag", "foo"]) }
       it "creates array of chef tag" do
-        server_def = ec2_server_create.create_server_def
+        server_def = ec2_server_create.server_attributes
         expect(server_def[:chef_tag]).to eq(["foo"])
       end
     end
   end
 
   describe "--aws-tag option" do
+    before do
+      allow(ec2_server_create).to receive(:validate_aws_config!)
+      allow(ec2_server_create).to receive(:validate_nics!)
+      allow(ec2_server_create).to receive(:ami).and_return(ami)
+    end
 
     context 'when mulitple values provided from cli for e.g. --aws-tag "foo=bar" --aws-tag "foo1=bar1"' do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--aws-tag", "foo=bar", "--aws-tag", "foo1=bar1"]) }
@@ -2570,10 +2598,12 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "--tag-node-in-chef option" do
-
     context "when provided from cli for e.g. --tag-node-in-chef" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--tag-node-in-chef"]) }
       it 'raises deprecated warning "[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead."' do
+        allow(ec2_server_create).to receive(:validate_aws_config!)
+        allow(ec2_server_create).to receive(:validate_nics!)
+        allow(ec2_server_create).to receive(:ami).and_return(ami)
         expect(ec2_server_create.ui).to receive(:warn).with("[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead.")
         ec2_server_create.plugin_validate_options!
       end
@@ -2582,7 +2612,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
   describe "evaluate_node_name" do
     before do
-      knife_ec2_create.instance_variable_set(:@server, server)
+      knife_ec2_create.instance_variable_set(:@server, ec2_server_attribs)
     end
 
     context "when ec2 server attributes are not passed in node name" do
@@ -2593,13 +2623,16 @@ describe Chef::Knife::Ec2ServerCreate do
 
     context "when %s is passed in the node name" do
       it "returns evaluated node name" do
-        expect(knife_ec2_create.evaluate_node_name("Test-%s")).to eq("Test-i-123")
+        expect(knife_ec2_create.evaluate_node_name("Test-%s")).to eq("Test-i-00fe186450a2e8e97")
       end
     end
   end
 
   describe "Handle password greater than 14 characters" do
     before do
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
       knife_ec2_create.config[:winrm_user] = "domain\\ec2"
       knife_ec2_create.config[:winrm_password] = "LongPassword@123"
     end
@@ -2634,15 +2667,15 @@ describe Chef::Knife::Ec2ServerCreate do
         expect { knife_ec2_create.plugin_validate_options! }.to raise_error("The input provided is incorrect.")
       end
     end
-
   end
-  describe "--primary_eni option" do
 
+  describe "--primary_eni option" do
     context "when a preexisting eni is specified eg. eni-12345678 use that eni for device index 0" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--primary-eni", "eni-12345678"]) }
       it "provides a network_interfaces list of hashes with on element for the primary interface" do
-        server_def = ec2_server_create.create_server_def
-        expect(server_def[:network_interfaces]).to eq([{ NetworkInterfaceId: "eni-12345678", DeviceIndex: "0" }])
+        allow(ec2_server_create).to receive(:ami).and_return(ami)
+        server_def = ec2_server_create.server_attributes
+        expect(server_def[:network_interfaces]).to eq([{ network_interface_id: "eni-12345678", device_index: 0 }])
       end
     end
   end

@@ -1353,7 +1353,7 @@ class Chef
       def connection_port
         port = config_value(:connection_port,
                             knife_key_for_protocol(connection_protocol, :port))
-        port || winrm? ? 5985 : 22
+        port || (winrm? ? 5985 : 22)
       end
 
       def server_name
