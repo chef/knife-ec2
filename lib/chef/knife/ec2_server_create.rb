@@ -728,7 +728,7 @@ class Chef
         end
 
         if config_value(:spot_price).nil? && config_value(:spot_wait_mode)
-         if !(config_value(:spot_wait_mode).casecmp("prompt") == 0)
+          if !(config_value(:spot_wait_mode).casecmp("prompt") == 0)
             ui.error("spot-wait-mode option requires that a spot-price option is set.")
             exit 1
           end
@@ -860,7 +860,7 @@ class Chef
 
       # base64-encoded text
       def encode_data(text)
-        require 'base64'
+        require "base64"
         Base64.encode64(text)
       end
 

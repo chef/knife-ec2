@@ -51,7 +51,7 @@ describe Chef::Knife::Ec2ServerCreate do
       placement: placement,
       state: state,
       security_groups: security_groups,
-      tags: tags,
+      tags: tags
     )
   end
 
@@ -76,7 +76,7 @@ describe Chef::Knife::Ec2ServerCreate do
       network_interface_id: "eni-12345678",
       network_interface_owner_id: "123456789012",
       private_ip_address: "10.0.1.241",
-      public_ip: "111.111.111.111",
+      public_ip: "111.111.111.111"
     )
   end
 
@@ -102,7 +102,7 @@ describe Chef::Knife::Ec2ServerCreate do
         group_name: "some_placement_group"
       },
       security_group_ids: nil,
-      iam_instance_profile: {name: nil},
+      iam_instance_profile: { name: nil },
       ebs_optimized: false,
       instance_initiated_shutdown_behavior: nil,
       chef_tag: nil
@@ -125,7 +125,6 @@ describe Chef::Knife::Ec2ServerCreate do
       root_device_type: "ebs",
       block_device_mapping: [{ volume_id: 456 }],
       volume_id: "v-006eub006") end
-
 
   let(:my_vpc) { "vpc-12345678" }
 
@@ -180,7 +179,7 @@ describe Chef::Knife::Ec2ServerCreate do
         instance_count: 1,
         launch_specification: server_attributes,
         spot_price: 0.001,
-            type: "persistent",
+        type: "persistent",
       }
     end
 
@@ -401,7 +400,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "sets the Name tag to the instance id by default" do
-      tags_params = { tags:[ key: "Name", value: ec2_server_attribs.id], resources: [ec2_server_attribs.id] }
+      tags_params = { tags: [ key: "Name", value: ec2_server_attribs.id], resources: [ec2_server_attribs.id] }
       expect(ec2_connection).to receive(:create_tags).with(tags_params)
       expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
@@ -409,7 +408,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "sets the Name tag to the chef_node_name when given" do
       knife_ec2_create.config[:chef_node_name] = "wombat"
-      tags_params = { tags:[ key: "Name", value: "wombat"], resources: [ec2_server_attribs.id] }
+      tags_params = { tags: [ key: "Name", value: "wombat"], resources: [ec2_server_attribs.id] }
       expect(ec2_connection).to receive(:create_tags).with(tags_params)
       expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
@@ -417,7 +416,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "sets the Name tag to the specified name when given --aws-tag Name=NAME" do
       knife_ec2_create.config[:aws_tag] = ["Name=bobcat"]
-      tags_params = { tags:[ key: "Name", value: "bobcat"], resources: [ec2_server_attribs.id] }
+      tags_params = { tags: [ key: "Name", value: "bobcat"], resources: [ec2_server_attribs.id] }
       expect(ec2_connection).to receive(:create_tags).with(tags_params)
       expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
@@ -425,7 +424,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "sets arbitrary aws tags" do
       knife_ec2_create.config[:aws_tag] = ["foo=bar"]
-      tags_params = { tags:[ { key: "foo", value: "bar" }, { key: "Name", value: "i-00fe186450a2e8e97"}], resources: [ec2_server_attribs.id] }
+      tags_params = { tags: [ { key: "foo", value: "bar" }, { key: "Name", value: "i-00fe186450a2e8e97" }], resources: [ec2_server_attribs.id] }
       expect(ec2_connection).to receive(:create_tags).with(tags_params)
       expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
@@ -433,7 +432,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "sets the Name tag to the specified name when given --tags Name=NAME" do
       knife_ec2_create.config[:tags] = ["Name=bobcat"]
-      tags_params = { tags:[ key: "Name", value: "bobcat"], resources: [ec2_server_attribs.id] }
+      tags_params = { tags: [ key: "Name", value: "bobcat"], resources: [ec2_server_attribs.id] }
       expect(ec2_connection).to receive(:create_tags).with(tags_params)
       expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
@@ -441,7 +440,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "sets arbitrary tags" do
       knife_ec2_create.config[:tags] = ["foo=bar"]
-      tags_params = { tags:[ { key: "foo", value: "bar" }, { key: "Name", value: "i-00fe186450a2e8e97"}], resources: [ec2_server_attribs.id] }
+      tags_params = { tags: [ { key: "foo", value: "bar" }, { key: "Name", value: "i-00fe186450a2e8e97" }], resources: [ec2_server_attribs.id] }
       expect(ec2_connection).to receive(:create_tags).with(tags_params)
       expect(knife_ec2_create).to receive(:plugin_validate_options!)
       knife_ec2_create.run
@@ -449,7 +448,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it 'raises deprecated warning "[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead."' do
       knife_ec2_create.config[:tags] = ["foo=bar"]
-      tags_params = { tags:[ { key: "foo", value: "bar" }, { key: "Name", value: "i-00fe186450a2e8e97"}], resources: [ec2_server_attribs.id] }
+      tags_params = { tags: [ { key: "foo", value: "bar" }, { key: "Name", value: "i-00fe186450a2e8e97" }], resources: [ec2_server_attribs.id] }
       expect(ec2_connection).to receive(:create_tags).with(tags_params)
       expect(knife_ec2_create.ui).to receive(:warn).with("[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead.").exactly(2).times
       knife_ec2_create.plugin_validate_options!
@@ -474,7 +473,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "sets the volume tags as specified when given --volume-tags Key=Value" do
       knife_ec2_create.config[:volume_tags] = ["VolumeTagKey=TestVolumeTagValue"]
-      tags_params = { tags:[ { key: "VolumeTagKey", value: "TestVolumeTagValue" }], resources: [ec2_server_attribs.volume_id] }
+      tags_params = { tags: [ { key: "VolumeTagKey", value: "TestVolumeTagValue" }], resources: [ec2_server_attribs.volume_id] }
       allow(knife_ec2_create).to receive(:create_tags)
       expect(ec2_connection).to receive(:create_tags).with(tags_params)
       knife_ec2_create.run
@@ -1140,7 +1139,7 @@ describe Chef::Knife::Ec2ServerCreate do
     before do
       allow(knife_ec2_create).to receive(:plugin_validate_options!)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
-    end    
+    end
 
     it "sets the specified placement_group" do
       knife_ec2_create.config[:placement_group] = "some_placement_group"
@@ -1184,7 +1183,7 @@ describe Chef::Knife::Ec2ServerCreate do
     it "adds the specified ephemeral device mappings" do
       knife_ec2_create.config[:ephemeral] = [ "/dev/sdb", "/dev/sdc", "/dev/sdd", "/dev/sde" ]
       server_def = knife_ec2_create.server_attributes
-      expect(server_def[:block_device_mappings]).to eq([{ device_name: nil, ebs: { delete_on_termination: nil, iops: "123", volume_size: "30", volume_type: nil }},
+      expect(server_def[:block_device_mappings]).to eq([{ device_name: nil, ebs: { delete_on_termination: nil, iops: "123", volume_size: "30", volume_type: nil } },
                                                     { virtual_name: "ephemeral0", device_name: "/dev/sdb" },
                                                    { virtual_name: "ephemeral1", device_name: "/dev/sdc" },
                                                    { virtual_name: "ephemeral2", device_name: "/dev/sdd" },
@@ -1367,7 +1366,7 @@ describe Chef::Knife::Ec2ServerCreate do
         map_public_ip_on_launch: false,
         subnet_id: "subnet-1a2b3c4d"
       )
-    end 
+    end
     let(:subnets) { OpenStruct.new(subnets: [subnet_res]) }
 
     before do
@@ -1771,7 +1770,7 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "attach ssl config into user data when transport is ssl" do
-    require 'base64'
+    require "base64"
 
     before(:each) do
       allow(knife_ec2_create).to receive(:validate_aws_config!)
@@ -2053,7 +2052,6 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "does no modifications and passes user_data as it is to server_def" do
-        require 'base64'
         encoded_data = Base64.encode64(@server_def_user_data)
         server_def = knife_ec2_create.server_attributes
 

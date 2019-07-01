@@ -36,7 +36,7 @@ describe Chef::Knife::Ec2ServerDelete do
         block_device_mappings: [block_device_mappings],
         placement: placement,
         security_groups: security_groups,
-        tags: tags,
+        tags: tags
       )
     end
 
