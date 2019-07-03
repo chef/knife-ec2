@@ -99,7 +99,7 @@ describe Chef::Knife::Ec2ServerCreate do
       min_count: 1,
       placement: {
         availability_zone: "us-west-2a",
-        group_name: "some_placement_group"
+        group_name: "some_placement_group",
       },
       security_group_ids: nil,
       iam_instance_profile: { name: nil },
@@ -2537,7 +2537,7 @@ describe Chef::Knife::Ec2ServerCreate do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["-g", "sg-aab343ytr", "-g", "sg-3764sdss"]) }
       it "creates array of security group ids" do
         server_def = ec2_server_create.server_attributes
-        expect(server_def[:security_group_ids]).to eq(["sg-aab343ytr", "sg-3764sdss"])
+        expect(server_def[:security_group_ids]).to eq(["sg-aab343ytr", "sg-3764sdss"]) # rubocop:disable Style/WordArray
       end
     end
 
