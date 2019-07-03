@@ -126,7 +126,7 @@ class Chef
 
       def fetch_subnet(subnet_id)
         ec2_connection.describe_subnets({
-          subnet_ids: [subnet_id]
+          subnet_ids: [subnet_id],
         }).subnets[0]
       end
 
@@ -228,7 +228,7 @@ class Chef
         end
 
         if locate_config_value(:owner)
-          unless ["self", "aws-marketplace", "microsoft"].include? (locate_config_value(:owner))
+          unless ["self", "aws-marketplace", "microsoft"].include? (locate_config_value(:owner)) # rubocop:disable Style/WordArray
             raise ArgumentError, "Invalid owner: #{locate_config_value(:owner)}. Allowed owners are self, aws-marketplace or microsoft."
           end
         end

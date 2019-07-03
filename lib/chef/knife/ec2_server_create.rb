@@ -737,7 +737,7 @@ class Chef
           exit 1
         end
 
-        if config_value(:winrm_password).to_s.length > 14
+        if winrm? && config_value(:connection_password).to_s.length > 14
           ui.warn("The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):")
           password_promt = STDIN.gets.chomp.upcase
           if password_promt == "N"

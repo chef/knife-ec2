@@ -105,7 +105,7 @@ describe Chef::Knife::Ec2ServerCreate do
       iam_instance_profile: { name: nil },
       ebs_optimized: false,
       instance_initiated_shutdown_behavior: nil,
-      chef_tag: nil
+      chef_tag: nil,
     }
   end
 
@@ -138,15 +138,15 @@ describe Chef::Knife::Ec2ServerCreate do
     allow(knife_ec2_create).to receive(:perform_bootstrap)
     allow(knife_ec2_create).to receive(:plugin_finalize)
     allow(knife_ec2_create).to receive(:ec2_connection).and_return ec2_connection
-    allow(knife_ec2_create).to receive(:tcp_test_ssh).and_return(true)
+    allow(knife_ec2_create).to receive(:tcp_test_ssh)
     allow(knife_ec2_create).to receive(:msg_pair)
     allow(knife_ec2_create).to receive(:puts)
     allow(knife_ec2_create).to receive(:print)
     allow(ec2_connection).to receive(:describe_addresses).and_return(elastic_address_response)
     allow(ec2_connection).to receive(:tags).and_return double("create", create: true)
     allow(ec2_connection).to receive(:volume_tags).and_return double("create", create: true)
-    allow(knife_ec2_create).to receive(:windows_password)
     allow(knife_ec2_create).to receive(:ami).and_return(ami)
+    allow(knife_ec2_create).to receive(:tcp_test_winrm).and_return(true)
     allow(ec2_connection).to receive(:addresses).and_return [double("addesses", {
             domain: "standard",
             public_ip: "111.111.111.111",
@@ -164,8 +164,7 @@ describe Chef::Knife::Ec2ServerCreate do
       ssh_key_name: "ssh_key_name",
       connection_user: "user",
       connection_password: "password",
-      network_interfaces: ["eni-12345678",
-                              "eni-87654321"],
+      network_interfaces: ["eni-12345678", "eni-87654321"], # rubocop:disable Style/WordArray
     }.each do |key, value|
       Chef::Config[:knife][key] = value
     end
@@ -376,7 +375,6 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:msg_pair)
       knife_ec2_create.config[:image] = "ami-005bdb005fb00e791"
       allow(knife_ec2_create).to receive(:is_image_windows?).and_return(true)
-      allow(knife_ec2_create).to receive(:tcp_test_winrm).and_return(true)
     end
 
     it "waits for EC2 to generate password if not supplied" do
@@ -601,7 +599,7 @@ describe Chef::Knife::Ec2ServerCreate do
   context "when ssh_key_name option is used in knife config instead of deprecated aws_ssh_key_id option" do
     before do
       Chef::Config[:knife][:ssh_key_name] = "mykey"
-      allow(knife_ec2_create).to receive(:ami).and_return(false)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:validate_aws_config!)
       allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
     end
@@ -635,7 +633,9 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
       allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
       allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
-
+      allow(knife_ec2_create).to receive(:is_image_windows?).and_return(false)
+      allow(knife_ec2_create).to receive(:tunnel_test_ssh).and_return(true)
+      allow(knife_ec2_create).to receive(:wait_for_tunnelled_sshd).and_return(true)
       knife_ec2_create.config[:connection_user] = "ubuntu"
       knife_ec2_create.config[:ssh_identity_file] = "~/.ssh/aws-key.pem"
       knife_ec2_create.config[:connection_protocol] = "ssh"
@@ -748,6 +748,7 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.config[:msi_url] = "https://opscode-omnibus-packages.s3.amazonaws.com/windows/2008r2/x86_64/chef-client-12.3.0-1.msi"
       knife_ec2_create.config[:install_as_service] = true
       knife_ec2_create.config[:session_timeout] = "90"
+      knife_ec2_create.config[:fqdn] = "ec2-75.101.253.10.compute-1.amazonaws.com"
 
       allow(knife_ec2_create).to receive(:validate_aws_config!)
       allow(knife_ec2_create).to receive(:validate_nics!)
@@ -760,12 +761,14 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:msg_pair)
       allow(knife_ec2_create).to receive(:puts)
       allow(knife_ec2_create).to receive(:print)
+      allow(knife_ec2_create).to receive(:fetch_server_fqdn)
       knife_ec2_create.plugin_create_instance!
     end
 
     it "should set the winrm username correctly" do
       expect(knife_ec2_create.config[:connection_user]).to eq("Administrator")
     end
+
     it "should set the winrm password correctly" do
       expect(knife_ec2_create.config[:connection_password]).to eq("password")
     end
@@ -808,7 +811,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "should set the bootstrap 'session_timeout' correctly" do
-      expect(knife_ec2_create.config[:session_timeout]).to eq(90)
+      expect(knife_ec2_create.config[:session_timeout].to_i).to eq(90)
     end
 
     it "configures sets the bootstrap's run_list" do
@@ -1470,7 +1473,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "should test ssh through a gateway" do
-      knife_ec2_create.config[:ssh_port] = 22
+      knife_ec2_create.config[:connection_port] = 22
       expect(gateway).to receive(:open).with(hostname, 22).and_yield(local_port)
       expect(knife_ec2_create).to receive(:tcp_test_ssh).with("localhost", local_port).and_return(true)
       expect(knife_ec2_create.tunnel_test_ssh(gateway_host, hostname)).to eq(true)
@@ -2234,8 +2237,9 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "creates user_data only with default ssl configuration" do
+        encoded_data = Base64.encode64(@server_def_user_data)
         server_def = knife_ec2_create.server_attributes
-        expect(server_def[:user_data]).to eq(@server_def_user_data)
+        expect(server_def[:user_data]).to eq(encoded_data)
       end
     end
 
@@ -2492,16 +2496,16 @@ describe Chef::Knife::Ec2ServerCreate do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--security-group-ids", "sg-aabbccdd,sg-3764sdss,sg-00aa11bb"]) }
       it "creates array of security group ids" do
         server_def = ec2_server_create.server_attributes
-        expect(server_def[:security_group_ids]).to eq(["sg-aabbccdd", "sg-3764sdss", "sg-00aa11bb"])
+        expect(server_def[:security_group_ids]).to eq(["sg-aabbccdd", "sg-3764sdss", "sg-00aa11bb"]) # rubocop:disable Style/WordArray
       end
     end
 
     context "when mulitple values provided from cli for e.g. --security-group-ids sg-aab343ytr --security-group-ids sg-3764sdss" do
-      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--security-group-ids", "sg-aab343ytr", "--security-group-ids", "sg-3764sdss"]) }
+      let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--security-group-ids", "sg-aab343ytr", "--security-group-ids", "sg-3764sdss"]) } # rubocop:disable Style/WordArray
       it "creates array of security group ids" do
         allow(ec2_server_create.ui).to receive(:warn)
         server_def = ec2_server_create.server_attributes
-        expect(server_def[:security_group_ids]).to eq(["sg-aab343ytr", "sg-3764sdss"])
+        expect(server_def[:security_group_ids]).to eq(["sg-aab343ytr", "sg-3764sdss"]) # rubocop:disable Style/WordArray
       end
     end
 
@@ -2517,7 +2521,7 @@ describe Chef::Knife::Ec2ServerCreate do
     context "when security group ids array is provided from knife.rb" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new }
       it "allows --security-group-ids set from an array in knife.rb" do
-        Chef::Config[:knife][:security_group_ids] = ["sg-aabbccdd", "sg-3764sdss", "sg-00aa11bb"]
+        Chef::Config[:knife][:security_group_ids] = ["sg-aabbccdd", "sg-3764sdss", "sg-00aa11bb"] # rubocop:disable Style/WordArray
         expect { ec2_server_create.plugin_validate_options! }.to_not raise_error(SystemExit)
       end
     end
@@ -2631,6 +2635,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       knife_ec2_create.config[:connection_user] = "domain\\ec2"
       knife_ec2_create.config[:connection_password] = "LongPassword@123"
+      knife_ec2_create.config[:connection_protocol] = "winrm"
     end
 
     context "when user enters Y after prompt" do
