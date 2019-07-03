@@ -407,6 +407,9 @@ class Chef
           Chef::Config[:validation_key] = validation_key_path
         end
 
+        config[:connection_protocol] ||= connection_protocol
+        config[:connection_port] ||= connection_port
+
         # Check if Server is Windows or Linux
         if is_image_windows?
           if winrm?
@@ -429,14 +432,12 @@ class Chef
         end
 
         fqdn = connection_host
-        config[:connection_port] ||= connection_port
-        config[:connection_protocol] ||= connection_protocol
         if winrm?
           if config_value(:kerberos_realm)
             # Fetch AD/WINS based fqdn if any for Kerberos-based Auth
             fqdn = config_value(:fqdn) || fetch_server_fqdn(server.private_ip_address)
           end
-          config[:winrm_password] = windows_password
+          config[:connection_password] = windows_password
         end
         @name_args = [fqdn]
 
@@ -593,10 +594,6 @@ class Chef
         # Amazon Virtual Private Cloud requires a subnet_id. If
         # present, do a few things differently
         !!config_value(:subnet_id)
-      end
-
-      def ami
-        @ami ||= fetch_ami(locate_config_value(:image))
       end
 
       def validate_name_args!
@@ -780,11 +777,11 @@ class Chef
 
       def ssl_config_user_data
         user_related_commands = ""
-        winrm_user = config_value(:winrm_user).split("\\")
-        if (winrm_user[0] == ".") || (winrm_user[0] == "") || (winrm_user.length == 1)
+        user = connection_user.split("\\")
+        if (user[0] == ".") || (user[0] == "") || (user.length == 1)
           user_related_commands = <<~EOH
-            net user /add #{config_value(:winrm_user).delete('.\\')} #{windows_password} #{@allow_long_password};
-            net localgroup Administrators /add #{config_value(:winrm_user).delete('.\\')};
+            net user /add #{connection_user.delete('.\\')} #{windows_password} #{@allow_long_password};
+            net localgroup Administrators /add #{connection_user.delete('.\\')};
           EOH
         end
         <<~EOH
@@ -883,7 +880,7 @@ class Chef
           min_count: 1,
           placement: {
             availability_zone: config_value(:availability_zone),
-          }
+          },
         }
         network_attrs = {}
         if primary_eni = config_value(:primary_eni)
@@ -909,7 +906,7 @@ class Chef
         attributes[:iam_instance_profile] = {}
         attributes[:iam_instance_profile][:name] = config_value(:iam_instance_profile)
 
-        if config_value(:winrm_transport) == "ssl"
+        if config_value(:winrm_ssl)
           if config_value(:aws_user_data)
             begin
               user_data = File.readlines(config_value(:aws_user_data))
@@ -923,7 +920,7 @@ class Chef
             end
           else
             if config[:create_ssl_listener]
-              attributes[:user_data] = "<powershell>\n" + ssl_config_user_data + "</powershell>\n"
+              attributes[:user_data] = encode_data("<powershell>\n" + ssl_config_user_data + "</powershell>\n")
             end
           end
         else
@@ -991,8 +988,12 @@ class Chef
           attributes[:block_device_mappings][0][:ebs][:encrypted] = true if config_value(:ebs_encrypted)
         end
 
-        (config[:ephemeral] || []).each_with_index do |device_name, i|
-          attributes[:block_device_mappings] = (attributes[:block_device_mappings] || []) << { virtual_name: "ephemeral#{i}", device_name: device_name }
+        if config[:ephemeral] && config[:ephemeral].length > 0
+          ephemeral_blocks = []
+          config[:ephemeral].each_with_index do |device_name, i|
+            ephemeral_blocks << { virtual_name: "ephemeral#{i}", device_name: device_name }
+          end
+          attributes[:block_device_mappings] += ephemeral_blocks
         end
 
         ## cannot pass disable_api_termination option to the API when using spot instances ##
@@ -1323,14 +1324,14 @@ class Chef
       end
 
       def windows_password
-        if not config_value(:winrm_password)
+        if not config_value(:connection_password)
           if config_value(:ssh_identity_file)
             if server
               print "\n#{ui.color("Waiting for Windows Admin password to be available: ", :magenta)}"
               print(".") until check_windows_password_available(server.id) { puts("done") }
               response = fetch_password_data(server.id)
               data = File.read(locate_config_value(:ssh_identity_file))
-              config[:winrm_password] = decrypt_admin_password(response.password_data, data)
+              config[:connection_password] = decrypt_admin_password(response.password_data, data)
             else
               print "\n#{ui.color("Fetchig instance details: \n", :magenta)}"
             end
@@ -1339,7 +1340,7 @@ class Chef
             exit 1
           end
         else
-          config_value(:winrm_password)
+          config_value(:connection_password)
         end
       end
 
@@ -1353,7 +1354,37 @@ class Chef
       def connection_port
         port = config_value(:connection_port,
                             knife_key_for_protocol(connection_protocol, :port))
-        port || (winrm? ? 5985 : 22)
+        return port if port
+
+        assign_default_port
+      end
+
+      # Set default port 5986 if winrm_ssl return true otherwise set it to 5985
+      # Set default port 22 for ssh protocol
+      # @return [Integer]
+      def assign_default_port
+        if winrm?
+          config_value(:winrm_ssl) ? 5986 : 5985
+        else
+          22
+        end
+      end
+
+      # url values override CLI flags, if you provide both
+      # we'll use the one that you gave in the URL.
+      def connection_protocol
+        return @connection_protocol if @connection_protocol
+
+        default_protocol = is_image_windows? ? "winrm" : "ssh"
+
+        from_url = host_descriptor =~ /^(.*):\/\// ? $1 : nil
+        from_cli = config[:connection_protocol]
+        from_knife = Chef::Config[:knife][:connection_protocol]
+        @connection_protocol = from_url || from_cli || from_knife || default_protocol
+      end
+
+      def connection_user
+        @connection_user ||= config_value(:connection_user, knife_key_for_protocol(connection_protocol, :user))
       end
 
       def server_name

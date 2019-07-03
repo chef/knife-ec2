@@ -174,10 +174,17 @@ class Chef
         end
       end
 
+      def ami
+        @ami ||= fetch_ami(locate_config_value(:image))
+      end
+
       # @return [Boolean]
       def is_image_windows?
-        raise "Instance not created yet." unless @server
-        @server.platform && @server.platform == "windows"
+        if ami.platform
+          ami.platform == "windows"
+        else
+          @server.platform && @server.platform == "windows"
+        end
       end
 
       # validate the config options that were passed since some of them cannot be used together
