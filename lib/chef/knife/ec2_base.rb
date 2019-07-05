@@ -178,13 +178,10 @@ class Chef
         @ami ||= fetch_ami(locate_config_value(:image))
       end
 
+      # Platform value return for Windows AMIs; otherwise, it is blank.
       # @return [Boolean]
       def is_image_windows?
-        if ami.platform
-          ami.platform == "windows"
-        else
-          @server.platform && @server.platform == "windows"
-        end
+        ami.platform == "windows"
       end
 
       # validate the config options that were passed since some of them cannot be used together

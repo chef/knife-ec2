@@ -984,7 +984,7 @@ class Chef
                   volume_type: config[:ebs_volume_type], # accepts standard, io1, gp2, sc1, st1
                 },
              }]
-          attributes[:block_device_mappings][0][:ebs][:iops] = iops_rate unless iops_rate.empty?
+          attributes[:block_device_mappings][0][:ebs][:iops] = iops_rate unless iops_rate.nil? || iops_rate.empty?
           attributes[:block_device_mappings][0][:ebs][:encrypted] = true if config_value(:ebs_encrypted)
         end
 
