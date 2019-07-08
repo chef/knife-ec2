@@ -72,8 +72,8 @@ class Chef
             long: "--use-iam-profile",
             description: "Use IAM profile assigned to current machine",
             boolean: true,
-            proc: Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key },
-            default: false
+            default: false,
+            proc: Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key }
         end
       end
 
