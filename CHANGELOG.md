@@ -4,17 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.3 -->
-## [v1.0.3](https://github.com/chef/knife-ec2/tree/v1.0.3) (2019-07-08)
+<!-- latest_release 1.0.4 -->
+## [v1.0.4](https://github.com/chef/knife-ec2/tree/v1.0.4) (2019-07-08)
 
 #### Merged Pull Requests
-- Update copyrights to 2019 [#594](https://github.com/chef/knife-ec2/pull/594) ([tas50](https://github.com/tas50))
+- Update the readme to not mention DK or the deprecated knife command [#595](https://github.com/chef/knife-ec2/pull/595) ([tas50](https://github.com/tas50))
 <!-- latest_release -->
 
 <!-- release_rollup since=1.0.1 -->
 ### Changes not yet released to rubygems.org
 
 #### Merged Pull Requests
+- Update the readme to not mention DK or the deprecated knife command [#595](https://github.com/chef/knife-ec2/pull/595) ([tas50](https://github.com/tas50)) <!-- 1.0.4 -->
 - Update copyrights to 2019 [#594](https://github.com/chef/knife-ec2/pull/594) ([tas50](https://github.com/tas50)) <!-- 1.0.3 -->
 - update readme with user data [#588](https://github.com/chef/knife-ec2/pull/588) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 1.0.2 -->
 <!-- release_rollup -->
