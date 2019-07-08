@@ -325,7 +325,7 @@ For information on contributing to this project please see our [Contributing Doc
 
 ## License & Copyright
 
-- Copyright:: Copyright (c) 2009-2018 Chef Software, Inc.
+- Copyright:: Copyright (c) 2009-2019 Chef Software, Inc.
 - License:: Apache License, Version 2.0
 
 ```text
