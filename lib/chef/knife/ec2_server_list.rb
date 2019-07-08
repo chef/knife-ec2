@@ -34,8 +34,15 @@ class Chef
         default: true,
         description: "Do not display name tag in output"
 
+      option :iamprofile,
+        short: "-i",
+        long: "--iam-profile",
+        boolean: true,
+        default: false,
+        description: "Show the iam profile"
+
       option :az,
-        short: "-z",
+        short: "-a",
         long: "--availability-zone",
         boolean: true,
         default: false,
@@ -64,12 +71,24 @@ class Chef
         end
       end
 
+      # @return [Symbol]
+      def state_color(state)
+        case state
+        when "shutting-down", "terminated", "stopping", "stopped"
+          :red
+        when "pending"
+          :yellow
+        else
+          :green
+        end
+      end
+
       def run
         $stdout.sync = true
 
-        validate!
+        validate_aws_config!
 
-        server_list = [
+        servers_list = [
           ui.color("Instance ID", :bold),
 
           if config[:name]
@@ -94,65 +113,85 @@ class Chef
             end
           end,
 
-          ui.color("IAM Profile", :bold),
+          if config[:iamprofile]
+            ui.color("IAM Profile", :bold)
+          end,
+
           ui.color("State", :bold)
         ].flatten.compact
 
-        output_column_count = server_list.length
+        output_column_count = servers_list.length
 
         if !config[:region] && Chef::Config[:knife][:region].nil?
           ui.warn "No region was specified in knife.rb/config.rb or as an argument. The default region, us-east-1, will be used:"
         end
 
-        servers = ec2_connection.servers
         if config[:format] == "summary"
-          servers.each do |server|
-            server_list << server.id.to_s
-
-            if config[:name]
-              server_list << server.tags["Name"].to_s
-            end
-
-            server_list << server.public_ip_address.to_s
-            server_list << server.private_ip_address.to_s
-            server_list << server.flavor_id.to_s
-
-            if config[:az]
-              server_list << ui.color(
-                                  server.availability_zone.to_s,
-                                  azcolor(server.availability_zone.to_s)
-                                )
-            end
-
-            server_list << server.image_id.to_s
-            server_list << server.key_name.to_s
-            server_list << server.groups.join(", ")
-
+          server_hashes.each do |v|
+            servers_list << v["instance_id"]
+            servers_list << v["name"] if config[:name]
+            servers_list << v["public_ip_address"]
+            servers_list << v["private_ip_address"]
+            servers_list << v["instance_type"]
+            servers_list << v["az"] if config[:az]
+            servers_list << v["image_id"]
+            servers_list << v["key_name"]
+            servers_list << v["security_groups"].join(",")
             if config[:tags]
-              config[:tags].split(",").each do |tag_name|
-                server_list << server.tags[tag_name].to_s
+              config[:tags].split(",").collect do |tag_name|
+                servers_list << v["tags"].find { |tag| tag == tag_name }
               end
             end
+            servers_list << v["iam_instance_profile"].to_s if config[:iamprofile] # may be nil
+            servers_list << v["state"]
+          end
+          puts ui.list(servers_list, :uneven_columns_across, output_column_count)
+        else
+          output(format_for_display(server_hashes))
+        end
+      end
 
-            server_list << iam_name_from_profile(server.iam_instance_profile)
+      private
 
-            server_list << begin
-              state = server.state.to_s.downcase
-              case state
-              when "shutting-down", "terminated", "stopping", "stopped"
-                ui.color(state, :red)
-              when "pending"
-                ui.color(state, :yellow)
-              else
-                ui.color(state, :green)
-              end
-            end
+      # @return [Array<Hash>]
+      def server_hashes
+        all_data = []
+        ec2_connection.describe_instances.reservations.each do |i|
+          server_data = {}
+          %w{image_id instance_id instance_type key_name public_ip_address private_ip_address}.each do |id|
+            server_data[id] = i.instances[0].send(id)
           end
 
-          puts ui.list(server_list, :uneven_columns_across, output_column_count)
-        else
-          output(format_for_display(servers))
+          # dig into tags struct
+          tags = extract_tags(i.instances[0].tags)
+
+          if config[:name]
+            server_data["name"] = tags[0]
+          end
+
+          if config[:az]
+            server_data["az"] = ui.color(i.instances[0].placement.availability_zone, azcolor(i.instances[0].placement.availability_zone))
+          end
+
+          server_data["iam_instance_profile"] = ( i.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[/instance-profile\/(.*)/] )
+
+          server_data["state"] = ui.color(i.instances[0].state.name, state_color(i.instances[0].state.name))
+
+          if config[:tags]
+            server_data["tags"] = tags
+          end
+
+          # dig into security_groups struct
+          server_data["security_groups"] = i.instances[0].security_groups.map { |x| x.group_name }
+
+          all_data << server_data
         end
+        all_data
+      end
+
+      # @return [Array<String>]
+      def extract_tags(tags_struct)
+        tags_struct.map { |x| x.value }
       end
     end
   end

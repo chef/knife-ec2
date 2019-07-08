@@ -16,7 +16,8 @@ Gem::Specification.new do |s|
   s.required_ruby_version = ">= 2.5"
 
   s.add_dependency "chef", ">= 15.1"
-  s.add_dependency "fog-aws", ">= 1", "< 4"
+  s.add_dependency "aws-sdk-s3", "~> 1.43"
+  s.add_dependency "aws-sdk-ec2", "~> 1.95"
 
   s.require_paths = ["lib"]
 end

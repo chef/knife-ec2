@@ -35,6 +35,13 @@ class Chef
 
       attr_reader :server
 
+      option :dry_run,
+        long: "--dry-run",
+        short: "-n",
+        boolean: true,
+        default: false,
+        description: "Don't take action, only print what would happen."
+
       option :purge,
         short: "-P",
         long: "--purge",
@@ -54,61 +61,48 @@ class Chef
       # necessary to make them confirm two more times.
       def destroy_item(klass, name, type_name)
         object = klass.load(name)
-        object.destroy
+        object.destroy unless config[:dry_run]
         ui.warn("Deleted #{type_name} #{name}")
       rescue Net::HTTPServerException
         ui.warn("Could not find a #{type_name} named #{name} to delete!")
       end
 
       def run
-        validate!
-        if @name_args.empty? && config[:chef_node_name]
-          ui.info("no instance id is specific, trying to retrieve it from node name")
-          instance_id = fetch_instance_id(config[:chef_node_name])
-          @name_args << instance_id unless instance_id.nil?
-        end
+        validate_aws_config!
+        validate_instances!
 
-        @name_args.each do |instance_id|
+        server_hashes.each do |h|
+          instance_id = h["instance_id"]
+          msg_pair("Instance ID", instance_id)
+          msg_pair("Instance Name", h["name"])
+          msg_pair("Flavor", h["instance_type"])
+          msg_pair("Image", h["image_id"])
+          msg_pair("Region", fetch_region)
+          msg_pair("Availability Zone", h["az"])
+          msg_pair("Security Groups", h["security_groups"])
+          msg_pair("IAM Profile", h["iam_instance_profile"])
+          msg_pair("SSH Key", h["key_name"])
+          msg_pair("Root Device Type", h["root_device_type"])
+          msg_pair("Public DNS Name", h["public_dns_name"])
+          msg_pair("Public IP Address", h["public_ip_address"])
+          msg_pair("Private DNS Name", h["private_dns_name"])
+          msg_pair("Private IP Address", h["private_ip_address"])
 
-          begin
-            @server = ec2_connection.servers.get(instance_id)
+          puts "\n"
+          confirm("Do you really want to delete this server")
 
-            msg_pair("Instance ID", @server.id)
-            msg_pair("Instance Name", @server.tags["Name"])
-            msg_pair("Flavor", @server.flavor_id)
-            msg_pair("Image", @server.image_id)
-            msg_pair("Region", ec2_connection.instance_variable_get(:@region))
-            msg_pair("Availability Zone", @server.availability_zone)
-            msg_pair("Security Groups", @server.groups.join(", "))
-            msg_pair("IAM Profile", iam_name_from_profile(@server.iam_instance_profile)) if @server.iam_instance_profile
-            msg_pair("SSH Key", @server.key_name)
-            msg_pair("Root Device Type", @server.root_device_type)
-            msg_pair("Public DNS Name", @server.dns_name)
-            msg_pair("Public IP Address", @server.public_ip_address)
-            msg_pair("Private DNS Name", @server.private_dns_name)
-            msg_pair("Private IP Address", @server.private_ip_address)
+          delete_instance(instance_id) unless config[:dry_run]
 
-            puts "\n"
-            confirm("Do you really want to delete this server")
+          ui.warn("Deleted server #{instance_id}")
 
-            @server.destroy
-
-            ui.warn("Deleted server #{@server.id}")
-
-            if config[:purge]
-              if config[:chef_node_name]
-                thing_to_delete = config[:chef_node_name]
-              else
-                thing_to_delete = fetch_node_name(instance_id)
-              end
-              destroy_item(Chef::Node, thing_to_delete, "node")
-              destroy_item(Chef::ApiClient, thing_to_delete, "client")
-            else
-              ui.warn("Corresponding node and client for the #{instance_id} server were not deleted and remain registered with the Chef Server")
-            end
-          rescue NoMethodError
-            ui.error("Could not locate server '#{instance_id}'.  Please verify it was provisioned in the '#{locate_config_value(:region)}' region.")
+          if config[:purge]
+            node_name = config[:chef_node_name] || fetch_node_name(instance_id)
+            destroy_item(Chef::Node, node_name, "node")
+            destroy_item(Chef::ApiClient, node_name, "client")
+          else
+            ui.warn("Corresponding node and client for the #{instance_id} server were not deleted and remain registered with the Chef Server")
           end
+          puts "\n"
         end
       end
 
@@ -136,6 +130,63 @@ class Chef
       # @return [Chef::Search::Query]
       def query
         @query ||= Chef::Search::Query.new
+      end
+
+      private
+
+      # @return [Array<Hash>]
+      def server_hashes
+        all_data = []
+
+        servers_list = ec2_connection.describe_instances({
+          instance_ids: @name_args,
+        })
+
+        servers_list.reservations.each do |i|
+          server_data = {}
+          %w{image_id instance_id instance_type key_name root_device_type public_ip_address private_ip_address private_dns_name public_dns_name}.each do |id|
+            server_data[id] = i.instances[0].send(id)
+          end
+
+          server_data["name"] = i.instances[0].tags[0].value
+          server_data["az"] = i.instances[0].placement.availability_zone
+          server_data["iam_instance_profile"] = ( i.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[/instance-profile\/(.*)/] )
+          server_data["security_groups"] = i.instances[0].security_groups.map { |x| x.group_name }.join(", ")
+
+          all_data << server_data
+        end
+        all_data
+      end
+
+      # Delete the server instance
+      def delete_instance(instance_id)
+        return nil unless instance_id || instance_id.is_a?(String)
+        ec2_connection.terminate_instances({
+          instance_ids: [
+            instance_id,
+          ],
+        })
+      end
+
+      # If SERVER instance id not provided then check chef_name_tag and fetch the node
+      # And if the node contains instance id then add it to the name args
+      def validate_instances!
+        if @name_args.empty?
+          if config[:chef_node_name]
+            ui.info("No instance id is specified, trying to retrieve it from node name")
+            instance_id = fetch_instance_id(config[:chef_node_name])
+
+            if instance_id.nil?
+              ui.info("No instance id found.")
+              exit 1
+            else
+              @name_args << instance_id
+            end
+          else
+            ui.info("No instance id is specified.")
+            exit 1
+          end
+        end
       end
     end
   end

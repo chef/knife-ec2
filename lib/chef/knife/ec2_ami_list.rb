@@ -58,10 +58,10 @@ class Chef
       def run
         $stdout.sync = true
 
-        validate!
+        validate_aws_config!
         custom_warnings!
 
-        server_list = [
+        servers_list = [
           ui.color("AMI ID", :bold),
           ui.color("Platform", :bold),
           ui.color("Architecture", :bold),
@@ -70,48 +70,59 @@ class Chef
           ui.color("Description", :bold)
         ].flatten.compact
 
-        output_column_count = server_list.length
-        begin
-          owner = locate_config_value(:owner) || "aws-marketplace"
-          servers = ec2_connection.describe_images({ "Owner" => "#{owner}" }) # aws-marketplace, microsoft
-        rescue Exception => api_error
-          raise api_error
-        end
+        output_column_count = servers_list.length
 
-        servers.body["imagesSet"].each do |server|
-          server["platform"] = find_server_platform(server["name"]) unless server["platform"]
-
-          if locate_config_value(:platform) && locate_config_value(:search)
-            locate_config_value(:search).downcase!
-            if server["description"] && server["platform"] == locate_config_value(:platform) && server["description"].downcase.include?(locate_config_value(:search))
-              server_list += get_server_list(server)
-            end
-          elsif locate_config_value(:platform)
-            if server["platform"] == locate_config_value(:platform)
-              server_list += get_server_list(server)
-            end
-          elsif locate_config_value(:search)
-            locate_config_value(:search).downcase!
-            if server["description"] && server["description"].downcase.include?(locate_config_value(:search))
-              server_list += get_server_list(server)
-            end
-          else
-            server_list += get_server_list(server)
+        if config[:format] == "summary"
+          ami_hashes.each_pair do |_k, v|
+            servers_list << v["image_id"]
+            servers_list << v["platform"]
+            servers_list << v["architecture"]
+            servers_list << v["size"]
+            servers_list << v["name"]
+            servers_list << v["description"]
           end
+          puts ui.list(servers_list, :uneven_columns_across, output_column_count)
+        else
+          output(format_for_display(ami_hashes))
         end
-        puts ui.list(server_list, :uneven_columns_across, output_column_count)
       end
 
       private
 
-      def get_server_list(server)
-        server_list = []
-        server_list << server["imageId"]
-        server_list << server["platform"]
-        server_list << server["architecture"]
-        server_list << server["blockDeviceMapping"].first["volumeSize"].to_s
-        server_list << server["name"].split(/\W+/).first
-        server_list << server["description"]
+      def ami_hashes
+        all_data = {}
+        ec2_connection.describe_images(image_params).images.each do |v|
+          v_data = {}
+          if locate_config_value(:search)
+            next unless v.description.downcase.include?(locate_config_value(:search).downcase)
+          end
+
+          %w{image_id platform description architecture}.each do |id|
+            v_data[id] = v.send(id)
+          end
+
+          v_data["name"] = v.name.split(/\W+/).first
+          v_data["size"] = v.block_device_mappings[0].ebs.volume_size.to_s
+          all_data[v_data["image_id"]] = v_data
+        end
+        all_data
+      end
+
+      def image_params
+        params = {}
+        owner = locate_config_value(:owner) || "aws-marketplace" # aws-marketplace, microsoft
+        params["owners"] = [owner.to_s]
+
+        filters = []
+        filters << { platform: locate_config_value(:platform) } if locate_config_value(:platform)
+
+        # TODO: Need to find substring to match in the description
+        # filters << { description: locate_config_value(:search) } if locate_config_value(:search)
+
+        if filters.length > 0
+          params["filters"] = filters
+        end
+        params
       end
     end
   end

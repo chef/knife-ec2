@@ -27,26 +27,23 @@ class Chef
         includer.class_eval do
 
           deps do
-            require "fog/aws"
+            require "aws-sdk-ec2"
             require "chef/json_compat"
             require "chef/util/path_helper"
           end
 
           option :aws_credential_file,
             long: "--aws-credential-file FILE",
-            description: "File containing AWS credentials as used by the AWS Command Line Interface.",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_credential_file] = key }
+            description: "File containing AWS credentials as used by the AWS Command Line Interface."
 
           option :aws_config_file,
             long: "--aws-config-file FILE",
-            description: "File containing AWS configurations as used by the AWS Command Line Interface.",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_config_file] = key }
+            description: "File containing AWS configurations as used by the AWS Command Line Interface."
 
           option :aws_profile,
             long: "--aws-profile PROFILE",
             description: "AWS profile, from AWS credential file and AWS config file, to use",
-            default: "default",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_profile] = key }
+            default: "default"
 
           option :aws_access_key_id,
             short: "-A ID",
@@ -68,7 +65,8 @@ class Chef
           option :region,
             long: "--region REGION",
             description: "Your AWS region",
-            proc: Proc.new { |key| Chef::Config[:knife][:region] = key }
+            proc: Proc.new { |key| Chef::Config[:knife][:region] = key },
+            default: "us-east-1"
 
           option :use_iam_profile,
             long: "--use-iam-profile",
@@ -79,29 +77,102 @@ class Chef
         end
       end
 
-      # @return [Fog::Compute]
-      def ec2_connection
-        connection_settings = {
-          provider: "AWS",
-          region: locate_config_value(:region),
-        }
+      def connection_string
+        conn = {}
+        conn[:region] = locate_config_value(:region)
+        conn[:credentials] =
+          if locate_config_value(:use_iam_profile)
+            Aws::InstanceProfileCredentials.new
+          else
+            Aws::Credentials.new(locate_config_value(:aws_access_key_id), locate_config_value(:aws_secret_access_key), locate_config_value(:aws_session_token))
+          end
+        conn
+      end
 
-        if locate_config_value(:use_iam_profile)
-          connection_settings[:use_iam_profile] = true
-        else
-          connection_settings[:aws_access_key_id] = locate_config_value(:aws_access_key_id)
-          connection_settings[:aws_secret_access_key] = locate_config_value(:aws_secret_access_key)
-          connection_settings[:aws_session_token] = locate_config_value(:aws_session_token)
+      # @return [Aws::EC2::Client]
+      def ec2_connection
+        @ec2_connection ||= Aws::EC2::Client.new(connection_string)
+      end
+
+      def fetch_ami(image_id)
+        return {} unless image_id
+        ec2_connection.describe_images({
+          image_ids: [image_id],
+        }).images.first
+      end
+
+      def fetch_ec2_instance(instance_id)
+        instance = ec2_connection.describe_instances({
+          instance_ids: [
+            instance_id,
+          ],
+        }).reservations[0]
+        normalize_server_data(server_hashes(instance))
+      end
+
+      def fetch_network_interfaces(nic_id)
+        ec2_connection.describe_network_interfaces({
+          network_interface_ids: [nic_id],
+        }).network_interfaces[0]
+      end
+
+      def fetch_password_data(server_id)
+        ec2_connection.get_password_data({
+          instance_id: server_id,
+        })
+      end
+
+      # @return [String]
+      def fetch_region
+        ec2_connection.instance_variable_get(:@config).region
+      end
+
+      def fetch_subnet(subnet_id)
+        ec2_connection.describe_subnets({
+          subnet_ids: [subnet_id],
+        }).subnets[0]
+      end
+
+      # @return [Hash]
+      def server_hashes(server_obj)
+        server_data = {}
+        %w{ebs_optimized image_id instance_id instance_type key_name platform public_dns_name public_ip_address private_dns_name private_ip_address root_device_type}.each do |id|
+          server_data[id] = server_obj.instances[0].send(id)
         end
-        @fog_connection ||= begin
-          connection = Fog::Compute.new(connection_settings)
-        end
+
+        server_data["availability_zone"] = server_obj.instances[0].placement.availability_zone
+        server_data["groups"] = server_obj.groups.map { |grp| grp.name }
+        server_data["iam_instance_profile"] = ( server_obj.instances[0].iam_instance_profile.nil? ? nil : server_obj.instances[0].iam_instance_profile.arn[/instance-profile\/(.*)/] )
+        server_data["id"] = server_data["instance_id"]
+
+        tags = server_obj.instances[0].tags.map { |x| x.value }
+        server_data["name"] = tags[0]
+        server_data["placement_group"] = server_obj.instances[0].placement.group_name
+        server_data["security_groups"] = server_obj.instances[0].security_groups.map { |x| x.group_name }
+        server_data["security_group_ids"] = server_obj.instances[0].security_groups.map { |x| x.group_id }
+        server_data["state"] = server_obj.instances[0].state.name
+        server_data["subnet_id"] = server_obj.instances[0].network_interfaces[0].subnet_id
+        server_data["tags"] = tags
+        server_data["tenancy"] = server_obj.instances[0].placement.tenancy
+        server_data["volume_id"] = server_obj.instances[0].block_device_mappings[0]&.ebs&.volume_id
+        server_data["block_device_mappings"] = server_obj.instances[0].block_device_mappings
+        server_data
+      end
+
+      # @return [Struct]
+      def normalize_server_data(server_hashes)
+        require "ostruct"
+        OpenStruct.new(server_hashes)
       end
 
       # @return [String]
       def locate_config_value(key)
         key = key.to_sym
-        config[key] || Chef::Config[:knife][key]
+        if defined?(config_value) # Inherited by bootstrap
+          config_value(key) || default_config[key]
+        else
+          config[key] || Chef::Config[:knife][key] || default_config[key]
+        end
       end
 
       def msg_pair(label, value, color = :cyan)
@@ -110,10 +181,14 @@ class Chef
         end
       end
 
+      def ami
+        @ami ||= fetch_ami(locate_config_value(:image))
+      end
+
+      # Platform value return for Windows AMIs; otherwise, it is blank.
       # @return [Boolean]
       def is_image_windows?
-        image_info = ec2_connection.images.get(@server.image_id)
-        image_info.platform == "windows"
+        ami.platform == "windows"
       end
 
       # validate the config options that were passed since some of them cannot be used together
@@ -157,7 +232,7 @@ class Chef
         end
 
         if locate_config_value(:owner)
-          unless ["self", "aws-marketplace", "microsoft"].include? (locate_config_value(:owner))
+          unless ["self", "aws-marketplace", "microsoft"].include? (locate_config_value(:owner)) # rubocop:disable Style/WordArray
             raise ArgumentError, "Invalid owner: #{locate_config_value(:owner)}. Allowed owners are self, aws-marketplace or microsoft."
           end
         end
@@ -236,17 +311,14 @@ class Chef
       raise ArgumentError, "The provided --aws_config_file (#{config_file}) cannot be found on disk." unless File.exist?(config_file)
 
       aws_config = ini_parse(File.read(config_file))
-      profile = if locate_config_value(:aws_profile) == "default"
-                  "default"
-                else
-                  "profile #{locate_config_value(:aws_profile)}"
-                end
+      profile_key = locate_config_value(:aws_profile)
+      profile_key = "profile #{profile_key}" if profile_key != "default"
 
       unless aws_config.values.empty?
-        if aws_config[profile]
-          Chef::Config[:knife][:region] = aws_config[profile]["region"]
+        if aws_config[profile_key]
+          Chef::Config[:knife][:region] = aws_config[profile_key]["region"]
         else
-          raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
+          raise ArgumentError, "The provided --aws-profile '#{profile_key}' is invalid."
         end
       end
     end
