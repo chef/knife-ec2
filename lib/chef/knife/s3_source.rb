@@ -58,17 +58,27 @@ class Chef
         end
       end
 
+      def connection_string
+        conn = {}
+        conn[:region] = Chef::Config[:knife][:region]
+        conn[:credentials] =
+          if Chef::Config[:knife][:use_iam_profile]
+            Aws::InstanceProfileCredentials.new
+          else
+            Aws::Credentials.new(
+              Chef::Config[:knife][:aws_access_key_id],
+              Chef::Config[:knife][:aws_secret_access_key],
+              Chef::Config[:knife][:aws_session_token]
+            )
+          end
+        conn
+      end
+
       # @return [Aws::S3::Client]
       def s3_connection
-        require "aws-sdk-s3" # lazy load the aws sdk to speed up the knife run
         @s3_connection ||= begin
-          conn = {}
-          conn[:credentials] = Aws::Credentials.new(
-            Chef::Config[:knife][:aws_access_key_id],
-            Chef::Config[:knife][:aws_secret_access_key]
-          )
-          conn[:region] = Chef::Config[:knife][:region] || "us-east-1" # Default region us-east-1
-          Aws::S3::Client.new(conn)
+          require "aws-sdk-s3" # lazy load the aws sdk to speed up the knife run
+          Aws::S3::Client.new(connection_string)
         end
       end
     end

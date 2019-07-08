@@ -934,11 +934,7 @@ class Chef
           end
         end
 
-        attributes[:ebs_optimized] = if config[:ebs_optimized]
-                                       true
-                                     else
-                                       false
-                                     end
+        attributes[:ebs_optimized] = !!config_value(:ebs_optimized)
 
         if ami.root_device_type == "ebs"
           if config_value(:ebs_encrypted)
@@ -1213,10 +1209,7 @@ class Chef
       end
 
       def vpc_id
-        @vpc_id ||= begin
-          subnet = fetch_subnet(locate_config_value(:subnet_id))
-          subnet.vpc_id
-        end
+        @vpc_id ||= fetch_subnet(locate_config_value(:subnet_id)).vpc_id
       end
 
       def wait_for_nic_attachment

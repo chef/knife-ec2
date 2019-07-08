@@ -48,47 +48,50 @@ class Chef
           option :aws_access_key_id,
             short: "-A ID",
             long: "--aws-access-key-id KEY",
-            description: "Your AWS Access Key ID"
+            description: "Your AWS Access Key ID",
+            proc: Proc.new { |key| Chef::Config[:knife][:aws_access_key_id] = key }
 
           option :aws_secret_access_key,
             short: "-K SECRET",
             long: "--aws-secret-access-key SECRET",
-            description: "Your AWS API Secret Access Key"
+            description: "Your AWS API Secret Access Key",
+            proc: Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
 
           option :aws_session_token,
             long: "--aws-session-token TOKEN",
-            description: "Your AWS Session Token, for use with AWS STS Federation or Session Tokens"
+            description: "Your AWS Session Token, for use with AWS STS Federation or Session Tokens",
+            proc: Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
 
           option :region,
             long: "--region REGION",
-            description: "Your AWS region"
+            description: "Your AWS region",
+            proc: Proc.new { |key| Chef::Config[:knife][:region] = key },
+            default: "us-east-1"
 
           option :use_iam_profile,
             long: "--use-iam-profile",
             description: "Use IAM profile assigned to current machine",
             boolean: true,
+            proc: Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key },
             default: false
         end
       end
 
       def connection_string
         conn = {}
-        conn[:region] = locate_config_value(:region) || "us-east-1" # Default region us-east-1
-        conn[:credentials] = if locate_config_value(:use_iam_profile)
-                               Aws::InstanceProfileCredentials.new
-                             elsif locate_config_value(:aws_session_token)
-                               Aws::Credentials.new(locate_config_value(:aws_access_key_id), locate_config_value(:aws_secret_access_key), locate_config_value(:aws_session_token))
-                             else
-                               Aws::Credentials.new(locate_config_value(:aws_access_key_id), locate_config_value(:aws_secret_access_key))
-                             end
+        conn[:region] = locate_config_value(:region)
+        conn[:credentials] =
+          if locate_config_value(:use_iam_profile)
+            Aws::InstanceProfileCredentials.new
+          else
+            Aws::Credentials.new(locate_config_value(:aws_access_key_id), locate_config_value(:aws_secret_access_key), locate_config_value(:aws_session_token))
+          end
         conn
       end
 
       # @return [Aws::EC2::Client]
       def ec2_connection
-        @ec2_connection ||= begin
-          Aws::EC2::Client.new(connection_string)
-        end
+        @ec2_connection ||= Aws::EC2::Client.new(connection_string)
       end
 
       def fetch_ami(image_id)
@@ -165,7 +168,11 @@ class Chef
       # @return [String]
       def locate_config_value(key)
         key = key.to_sym
-        config[key] || Chef::Config[:knife][key]
+        if defined?(config_value) # Inherited by bootstrap
+          config_value(key) || default_config[key]
+        else
+          config[key] || Chef::Config[:knife][key] || default_config[key]
+        end
       end
 
       def msg_pair(label, value, color = :cyan)
@@ -304,17 +311,14 @@ class Chef
       raise ArgumentError, "The provided --aws_config_file (#{config_file}) cannot be found on disk." unless File.exist?(config_file)
 
       aws_config = ini_parse(File.read(config_file))
-      profile = if !locate_config_value(:aws_profile) || locate_config_value(:aws_profile) == "default"
-                  "default"
-                else
-                  "profile #{locate_config_value(:aws_profile)}"
-                end
+      profile_key = locate_config_value(:aws_profile)
+      profile_key = "profile #{profile_key}" if profile_key != "default"
 
       unless aws_config.values.empty?
-        if aws_config[profile]
-          Chef::Config[:knife][:region] = aws_config[profile]["region"]
+        if aws_config[profile_key]
+          Chef::Config[:knife][:region] = aws_config[profile_key]["region"]
         else
-          raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
+          raise ArgumentError, "The provided --aws-profile '#{profile_key}' is invalid."
         end
       end
     end

@@ -96,13 +96,9 @@ class Chef
           ui.warn("Deleted server #{instance_id}")
 
           if config[:purge]
-            if config[:chef_node_name]
-              thing_to_delete = config[:chef_node_name]
-            else
-              thing_to_delete = fetch_node_name(instance_id)
-            end
-            destroy_item(Chef::Node, thing_to_delete, "node")
-            destroy_item(Chef::ApiClient, thing_to_delete, "client")
+            node_name = config[:chef_node_name] || fetch_node_name(instance_id)
+            destroy_item(Chef::Node, node_name, "node")
+            destroy_item(Chef::ApiClient, node_name, "client")
           else
             ui.warn("Corresponding node and client for the #{instance_id} server were not deleted and remain registered with the Chef Server")
           end

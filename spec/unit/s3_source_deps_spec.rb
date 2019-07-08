@@ -16,7 +16,7 @@ describe "Check Dependencies", exclude: Object.constants.include?(:Aws) do
     begin
       Chef::Knife::S3Source.fetch("test")
     rescue Exception => e
-      expect(e).to be_a_kind_of(ArgumentError)
+      expect(e).to be_a_kind_of(NoMethodError)
     end
   end
 
