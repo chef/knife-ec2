@@ -887,7 +887,7 @@ describe Chef::Knife::Ec2ServerCreate do
         it "raises exception" do
           Chef::Config[:knife][:aws_profile] = "xyz"
           allow(File).to receive(:read).and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET")
-          expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws-profile 'xyz' is invalid.")
+          expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws-profile 'xyz' is invalid. Does the credential file at '/apple/pear' contain this profile?")
         end
       end
 
