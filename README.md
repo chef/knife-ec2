@@ -198,27 +198,66 @@ Users can attach ebs volumes to a new instance being created with knife-ec2 usin
 
 #### Bootstrap Windows (2012 R2 and above platform) instance without user-data through winrm ssl transport
 
-Users can bootstrap the Windows instance without the need to provide the user-data. `knife-ec2` has the ability to bootstrap the Windows instance through `winrm protocol` using the `ssl` transport. This requires users to set `--winrm-transport` option as `ssl` and `--winrm-ssl-verify-mode` option as `verify_none`. This will do the necessary winrm ssl transport configurations on the target node and the bootstrap will just work.
+Users can bootstrap the Windows instance without the need to provide the user-data. `knife-ec2` has the ability to bootstrap the Windows instance through `winrm protocol` using the `ssl` transport. This requires users to set `--winrm-ssl` option and `--winrm-no-verify-cert`. This will do the necessary winrm ssl transport configurations on the target node and the bootstrap will just work.
 
 ***Note***: Users also need to pass the `--security-group-ids` option with IDs of the security group(s) having the required ports opened like `5986` for winrm ssl transport. In case if `--security-group-ids` option is not passed then make sure that the default security group in your account has the required ports opened.
 
 Below is the sample command to create a Windows instance and bootstrap it through `ssl` transport without passing any user-data:
 
 ```
-knife ec2 server create -N chef-node-name -I your-windows-image -f flavor-of-server -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --winrm-transport ssl --winrm-ssl-verify-mode verify_none --security-group-ids your-security-groups -VV
+knife ec2 server create -N chef-node-name -I your-windows-image -f flavor-of-server -x '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --winrm-ssl --winrm-no-verify-cert --security-group-ids your-security-groups -VV
 ```
 
+#### Bootstrap Windows (2012 R2 and above platform) instance with user-data through winrm with negotiate transport
+
+Users can bootstrap the Windows instance with the user-data. `knife-ec2` has the ability to bootstrap the Windows instance through `winrm protocol` using the `negotiate` transport. This requires users to set `--winrm-auth-method` option as `negotiate` and `--connection-protocol` option as `winrm` and `--user-data` file. USER DATA file contains winrm configurations which needs to be set for successful winrm communication. This will do the necessary winrm configurations on the target node and the bootstrap will just work.
+
+***Note***: Users also need to pass the `--security-group-ids` option with IDs of the security group(s) having the required ports opened like `5985` for winrm with negotiate transport. In case if `--security-group-ids` option is not passed then make sure that the default security group in your account has the required ports opened.
+
+Below is the sample command to create a Windows instance and bootstrap it through `negotiate` transport with passing user-data:
+
+```
+knife ec2 server create -N chef-node-name -I your-windows-image -f flavor-of-server -U '.\a_local_user' -P 'yourpassword' --ssh-key your-public-key-id --connection-protocol winrm --winrm-auth-method negotiate --user-data '\path\to\user-data-file' --security-group-ids your-security-groups -VV
+```
+Below is the content of user data which is required to set winrm configurations and important ports to get open for successful winrm communication to node.
+
+```
+<powershell>
+# Allow script execution
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
+# PS Remoting and & winrm.cmd basic config
+Enable-PSRemoting -Force -SkipNetworkProfileCheck
+winrm quickconfig -q
+$user = "username"
+$password = "password"
+net user /add $user $password
+net localgroup administrators $user /add
+winrm create winrm/config/Listener?Address=*+Transport=HTTP
+# winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="300"}'
+winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}'
+winrm set winrm/config/winrs '@{MaxShellsPerUser="50"}'
+winrm set winrm/config '@{MaxTimeoutms="1800000"}'
+winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+winrm set winrm/config/service/auth '@{Basic="true"}'
+netsh advfirewall firewall add rule name="WinRM 5985" protocol=TCP dir=in localport=5985 action=allow
+netsh advfirewall firewall add rule name="WinRM 5986" protocol=TCP dir=in localport=5986 action=allow
+NetSh Advfirewall set allprofiles state off
+net stop winrm
+sc.exe config winrm start=auto
+net start winrm
+</powershell>
+```
 #### Options for bootstrapping Windows
 
-The `knife ec2 server create` command also supports the following options for bootstrapping a Windows node after the VM s created:
+The `knife ec2 server create` command also supports the following options for bootstrapping a Windows node after the VM is created:
 
 ```
-:winrm_password                The WinRM password
-:winrm_authentication_protocol Defaults to negotiate, supports kerberos, can be set to basic for debugging
-:winrm_transport               Defaults to plaintext, use ssl for improved security
-:winrm_port                    Defaults to 5985 plaintext transport, or 5986 for SSL
+:connection_password           The WinRM password
+:winrm_auth_method             Defaults to negotiate, supports kerberos, can be set to basic for debugging
+:winrm_ssl                     SSL in the WinRM connection
+:connection_port               Defaults to 5985 plaintext transport, or 5986 for SSL
 :ca_trust_file                 The CA certificate file to use to verify the server when using SSL
-:winrm_ssl_verify_mode         Defaults to verify_peer, use verify_none to skip validation of the server certificate during testing
+:winrm_no_verify_cert          When flag is present, SSL cert will not be verified. Same as original mode of 'verify_none'
 :kerberos_keytab_file          The Kerberos keytab file used for authentication
 :kerberos_realm                The Kerberos realm used for authentication
 :kerberos_service              The Kerberos service used for authentication
