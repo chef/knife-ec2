@@ -1,26 +1,27 @@
-require "rspec/core/rake_task"
+require "bundler/gem_tasks"
 
 begin
-  Bundler.setup(:default, :development)
-rescue Bundler::BundlerError => e
-  $stderr.puts e.message
-  $stderr.puts "Run `bundle install` to install missing gems"
-  exit e.status_code
-end
+  require "rspec/core/rake_task"
 
-desc "Run specs"
-RSpec::Core::RakeTask.new(:spec) do |spec|
-  spec.pattern = "spec/**/*_spec.rb"
+  RSpec::Core::RakeTask.new do |t|
+    t.pattern = "spec/**/*_spec.rb"
+  end
+rescue LoadError
+  desc "rspec is not installed, this task is disabled"
+  task :spec do
+    abort "rspec is not installed. bundle install first to make sure all dependencies are installed."
+  end
 end
 
 begin
   require "chefstyle"
   require "rubocop/rake_task"
+  desc "Run Chefstyle tests"
   RuboCop::RakeTask.new(:style) do |task|
     task.options += ["--display-cop-names", "--no-color"]
   end
 rescue LoadError
-  puts "chefstyle/rubocop is not available. bundle install first to make sure all dependencies are installed."
+  puts "chefstyle gem is not installed. bundle install first to make sure all dependencies are installed."
 end
 
 begin

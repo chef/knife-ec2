@@ -1,6 +1,5 @@
 # Knife EC2
 [![Gem Version](https://badge.fury.io/rb/knife-ec2.svg)](https://rubygems.org/gems/knife-ec2)
-[![Build Status](https://travis-ci.org/chef/knife-ec2.svg?branch=master)](https://travis-ci.org/chef/knife-ec2)
 
 This is the official Chef Knife plugin for Amazon EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
 - Documentation: [https://github.com/chef/knife-ec2/blob/master/README.md](https://github.com/chef/knife-ec2/blob/master/README.md)
