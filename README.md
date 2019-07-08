@@ -10,7 +10,7 @@ This is the official Chef Knife plugin for Amazon EC2. This plugin gives knife t
 
 ## Installation
 
-We highly recommend using [ChefDK](https://downloads.chef.io/chef-dk/), which includes knife-ec2 out of the box. If for some reason you can't use ChefDK you can manually install the gem.
+We highly recommend using [Chef Workstation](https://downloads.chef.io/chef-workstation/), which includes knife-ec2 out of the box. If for some reason you can't use Chef Workstation you can manually install the gem.
 
 If you're using bundler, simply add Chef and Knife EC2 to your `Gemfile`:
 
@@ -302,10 +302,6 @@ knife ec2 ami list
 ### `knife ec2 server list`
 
 Outputs a list of all servers in the currently configured AWS account. **Note, this shows all instances associated with the account, some of which may not be currently managed by the Chef server.**
-
-### `knife ec2 flavor list`
-
-Outputs a list of all instance types comprising varying combinations of CPU, memory, storage, and architecture capacity of the currently configured AWS account. **Note, this shows all instances type associated with the account.**
 
 ### `knife ec2 server delete`
 
