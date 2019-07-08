@@ -4,17 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.5 -->
-## [v1.0.5](https://github.com/chef/knife-ec2/tree/v1.0.5) (2019-07-08)
+<!-- latest_release 1.0.6 -->
+## [v1.0.6](https://github.com/chef/knife-ec2/tree/v1.0.6) (2019-07-08)
 
 #### Merged Pull Requests
-- Add a buildkite PR verification pipeline [#597](https://github.com/chef/knife-ec2/pull/597) ([tas50](https://github.com/tas50))
+- Cutover to Buildkite for all PR testing [#598](https://github.com/chef/knife-ec2/pull/598) ([tas50](https://github.com/tas50))
 <!-- latest_release -->
 
 <!-- release_rollup since=1.0.1 -->
 ### Changes not yet released to rubygems.org
 
 #### Merged Pull Requests
+- Cutover to Buildkite for all PR testing [#598](https://github.com/chef/knife-ec2/pull/598) ([tas50](https://github.com/tas50)) <!-- 1.0.6 -->
 - Add a buildkite PR verification pipeline [#597](https://github.com/chef/knife-ec2/pull/597) ([tas50](https://github.com/tas50)) <!-- 1.0.5 -->
 - Update the readme to not mention DK or the deprecated knife command [#595](https://github.com/chef/knife-ec2/pull/595) ([tas50](https://github.com/tas50)) <!-- 1.0.4 -->
 - Update copyrights to 2019 [#594](https://github.com/chef/knife-ec2/pull/594) ([tas50](https://github.com/tas50)) <!-- 1.0.3 -->
