@@ -4,28 +4,25 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.1 -->
-## [v1.0.1](https://github.com/chef/knife-ec2/tree/v1.0.1) (2019-07-08)
-
-#### Merged Pull Requests
-- Convert to aws-sdk and add new commands #546 [#587](https://github.com/chef/knife-ec2/pull/587) ([vsingh-msys](https://github.com/vsingh-msys))
+<!-- latest_release -->
 <!-- latest_release -->
 
-<!-- release_rollup since=0.19.16 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Convert to aws-sdk and add new commands #546 [#587](https://github.com/chef/knife-ec2/pull/587) ([vsingh-msys](https://github.com/vsingh-msys)) <!-- 1.0.1 -->
-- Prep knife-windows v1.0.x [#578](https://github.com/chef/knife-ec2/pull/578) ([btm](https://github.com/btm)) <!-- 1.0.0 -->
-- Update codeowners, test on latest ruby releases + more misc [#563](https://github.com/chef/knife-ec2/pull/563) ([tas50](https://github.com/tas50)) <!-- 0.19.17 -->
+<!-- release_rollup -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
+## [v1.0.1](https://github.com/chef/knife-ec2/tree/v1.0.1) (2019-07-08)
+
+#### Merged Pull Requests
+- Update codeowners, test on latest ruby releases + more misc [#563](https://github.com/chef/knife-ec2/pull/563) ([tas50](https://github.com/tas50))
+- Prep knife-windows v1.0.x [#578](https://github.com/chef/knife-ec2/pull/578) ([btm](https://github.com/btm))
+- Convert to aws-sdk and add new commands #546 [#587](https://github.com/chef/knife-ec2/pull/587) ([vsingh-msys](https://github.com/vsingh-msys))
+<!-- latest_stable_release -->
+
 ## [v0.19.16](https://github.com/chef/knife-ec2/tree/v0.19.16) (2018-12-11)
 
 #### Merged Pull Requests
 - Don&#39;t ship the spec files in the gem [#562](https://github.com/chef/knife-ec2/pull/562) ([tas50](https://github.com/tas50))
-<!-- latest_stable_release -->
 
 ## [v0.19.15](https://github.com/chef/knife-ec2/tree/v0.19.15) (2018-12-03)
 
