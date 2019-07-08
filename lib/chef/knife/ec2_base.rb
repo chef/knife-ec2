@@ -80,10 +80,13 @@ class Chef
       def connection_string
         conn = {}
         conn[:region] = locate_config_value(:region)
+        Chef::Log.debug "Using AWS region #{locate_config_value(:region)}"
         conn[:credentials] =
           if locate_config_value(:use_iam_profile)
+            Chef::Log.debug "Using iam profile for authentication as use_iam_profile set"
             Aws::InstanceProfileCredentials.new
           else
+            Chef::Log.debug "Setting up AWS connection using aws_access_key_id #{locate_config_value(:aws_access_key_id)} aws_secret_access_key: #{locate_config_value(:aws_secret_access_key)} aws_session_token: #{locate_config_value(:aws_session_token)}"
             Aws::Credentials.new(locate_config_value(:aws_access_key_id), locate_config_value(:aws_secret_access_key), locate_config_value(:aws_session_token))
           end
         conn
@@ -308,6 +311,8 @@ class Chef
     # @return [void]
     def validate_aws_config_file!
       config_file = locate_config_value(:aws_config_file)
+      Chef::Log.debug "Using AWS config file at #{config_file}"
+
       raise ArgumentError, "The provided --aws_config_file (#{config_file}) cannot be found on disk." unless File.exist?(config_file)
 
       aws_config = ini_parse(File.read(config_file))
@@ -326,6 +331,7 @@ class Chef
     # validate the contents of the aws credentials file
     # @return [void]
     def validate_aws_credential_file!
+      Chef::Log.debug "Using AWS credential file at #{aws_cred_file_location}"
       raise ArgumentError, "The provided --aws_credential_file (#{aws_cred_file_location}) cannot be found on disk." unless File.exist?(aws_cred_file_location)
 
       # File format:
@@ -339,6 +345,8 @@ class Chef
       aws_creds = ini_parse(File.read(aws_cred_file_location))
       profile = locate_config_value(:aws_profile)
 
+      Chef::Log.debug "Using AWS profile #{profile}"
+
       entries = if aws_creds.values.first.key?("AWSAccessKeyId")
                   aws_creds.values.first
                 else
@@ -350,7 +358,7 @@ class Chef
         Chef::Config[:knife][:aws_secret_access_key] = entries["AWSSecretKey"] || entries["aws_secret_access_key"]
         Chef::Config[:knife][:aws_session_token] = entries["AWSSessionToken"] || entries["aws_session_token"]
       else
-        raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid."
+        raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid. Does the credential file at '#{aws_cred_file_location}' contain this profile?"
       end
     end
   end
