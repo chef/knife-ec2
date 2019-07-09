@@ -2485,6 +2485,9 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(ec2_server_create).to receive(:validate_aws_config!)
       allow(ec2_server_create).to receive(:validate_nics!)
       allow(ec2_server_create).to receive(:ami).and_return(ami)
+      ec2_server_create.config[:tags] = []
+      expect(ec2_server_create.ui).to receive(:warn).with("[DEPRECATED] --chef-tag option is deprecated and will be removed in future release. Use --tags TAGS option instead.")
+      ec2_server_create.plugin_validate_options!
     end
     context 'when mulitple values provided from cli for e.g. --chef-tag "foo" --chef-tag "bar"' do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--chef-tag", "foo", "--chef-tag", "bar"]) }

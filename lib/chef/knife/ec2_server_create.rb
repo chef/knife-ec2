@@ -429,7 +429,7 @@ class Chef
         msg_pair("IAM Profile", config_value(:iam_instance_profile)) if config_value(:iam_instance_profile)
         msg_pair("Primary ENI", config_value(:primary_eni)) if config_value(:primary_eni)
         msg_pair("AWS Tags", printed_aws_tags)
-        msg_pair("Chef Tags", config_value(:chef_tag)) if config_value(:chef_tag)
+        msg_pair("Chef Tags", config_value(:tags)) if config_value(:tags).any?
         msg_pair("SSH Key", server.key_name)
         msg_pair("Root Device Type", server.root_device_type)
         msg_pair("Root Volume Tags", printed_volume_tags)
@@ -540,11 +540,6 @@ class Chef
         Chef::Knife::DataBagSecretOptions.set_cl_secret(s3_secret) if config_value(:s3_secret)
         config[:secret] = s3_secret || config_value(:secret)
 
-        # If --chef-tag is provided then it will be set in chef as single value e.g. --chef-tag "myTag"
-        # --tags has been removed from knife-ec2, now it's available in core
-        if config_value(:chef_tag)
-          config[:tags] += config_value(:chef_tag)
-        end
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
@@ -716,11 +711,14 @@ class Chef
         end
 
         if config_value(:chef_tag)
+          # If --chef-tag is provided then it will be set in chef as single value e.g. --chef-tag "myTag"
+          # --tags has been removed from knife-ec2, now it's available in core
+          config[:tags] += config_value(:chef_tag)
           ui.warn("[DEPRECATED] --chef-tag option is deprecated and will be removed in future release. Use --tags TAGS option instead.")
         end
       end
 
-      def tags
+      def parse_aws_tags
         tags = config_value(:aws_tag)
         if !tags.nil? && (tags.length != tags.to_s.count("="))
           ui.error("AWS Tags should be entered in a key = value pair")
@@ -958,7 +956,7 @@ class Chef
         attributes[:disable_api_termination] = config_value(:disable_api_termination) if config_value(:spot_price).nil?
 
         attributes[:instance_initiated_shutdown_behavior] = config_value(:instance_initiated_shutdown_behavior)
-        attributes[:chef_tag] = config_value(:chef_tag)
+        attributes[:chef_tag] = config_value(:tags)
         attributes
       end
 
@@ -1383,7 +1381,7 @@ class Chef
 
       def hashed_tags
         ht = {}
-        tags.map { |t| key, val = t.split("="); ht[key] = val } unless tags.nil?
+        parse_aws_tags.map { |t| key, val = t.split("="); ht[key] = val } unless parse_aws_tags.nil?
 
         # Always set the Name tag
         unless ht.keys.include? "Name"

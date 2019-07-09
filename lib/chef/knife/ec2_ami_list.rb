@@ -48,7 +48,8 @@ class Chef
       option :owner,
         short: "-o OWNER",
         long: "--owner OWNER",
-        description: "The AMI owner (self, aws-marketplace, microsoft). Default is aws-marketplace"
+        description: "The AMI owner (self, aws-marketplace, microsoft). Default is aws-marketplace",
+        default: "aws-marketplace"
 
       option :search,
         short: "-s SEARCH",
@@ -110,8 +111,7 @@ class Chef
 
       def image_params
         params = {}
-        owner = locate_config_value(:owner) || "aws-marketplace" # aws-marketplace, microsoft
-        params["owners"] = [owner.to_s]
+        params["owners"] = [locate_config_value(:owner).to_s]
 
         filters = []
         filters << { platform: locate_config_value(:platform) } if locate_config_value(:platform)
