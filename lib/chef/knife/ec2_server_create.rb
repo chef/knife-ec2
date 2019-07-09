@@ -346,6 +346,7 @@ class Chef
           enable_classic_link(config[:classic_link_vpc_id], config[:classic_link_vpc_security_group_ids]) if config[:classic_link_vpc_id]
         rescue Aws::EC2::Errors::ServiceError, Aws::EC2::Errors::Error
           raise if (tries -= 1) <= 0
+
           ui.warn("server not ready, retrying tag application (retries left: #{tries})")
           sleep 5
           retry
@@ -527,6 +528,7 @@ class Chef
       def s3_secret
         @s3_secret ||= begin
           return false unless config_value(:s3_secret)
+
           Chef::Knife::S3Source.fetch(config_value(:s3_secret))
         end
       end
@@ -563,12 +565,12 @@ class Chef
 
       def plugin_validate_options!
         if Chef::Config[:knife].keys.include? :aws_ssh_key_id
-          Chef::Config[:knife][:ssh_key_name] = Chef::Config[:knife][:aws_ssh_key_id] if !Chef::Config[:knife][:ssh_key_name]
+          Chef::Config[:knife][:ssh_key_name] = Chef::Config[:knife][:aws_ssh_key_id] unless Chef::Config[:knife][:ssh_key_name]
           Chef::Config[:knife].delete(:aws_ssh_key_id)
           ui.warn("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
         end
 
-        validate_aws_config!([:image, :ssh_key_name, :aws_access_key_id, :aws_secret_access_key])
+        validate_aws_config!(%i{image ssh_key_name aws_access_key_id aws_secret_access_key})
 
         validate_nics! if config_value(:network_interfaces)
 
@@ -686,7 +688,7 @@ class Chef
         end
 
         if config_value(:spot_price).nil? && config_value(:spot_wait_mode)
-          if !(config_value(:spot_wait_mode).casecmp("prompt") == 0)
+          unless config_value(:spot_wait_mode).casecmp("prompt") == 0
             ui.error("spot-wait-mode option requires that a spot-price option is set.")
             exit 1
           end
@@ -797,7 +799,7 @@ class Chef
       end
 
       def process_user_data(script_lines)
-        if !ssl_config_data_already_exist?
+        unless ssl_config_data_already_exist?
           ps_start_tag = "<powershell>\n"
           ps_end_tag = "</powershell>\n"
           ps_start_tag_index = script_lines.index(ps_start_tag) || script_lines.index(ps_start_tag.strip)
@@ -1097,6 +1099,7 @@ class Chef
       # @return [Boolean]
       def subnet_public_ip_on_launch?
         return false unless server.subnet_id
+
         subnet = fetch_subnet(server.subnet_id)
         subnet.map_public_ip_on_launch
       end
@@ -1164,7 +1167,7 @@ class Chef
         return true if invalid_nic_ids.empty?
 
         ui.error "The following network interfaces are invalid: " \
-          "#{invalid_nic_ids.join(', ')}"
+          "#{invalid_nic_ids.join(", ")}"
         exit 1
       end
 
@@ -1273,6 +1276,7 @@ class Chef
         sleep 10
         response = fetch_password_data(server_id)
         return false unless response.password_data
+
         true
       end
 
@@ -1305,8 +1309,7 @@ class Chef
 
       # TODO: connection_protocol and connection_port used to choose winrm/ssh or 5985/22 based on the image chosen
       def connection_port
-        port = config_value(:connection_port,
-                            knife_key_for_protocol(connection_protocol, :port))
+        port = config_value(:connection_port, knife_key_for_protocol(connection_protocol, :port))
         return port if port
 
         assign_default_port
@@ -1330,7 +1333,7 @@ class Chef
 
         default_protocol = is_image_windows? ? "winrm" : "ssh"
 
-        from_url = host_descriptor =~ /^(.*):\/\// ? $1 : nil
+        from_url = host_descriptor =~ %r{^(.*)://} ? $1 : nil
         from_cli = config[:connection_protocol]
         from_knife = Chef::Config[:knife][:connection_protocol]
         @connection_protocol = from_url || from_cli || from_knife || default_protocol
@@ -1342,6 +1345,7 @@ class Chef
 
       def server_name
         return nil unless server
+
         server.public_dns_name || server.private_dns_name || server.private_ip_address
       end
 

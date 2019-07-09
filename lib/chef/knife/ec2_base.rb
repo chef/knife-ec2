@@ -99,6 +99,7 @@ class Chef
 
       def fetch_ami(image_id)
         return {} unless image_id
+
         ec2_connection.describe_images({
           image_ids: [image_id],
         }).images.first
@@ -144,15 +145,15 @@ class Chef
         end
 
         server_data["availability_zone"] = server_obj.instances[0].placement.availability_zone
-        server_data["groups"] = server_obj.groups.map { |grp| grp.name }
-        server_data["iam_instance_profile"] = ( server_obj.instances[0].iam_instance_profile.nil? ? nil : server_obj.instances[0].iam_instance_profile.arn[/instance-profile\/(.*)/] )
+        server_data["groups"] = server_obj.groups.map(&:name)
+        server_data["iam_instance_profile"] = ( server_obj.instances[0].iam_instance_profile.nil? ? nil : server_obj.instances[0].iam_instance_profile.arn[%r{instance-profile/(.*)}] )
         server_data["id"] = server_data["instance_id"]
 
-        tags = server_obj.instances[0].tags.map { |x| x.value }
+        tags = server_obj.instances[0].tags.map(&:value)
         server_data["name"] = tags[0]
         server_data["placement_group"] = server_obj.instances[0].placement.group_name
-        server_data["security_groups"] = server_obj.instances[0].security_groups.map { |x| x.group_name }
-        server_data["security_group_ids"] = server_obj.instances[0].security_groups.map { |x| x.group_id }
+        server_data["security_groups"] = server_obj.instances[0].security_groups.map(&:group_name)
+        server_data["security_group_ids"] = server_obj.instances[0].security_groups.map(&:group_id)
         server_data["state"] = server_obj.instances[0].state.name
         server_data["subnet_id"] = server_obj.instances[0].network_interfaces[0].subnet_id
         server_data["tags"] = tags
@@ -196,7 +197,7 @@ class Chef
 
       # validate the config options that were passed since some of them cannot be used together
       # also validate the aws configuration file contents if present
-      def validate_aws_config!(keys = [:aws_access_key_id, :aws_secret_access_key])
+      def validate_aws_config!(keys = %i{aws_access_key_id aws_secret_access_key})
         errors = [] # track all errors so we report on all of them
 
         validate_aws_config_file! if locate_config_value(:aws_config_file)
@@ -206,10 +207,10 @@ class Chef
           #   aws keys have not been passed in config / CLI and the default cred file location does exist
           #   OR
           #   the user passed aws_credential_file
-          if (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty? && aws_cred_file_location ||
+          if (Chef::Config[:knife].keys & %i{aws_access_key_id aws_secret_access_key}).empty? && aws_cred_file_location ||
               locate_config_value(:aws_credential_file)
 
-            unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
+            unless (Chef::Config[:knife].keys & %i{aws_access_key_id aws_secret_access_key}).empty?
               errors << "Either provide a credentials file or the access key and secret keys but not both."
             end
 

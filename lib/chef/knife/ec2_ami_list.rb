@@ -68,7 +68,7 @@ class Chef
           ui.color("Architecture", :bold),
           ui.color("Size", :bold),
           ui.color("Name", :bold),
-          ui.color("Description", :bold)
+          ui.color("Description", :bold),
         ].flatten.compact
 
         output_column_count = servers_list.length

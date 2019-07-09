@@ -150,8 +150,8 @@ class Chef
 
           server_data["name"] = i.instances[0].tags[0].value
           server_data["az"] = i.instances[0].placement.availability_zone
-          server_data["iam_instance_profile"] = ( i.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[/instance-profile\/(.*)/] )
-          server_data["security_groups"] = i.instances[0].security_groups.map { |x| x.group_name }.join(", ")
+          server_data["iam_instance_profile"] = ( i.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[%r{instance-profile/(.*)}] )
+          server_data["security_groups"] = i.instances[0].security_groups.map(&:group_name).join(", ")
 
           all_data << server_data
         end
@@ -161,6 +161,7 @@ class Chef
       # Delete the server instance
       def delete_instance(instance_id)
         return nil unless instance_id || instance_id.is_a?(String)
+
         ec2_connection.terminate_instances({
           instance_ids: [
             instance_id,

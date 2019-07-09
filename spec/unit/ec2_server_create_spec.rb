@@ -124,7 +124,8 @@ describe Chef::Knife::Ec2ServerCreate do
       private_ip_address: "10.251.75.20",
       root_device_type: "ebs",
       block_device_mapping: [{ volume_id: 456 }],
-      volume_id: "v-006eub006") end
+      volume_id: "v-006eub006")
+  end
 
   let(:my_vpc) { "vpc-12345678" }
 
@@ -156,7 +157,7 @@ describe Chef::Knife::Ec2ServerCreate do
     allow(ec2_connection).to receive(:subnets).and_return [@subnet_1, @subnet_2]
     allow(ec2_connection).to receive_message_chain(:network_interfaces, :all).and_return [
       double("network_interfaces", network_interface_id: "eni-12345678"),
-      double("network_interfaces", network_interface_id: "eni-87654321")
+      double("network_interfaces", network_interface_id: "eni-87654321"),
     ]
 
     {
@@ -902,14 +903,14 @@ describe Chef::Knife::Ec2ServerCreate do
 
       it "reads UNIX Line endings for new format" do
         allow(File).to receive(:read)
-         .and_return("[default]\nregion=#{@region}")
+          .and_return("[default]\nregion=#{@region}")
         knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:region]).to eq(@region)
       end
 
       it "reads DOS Line endings for new format" do
         allow(File).to receive(:read)
-         .and_return("[default]\nregion=#{@region}")
+          .and_return("[default]\nregion=#{@region}")
         knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:region]).to eq(@region)
       end
@@ -955,12 +956,12 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "returns a path to a tmp file when presented with a URI for the " \
       "validation key" do
-      Chef::Config[:knife][:validation_key_url] = @validation_key_url
+        Chef::Config[:knife][:validation_key_url] = @validation_key_url
 
-      allow(knife_ec2_create).to receive_message_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
+        allow(knife_ec2_create).to receive_message_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
 
-      expect(knife_ec2_create.validation_key_path).to eq(@validation_key_file)
-    end
+        expect(knife_ec2_create.validation_key_path).to eq(@validation_key_file)
+      end
 
     it "disallows security group names when using a VPC" do
       knife_ec2_create.config[:subnet_id] = @subnet_1_id
@@ -987,7 +988,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
       allow(ec2_connection).to receive_message_chain(:network_interfaces, :all).and_return [
         double("network_interfaces", network_interface_id: "eni-12345678", vpc_id: "another_vpc"),
-        double("network_interfaces", network_interface_id: "eni-87654321", vpc_id: my_vpc)
+        double("network_interfaces", network_interface_id: "eni-87654321", vpc_id: my_vpc),
       ]
 
       expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit

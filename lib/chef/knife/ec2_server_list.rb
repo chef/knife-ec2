@@ -117,7 +117,7 @@ class Chef
             ui.color("IAM Profile", :bold)
           end,
 
-          ui.color("State", :bold)
+          ui.color("State", :bold),
         ].flatten.compact
 
         output_column_count = servers_list.length
@@ -173,7 +173,7 @@ class Chef
             server_data["az"] = ui.color(i.instances[0].placement.availability_zone, azcolor(i.instances[0].placement.availability_zone))
           end
 
-          server_data["iam_instance_profile"] = ( i.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[/instance-profile\/(.*)/] )
+          server_data["iam_instance_profile"] = ( i.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[%r{instance-profile/(.*)}] )
 
           server_data["state"] = ui.color(i.instances[0].state.name, state_color(i.instances[0].state.name))
 
@@ -182,7 +182,7 @@ class Chef
           end
 
           # dig into security_groups struct
-          server_data["security_groups"] = i.instances[0].security_groups.map { |x| x.group_name }
+          server_data["security_groups"] = i.instances[0].security_groups.map(&:group_name)
 
           all_data << server_data
         end
@@ -191,7 +191,7 @@ class Chef
 
       # @return [Array<String>]
       def extract_tags(tags_struct)
-        tags_struct.map { |x| x.value }
+        tags_struct.map(&:value)
       end
     end
   end
