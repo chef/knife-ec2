@@ -98,7 +98,7 @@ class Chef
       end
 
       def fetch_ami(image_id)
-        return {} unless image_id
+        return nil unless image_id
 
         ec2_connection.describe_images({
           image_ids: [image_id],
@@ -192,7 +192,7 @@ class Chef
       # Platform value return for Windows AMIs; otherwise, it is blank.
       # @return [Boolean]
       def is_image_windows?
-        ami.platform == "windows"
+        ami && ami.platform == "windows"
       end
 
       # validate the config options that were passed since some of them cannot be used together
