@@ -165,7 +165,7 @@ describe Chef::Knife::Ec2ServerCreate do
       ssh_key_name: "ssh_key_name",
       connection_user: "user",
       connection_password: "password",
-      network_interfaces: ["eni-12345678", "eni-87654321"], # rubocop:disable Style/WordArray
+      network_interfaces: %w{eni-12345678 eni-87654321},
     }.each do |key, value|
       Chef::Config[:knife][key] = value
     end
@@ -2468,7 +2468,7 @@ describe Chef::Knife::Ec2ServerCreate do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["-g", "sg-aab343ytr", "-g", "sg-3764sdss"]) }
       it "creates array of security group ids" do
         server_def = ec2_server_create.server_attributes
-        expect(server_def[:security_group_ids]).to eq(["sg-aab343ytr", "sg-3764sdss"]) # rubocop:disable Style/WordArray
+        expect(server_def[:security_group_ids]).to eq(%w{sg-aab343ytr sg-3764sdss})
       end
     end
 

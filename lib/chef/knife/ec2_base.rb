@@ -236,7 +236,7 @@ class Chef
         end
 
         if locate_config_value(:owner)
-          unless ["self", "aws-marketplace", "microsoft"].include? (locate_config_value(:owner)) # rubocop:disable Style/WordArray
+          unless %w{self aws-marketplace microsoft}.include? (locate_config_value(:owner))
             raise ArgumentError, "Invalid owner: #{locate_config_value(:owner)}. Allowed owners are self, aws-marketplace or microsoft."
           end
         end
