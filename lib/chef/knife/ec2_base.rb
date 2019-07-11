@@ -21,6 +21,8 @@ require "chef/knife"
 class Chef
   class Knife
     module Ec2Base
+      # All valid platforms
+      VALID_PLATFORMS ||= %w{windows ubuntu debian centos fedora rhel nginx turnkey jumpbox coreos cisco amazon nessus}.freeze
 
       # @todo Would prefer to do this in a rational way, but can't be done b/c of Mixlib::CLI's design :(
       def self.included(includer)
@@ -165,7 +167,7 @@ class Chef
 
       # @return [Struct]
       def normalize_server_data(server_hashes)
-        require "ostruct"
+        require "ostruct" unless defined?(OpenStruct)
         OpenStruct.new(server_hashes)
       end
 
@@ -228,20 +230,7 @@ class Chef
             exit 1
           end
         end
-
-        if locate_config_value(:platform)
-          unless valid_platforms.include? (locate_config_value(:platform))
-            raise ArgumentError, "Invalid platform: #{locate_config_value(:platform)}. Allowed platforms are: #{valid_platforms.join(", ")}."
-          end
-        end
-
-        if locate_config_value(:owner)
-          unless %w{self aws-marketplace microsoft}.include? (locate_config_value(:owner))
-            raise ArgumentError, "Invalid owner: #{locate_config_value(:owner)}. Allowed owners are self, aws-marketplace or microsoft."
-          end
-        end
       end
-
     end
 
     # the path to the aws credentials file.
@@ -286,16 +275,10 @@ class Chef
       map
     end
 
-    # All valid platforms
-    # @return [Array]
-    def valid_platforms
-      %w{windows ubuntu debian centos fedora rhel nginx turnkey jumpbox coreos cisco amazon nessus}
-    end
-
     # Get the platform from server name
     # @return [String]
     def find_server_platform(server_name)
-      get_platform = valid_platforms.select { |name| server_name.downcase.include?(name) }
+      get_platform = VALID_PLATFORMS.select { |name| server_name.downcase.include?(name) }
       get_platform.first
     end
 

@@ -141,9 +141,8 @@ describe Chef::Knife::Ec2AmiList do
 
       context "When owner is invalid" do
         it "raises error" do
-          knife_ec2_ami_list.config[:owner] = "xyz"
-          knife_ec2_ami_list.config[:use_iam_profile] = true
-          expect { knife_ec2_ami_list.validate_aws_config! }.to raise_error "Invalid owner: #{knife_ec2_ami_list.config[:owner]}. Allowed owners are self, aws-marketplace or microsoft."
+          allow(knife_ec2_ami_list).to receive(:puts)
+          expect(lambda { knife_ec2_ami_list.parse_options(["--owner", "xyz"]) }).to raise_error(SystemExit)
         end
       end
     end
@@ -234,10 +233,8 @@ describe Chef::Knife::Ec2AmiList do
 
       context "When platform is invalid" do
         it "raises error" do
-          knife_ec2_ami_list.config[:platform] = "xyz"
-          knife_ec2_ami_list.config[:use_iam_profile] = true
-          knife_ec2_ami_list.config[:owner] = true
-          expect { knife_ec2_ami_list.validate_aws_config! }.to raise_error "Invalid platform: #{knife_ec2_ami_list.config[:platform]}. Allowed platforms are: windows, ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco, amazon, nessus."
+          allow(knife_ec2_ami_list).to receive(:puts)
+          expect(lambda { knife_ec2_ami_list.parse_options(["--platform", "xyz"]) }).to raise_error(SystemExit)
         end
       end
     end

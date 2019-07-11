@@ -43,13 +43,14 @@ class Chef
       option :platform,
         short: "-p PLATFORM",
         long: "--platform PLATFORM",
-        description: "Platform of the server. Allowed values are windows, ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco, amazon, nessus"
-
+        description: "Platform of the server",
+        in: Chef::Knife::Ec2Base::VALID_PLATFORMS
       option :owner,
         short: "-o OWNER",
         long: "--owner OWNER",
-        description: "The AMI owner (self, aws-marketplace, microsoft). Default is aws-marketplace",
-        default: "aws-marketplace"
+        description: "The AMI owner. Default is aws-marketplace",
+        default: "aws-marketplace",
+        in: %w{self aws-marketplace microsoft}
 
       option :search,
         short: "-s SEARCH",
