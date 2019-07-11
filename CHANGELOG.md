@@ -4,10 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release -->
+<!-- latest_release 1.0.8 -->
+## [v1.0.8](https://github.com/chef/knife-ec2/tree/v1.0.8) (2019-07-11)
+
+#### Merged Pull Requests
+- Remove deprecated options &amp; set default value for ec2 ami list owner option [#586](https://github.com/chef/knife-ec2/pull/586) ([vsingh-msys](https://github.com/vsingh-msys))
 <!-- latest_release -->
 
-<!-- release_rollup -->
+<!-- release_rollup since=1.0.7 -->
+### Changes not yet released to rubygems.org
+
+#### Merged Pull Requests
+- Remove deprecated options &amp; set default value for ec2 ami list owner option [#586](https://github.com/chef/knife-ec2/pull/586) ([vsingh-msys](https://github.com/vsingh-msys)) <!-- 1.0.8 -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
