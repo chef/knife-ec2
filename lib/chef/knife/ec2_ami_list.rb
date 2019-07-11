@@ -43,12 +43,14 @@ class Chef
       option :platform,
         short: "-p PLATFORM",
         long: "--platform PLATFORM",
-        description: "Platform of the server. Allowed values are windows, ubuntu, debian, centos, fedora, rhel, nginx, turnkey, jumpbox, coreos, cisco, amazon, nessus"
-
+        description: "Platform of the server",
+        in: Chef::Knife::Ec2Base::VALID_PLATFORMS
       option :owner,
         short: "-o OWNER",
         long: "--owner OWNER",
-        description: "The AMI owner (self, aws-marketplace, microsoft). Default is aws-marketplace"
+        description: "The AMI owner. Default is aws-marketplace",
+        default: "aws-marketplace",
+        in: %w{self aws-marketplace microsoft}
 
       option :search,
         short: "-s SEARCH",
@@ -67,7 +69,7 @@ class Chef
           ui.color("Architecture", :bold),
           ui.color("Size", :bold),
           ui.color("Name", :bold),
-          ui.color("Description", :bold)
+          ui.color("Description", :bold),
         ].flatten.compact
 
         output_column_count = servers_list.length
@@ -110,8 +112,7 @@ class Chef
 
       def image_params
         params = {}
-        owner = locate_config_value(:owner) || "aws-marketplace" # aws-marketplace, microsoft
-        params["owners"] = [owner.to_s]
+        params["owners"] = [locate_config_value(:owner).to_s]
 
         filters = []
         filters << { platform: locate_config_value(:platform) } if locate_config_value(:platform)

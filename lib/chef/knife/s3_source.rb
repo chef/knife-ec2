@@ -52,9 +52,9 @@ class Chef
       def path
         uri = URI(@url)
         if uri.scheme == "s3"
-          URI(@url).path.sub(/^\//, "")
+          URI(@url).path.sub(%r{^/}, "")
         else
-          URI(@url).path.split(bucket).last.sub(/^\//, "")
+          URI(@url).path.split(bucket).last.sub(%r{^/}, "")
         end
       end
 

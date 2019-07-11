@@ -36,7 +36,7 @@ class Chef
           ui.color("CIDR Block", :bold),
           ui.color("Instance Tenancy", :bold),
           ui.color("DHCP Options ID", :bold),
-          ui.color("Default VPC?", :bold)
+          ui.color("Default VPC?", :bold),
         ].flatten.compact
 
         output_column_count = vpcs_list.length

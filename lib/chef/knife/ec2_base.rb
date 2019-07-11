@@ -21,6 +21,8 @@ require "chef/knife"
 class Chef
   class Knife
     module Ec2Base
+      # All valid platforms
+      VALID_PLATFORMS ||= %w{windows ubuntu debian centos fedora rhel nginx turnkey jumpbox coreos cisco amazon nessus}.freeze
 
       # @todo Would prefer to do this in a rational way, but can't be done b/c of Mixlib::CLI's design :(
       def self.included(includer)
@@ -98,7 +100,8 @@ class Chef
       end
 
       def fetch_ami(image_id)
-        return {} unless image_id
+        return nil unless image_id
+
         ec2_connection.describe_images({
           image_ids: [image_id],
         }).images.first
@@ -144,15 +147,15 @@ class Chef
         end
 
         server_data["availability_zone"] = server_obj.instances[0].placement.availability_zone
-        server_data["groups"] = server_obj.groups.map { |grp| grp.name }
-        server_data["iam_instance_profile"] = ( server_obj.instances[0].iam_instance_profile.nil? ? nil : server_obj.instances[0].iam_instance_profile.arn[/instance-profile\/(.*)/] )
+        server_data["groups"] = server_obj.groups.map(&:name)
+        server_data["iam_instance_profile"] = ( server_obj.instances[0].iam_instance_profile.nil? ? nil : server_obj.instances[0].iam_instance_profile.arn[%r{instance-profile/(.*)}] )
         server_data["id"] = server_data["instance_id"]
 
-        tags = server_obj.instances[0].tags.map { |x| x.value }
+        tags = server_obj.instances[0].tags.map(&:value)
         server_data["name"] = tags[0]
         server_data["placement_group"] = server_obj.instances[0].placement.group_name
-        server_data["security_groups"] = server_obj.instances[0].security_groups.map { |x| x.group_name }
-        server_data["security_group_ids"] = server_obj.instances[0].security_groups.map { |x| x.group_id }
+        server_data["security_groups"] = server_obj.instances[0].security_groups.map(&:group_name)
+        server_data["security_group_ids"] = server_obj.instances[0].security_groups.map(&:group_id)
         server_data["state"] = server_obj.instances[0].state.name
         server_data["subnet_id"] = server_obj.instances[0].network_interfaces[0].subnet_id
         server_data["tags"] = tags
@@ -164,7 +167,7 @@ class Chef
 
       # @return [Struct]
       def normalize_server_data(server_hashes)
-        require "ostruct"
+        require "ostruct" unless defined?(OpenStruct)
         OpenStruct.new(server_hashes)
       end
 
@@ -191,12 +194,12 @@ class Chef
       # Platform value return for Windows AMIs; otherwise, it is blank.
       # @return [Boolean]
       def is_image_windows?
-        ami.platform == "windows"
+        ami && ami.platform == "windows"
       end
 
       # validate the config options that were passed since some of them cannot be used together
       # also validate the aws configuration file contents if present
-      def validate_aws_config!(keys = [:aws_access_key_id, :aws_secret_access_key])
+      def validate_aws_config!(keys = %i{aws_access_key_id aws_secret_access_key})
         errors = [] # track all errors so we report on all of them
 
         validate_aws_config_file! if locate_config_value(:aws_config_file)
@@ -206,10 +209,10 @@ class Chef
           #   aws keys have not been passed in config / CLI and the default cred file location does exist
           #   OR
           #   the user passed aws_credential_file
-          if (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty? && aws_cred_file_location ||
+          if (Chef::Config[:knife].keys & %i{aws_access_key_id aws_secret_access_key}).empty? && aws_cred_file_location ||
               locate_config_value(:aws_credential_file)
 
-            unless (Chef::Config[:knife].keys & [:aws_access_key_id, :aws_secret_access_key]).empty?
+            unless (Chef::Config[:knife].keys & %i{aws_access_key_id aws_secret_access_key}).empty?
               errors << "Either provide a credentials file or the access key and secret keys but not both."
             end
 
@@ -227,20 +230,7 @@ class Chef
             exit 1
           end
         end
-
-        if locate_config_value(:platform)
-          unless valid_platforms.include? (locate_config_value(:platform))
-            raise ArgumentError, "Invalid platform: #{locate_config_value(:platform)}. Allowed platforms are: #{valid_platforms.join(", ")}."
-          end
-        end
-
-        if locate_config_value(:owner)
-          unless ["self", "aws-marketplace", "microsoft"].include? (locate_config_value(:owner)) # rubocop:disable Style/WordArray
-            raise ArgumentError, "Invalid owner: #{locate_config_value(:owner)}. Allowed owners are self, aws-marketplace or microsoft."
-          end
-        end
       end
-
     end
 
     # the path to the aws credentials file.
@@ -285,16 +275,10 @@ class Chef
       map
     end
 
-    # All valid platforms
-    # @return [Array]
-    def valid_platforms
-      %w{windows ubuntu debian centos fedora rhel nginx turnkey jumpbox coreos cisco amazon nessus}
-    end
-
     # Get the platform from server name
     # @return [String]
     def find_server_platform(server_name)
-      get_platform = valid_platforms.select { |name| server_name.downcase.include?(name) }
+      get_platform = VALID_PLATFORMS.select { |name| server_name.downcase.include?(name) }
       get_platform.first
     end
 

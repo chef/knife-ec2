@@ -33,7 +33,7 @@ class Chef
         sg_list = [
           ui.color("ID", :bold),
           ui.color("Name", :bold),
-          ui.color("VPC ID", :bold)
+          ui.color("VPC ID", :bold),
         ].flatten.compact
 
         output_column_count = sg_list.length

@@ -38,7 +38,7 @@ class Chef
           ui.color("Available IPs", :bold),
           ui.color("AZ Default?", :bold),
           ui.color("Maps Public IP?", :bold),
-          ui.color("VPC ID", :bold)
+          ui.color("VPC ID", :bold),
         ].flatten.compact
 
         output_column_count = subnet_list.length

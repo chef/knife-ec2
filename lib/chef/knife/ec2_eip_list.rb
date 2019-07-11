@@ -38,7 +38,7 @@ class Chef
           ui.color("Private IPs", :bold),
           ui.color("IPv6 IPs", :bold),
           ui.color("Subnet ID", :bold),
-          ui.color("VPC ID", :bold)
+          ui.color("VPC ID", :bold),
         ].flatten.compact
 
         output_column_count = eni_list.length

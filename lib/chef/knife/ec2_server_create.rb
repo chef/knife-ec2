@@ -61,20 +61,6 @@ class Chef
         description: "The security groups for this server; not allowed when using VPC",
         proc: Proc.new { |groups| groups.split(",") }
 
-      option :security_group_ids,
-        long: "--security-group-ids 'X,Y,Z'",
-        description: "The security group ids for this server; required when using VPC. Provide values in format --security-group-ids 'X,Y,Z'. [DEPRECATED] This option will be removed in future release. Use the new --security-group-id option. ",
-        proc: Proc.new { |security_group_ids|
-          ui.warn("[DEPRECATED] This option will be removed in future release. Use the new --security-group-id option multiple times when specifying multiple groups for e.g. -g sg-e985168d -g sg-e7f06383 -g sg-ec1b7e88.")
-          if security_group_ids.delete(" ").split(",").size > 1
-            Chef::Config[:knife][:security_group_ids] = security_group_ids.delete(" ").split(",")
-          else
-            Chef::Config[:knife][:security_group_ids] ||= []
-            Chef::Config[:knife][:security_group_ids].push(security_group_ids)
-            Chef::Config[:knife][:security_group_ids]
-          end
-        }
-
       option :security_group_id,
         short: "-g SECURITY_GROUP_ID",
         long: "--security-group-id ID",
@@ -101,15 +87,6 @@ class Chef
       option :primary_eni,
         long: "--primary-eni ENI_ID",
         description: "Specify a pre-existing eni to use when building the instance."
-
-      option :tags,
-        short: "-T T=V[,T=V,...]",
-        long: "--tags Tag=Value[,Tag=Value...]",
-        description: "The tags for this server. [DEPRECATED] Use --aws-tag instead.",
-        proc: Proc.new { |tags|
-          Chef::Log.warn("[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead.")
-          tags.split(",")
-        }
 
       option :availability_zone,
         short: "-Z ZONE",
@@ -270,16 +247,6 @@ class Chef
         description: "Tag the Root volume",
         proc: Proc.new { |volume_tags| volume_tags.split(",") }
 
-      option :tag_node_in_chef,
-        long: "--tag-node-in-chef",
-        description: "Flag for tagging node in ec2 and chef both. [DEPRECATED] Use --chef-tag instead.",
-        proc: Proc.new { |v|
-          Chef::Log.warn("[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead.")
-          v
-        },
-        boolean: true,
-        default: false
-
       option :instance_initiated_shutdown_behavior,
         long: "--instance-initiated-shutdown-behavior SHUTDOWN_BEHAVIOR",
         description: "Indicates whether an instance stops or terminates when you initiate shutdown from the instance. Possible values are 'stop' and 'terminate', default is 'stop'."
@@ -379,6 +346,7 @@ class Chef
           enable_classic_link(config[:classic_link_vpc_id], config[:classic_link_vpc_security_group_ids]) if config[:classic_link_vpc_id]
         rescue Aws::EC2::Errors::ServiceError, Aws::EC2::Errors::Error
           raise if (tries -= 1) <= 0
+
           ui.warn("server not ready, retrying tag application (retries left: #{tries})")
           sleep 5
           retry
@@ -462,7 +430,7 @@ class Chef
         msg_pair("IAM Profile", config_value(:iam_instance_profile)) if config_value(:iam_instance_profile)
         msg_pair("Primary ENI", config_value(:primary_eni)) if config_value(:primary_eni)
         msg_pair("AWS Tags", printed_aws_tags)
-        msg_pair("Chef Tags", config_value(:chef_tag)) if config_value(:chef_tag)
+        msg_pair("Chef Tags", config_value(:tags)) if config_value(:tags).any?
         msg_pair("SSH Key", server.key_name)
         msg_pair("Root Device Type", server.root_device_type)
         msg_pair("Root Volume Tags", printed_volume_tags)
@@ -560,6 +528,7 @@ class Chef
       def s3_secret
         @s3_secret ||= begin
           return false unless config_value(:s3_secret)
+
           Chef::Knife::S3Source.fetch(config_value(:s3_secret))
         end
       end
@@ -573,12 +542,6 @@ class Chef
         Chef::Knife::DataBagSecretOptions.set_cl_secret(s3_secret) if config_value(:s3_secret)
         config[:secret] = s3_secret || config_value(:secret)
 
-        # If --chef-tag is provided then it will be set in chef as single value e.g. --chef-tag "myTag"
-        # Otherwise if --tag-node-in-chef is provided then it will tag the chef in key=value pair of --tags option
-        # e.g. --tags "key=value"
-        if config_value(:chef_tag)
-          config[:tags] = config_value(:chef_tag)
-        end
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
         Chef::Config[:knife][:hints] ||= {}
@@ -602,12 +565,12 @@ class Chef
 
       def plugin_validate_options!
         if Chef::Config[:knife].keys.include? :aws_ssh_key_id
-          Chef::Config[:knife][:ssh_key_name] = Chef::Config[:knife][:aws_ssh_key_id] if !Chef::Config[:knife][:ssh_key_name]
+          Chef::Config[:knife][:ssh_key_name] = Chef::Config[:knife][:aws_ssh_key_id] unless Chef::Config[:knife][:ssh_key_name]
           Chef::Config[:knife].delete(:aws_ssh_key_id)
           ui.warn("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
         end
 
-        validate_aws_config!([:image, :ssh_key_name, :aws_access_key_id, :aws_secret_access_key])
+        validate_aws_config!(%i{image ssh_key_name aws_access_key_id aws_secret_access_key})
 
         validate_nics! if config_value(:network_interfaces)
 
@@ -725,7 +688,7 @@ class Chef
         end
 
         if config_value(:spot_price).nil? && config_value(:spot_wait_mode)
-          if !(config_value(:spot_wait_mode).casecmp("prompt") == 0)
+          unless config_value(:spot_wait_mode).casecmp("prompt") == 0
             ui.error("spot-wait-mode option requires that a spot-price option is set.")
             exit 1
           end
@@ -749,17 +712,16 @@ class Chef
           end
         end
 
-        if config_value(:tag_node_in_chef)
-          ui.warn("[DEPRECATED] --tag-node-in-chef option is deprecated. Use --chef-tag option instead.")
-        end
-
-        if config_value(:tags)
-          ui.warn("[DEPRECATED] --tags option is deprecated. Use --aws-tag option instead.")
+        if config_value(:chef_tag)
+          # If --chef-tag is provided then it will be set in chef as single value e.g. --chef-tag "myTag"
+          # --tags has been removed from knife-ec2, now it's available in core
+          config[:tags] += config_value(:chef_tag)
+          ui.warn("[DEPRECATED] --chef-tag option is deprecated and will be removed in future release. Use --tags TAGS option instead.")
         end
       end
 
-      def tags
-        tags = config_value(:tags) || config_value(:aws_tag)
+      def parse_aws_tags
+        tags = config_value(:aws_tag)
         if !tags.nil? && (tags.length != tags.to_s.count("="))
           ui.error("AWS Tags should be entered in a key = value pair")
           exit 1
@@ -837,7 +799,7 @@ class Chef
       end
 
       def process_user_data(script_lines)
-        if !ssl_config_data_already_exist?
+        unless ssl_config_data_already_exist?
           ps_start_tag = "<powershell>\n"
           ps_end_tag = "</powershell>\n"
           ps_start_tag_index = script_lines.index(ps_start_tag) || script_lines.index(ps_start_tag.strip)
@@ -996,7 +958,7 @@ class Chef
         attributes[:disable_api_termination] = config_value(:disable_api_termination) if config_value(:spot_price).nil?
 
         attributes[:instance_initiated_shutdown_behavior] = config_value(:instance_initiated_shutdown_behavior)
-        attributes[:chef_tag] = config_value(:chef_tag)
+        attributes[:chef_tag] = config_value(:tags)
         attributes
       end
 
@@ -1137,6 +1099,7 @@ class Chef
       # @return [Boolean]
       def subnet_public_ip_on_launch?
         return false unless server.subnet_id
+
         subnet = fetch_subnet(server.subnet_id)
         subnet.map_public_ip_on_launch
       end
@@ -1204,7 +1167,7 @@ class Chef
         return true if invalid_nic_ids.empty?
 
         ui.error "The following network interfaces are invalid: " \
-          "#{invalid_nic_ids.join(', ')}"
+          "#{invalid_nic_ids.join(", ")}"
         exit 1
       end
 
@@ -1313,6 +1276,7 @@ class Chef
         sleep 10
         response = fetch_password_data(server_id)
         return false unless response.password_data
+
         true
       end
 
@@ -1345,8 +1309,7 @@ class Chef
 
       # TODO: connection_protocol and connection_port used to choose winrm/ssh or 5985/22 based on the image chosen
       def connection_port
-        port = config_value(:connection_port,
-                            knife_key_for_protocol(connection_protocol, :port))
+        port = config_value(:connection_port, knife_key_for_protocol(connection_protocol, :port))
         return port if port
 
         assign_default_port
@@ -1370,7 +1333,7 @@ class Chef
 
         default_protocol = is_image_windows? ? "winrm" : "ssh"
 
-        from_url = host_descriptor =~ /^(.*):\/\// ? $1 : nil
+        from_url = host_descriptor =~ %r{^(.*)://} ? $1 : nil
         from_cli = config[:connection_protocol]
         from_knife = Chef::Config[:knife][:connection_protocol]
         @connection_protocol = from_url || from_cli || from_knife || default_protocol
@@ -1382,6 +1345,7 @@ class Chef
 
       def server_name
         return nil unless server
+
         server.public_dns_name || server.private_dns_name || server.private_ip_address
       end
 
@@ -1421,7 +1385,7 @@ class Chef
 
       def hashed_tags
         ht = {}
-        tags.map { |t| key, val = t.split("="); ht[key] = val } unless tags.nil?
+        parse_aws_tags.map { |t| key, val = t.split("="); ht[key] = val } unless parse_aws_tags.nil?
 
         # Always set the Name tag
         unless ht.keys.include? "Name"
