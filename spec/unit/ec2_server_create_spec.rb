@@ -1161,10 +1161,10 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.config[:ephemeral] = [ "/dev/sdb", "/dev/sdc", "/dev/sdd", "/dev/sde" ]
       server_def = knife_ec2_create.server_attributes
       expect(server_def[:block_device_mappings]).to eq([{ device_name: nil, ebs: { delete_on_termination: nil, iops: "123", volume_size: "30", volume_type: nil } },
-                                                    { virtual_name: "ephemeral0", device_name: "/dev/sdb" },
-                                                   { virtual_name: "ephemeral1", device_name: "/dev/sdc" },
-                                                   { virtual_name: "ephemeral2", device_name: "/dev/sdd" },
-                                                   { virtual_name: "ephemeral3", device_name: "/dev/sde" }])
+                                                   { virtual_name: "ephemeral0", device_name: "/dev/sdb", ebs: { volume_size: "30" } },
+                                                   { virtual_name: "ephemeral1", device_name: "/dev/sdc", ebs: { volume_size: "30" } },
+                                                   { virtual_name: "ephemeral2", device_name: "/dev/sdd", ebs: { volume_size: "30" } },
+                                                   { virtual_name: "ephemeral3", device_name: "/dev/sde", ebs: { volume_size: "30" } }])
     end
 
     it "sets the specified private ip address" do
@@ -2493,16 +2493,14 @@ describe Chef::Knife::Ec2ServerCreate do
     context 'when mulitple values provided from cli for e.g. --chef-tag "foo" --chef-tag "bar"' do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--chef-tag", "foo", "--chef-tag", "bar"]) }
       it "creates array of chef tag" do
-        server_def = ec2_server_create.server_attributes
-        expect(server_def[:chef_tag]).to eq(%w{foo bar})
+        expect(ec2_server_create.config[:tags]).to eq(%w{foo bar})
       end
     end
 
     context "when single value provided from cli for e.g. --chef-tag foo" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--chef-tag", "foo"]) }
       it "creates array of chef tag" do
-        server_def = ec2_server_create.server_attributes
-        expect(server_def[:chef_tag]).to eq(["foo"])
+        expect(ec2_server_create.config[:tags]).to eq(["foo"])
       end
     end
   end

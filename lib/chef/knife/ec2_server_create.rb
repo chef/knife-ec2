@@ -949,7 +949,7 @@ class Chef
         if config[:ephemeral] && config[:ephemeral].length > 0
           ephemeral_blocks = []
           config[:ephemeral].each_with_index do |device_name, i|
-            ephemeral_blocks << { virtual_name: "ephemeral#{i}", device_name: device_name }
+            ephemeral_blocks << { virtual_name: "ephemeral#{i}", device_name: device_name, ebs: { volume_size: ebs_size } }
           end
           attributes[:block_device_mappings] += ephemeral_blocks
         end
@@ -958,7 +958,6 @@ class Chef
         attributes[:disable_api_termination] = config_value(:disable_api_termination) if config_value(:spot_price).nil?
 
         attributes[:instance_initiated_shutdown_behavior] = config_value(:instance_initiated_shutdown_behavior)
-        attributes[:chef_tag] = config_value(:tags)
         attributes
       end
 
