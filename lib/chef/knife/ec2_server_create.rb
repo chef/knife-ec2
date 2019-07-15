@@ -949,7 +949,7 @@ class Chef
         if config[:ephemeral] && config[:ephemeral].length > 0
           ephemeral_blocks = []
           config[:ephemeral].each_with_index do |device_name, i|
-            ephemeral_blocks << { virtual_name: "ephemeral#{i}", device_name: device_name }
+            ephemeral_blocks << { virtual_name: "ephemeral#{i}", device_name: device_name, ebs: { volume_size: ebs_size } }
           end
           attributes[:block_device_mappings] += ephemeral_blocks
         end
