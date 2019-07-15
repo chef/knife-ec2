@@ -2493,16 +2493,14 @@ describe Chef::Knife::Ec2ServerCreate do
     context 'when mulitple values provided from cli for e.g. --chef-tag "foo" --chef-tag "bar"' do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--chef-tag", "foo", "--chef-tag", "bar"]) }
       it "creates array of chef tag" do
-        server_def = ec2_server_create.server_attributes
-        expect(server_def[:chef_tag]).to eq(%w{foo bar})
+        expect(ec2_server_create.config[:tags]).to eq(%w{foo bar})
       end
     end
 
     context "when single value provided from cli for e.g. --chef-tag foo" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--chef-tag", "foo"]) }
       it "creates array of chef tag" do
-        server_def = ec2_server_create.server_attributes
-        expect(server_def[:chef_tag]).to eq(["foo"])
+        expect(ec2_server_create.config[:tags]).to eq(["foo"])
       end
     end
   end

@@ -958,7 +958,6 @@ class Chef
         attributes[:disable_api_termination] = config_value(:disable_api_termination) if config_value(:spot_price).nil?
 
         attributes[:instance_initiated_shutdown_behavior] = config_value(:instance_initiated_shutdown_behavior)
-        attributes[:chef_tag] = config_value(:tags)
         attributes
       end
 
