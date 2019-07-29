@@ -4,26 +4,23 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.9 -->
-## [v1.0.9](https://github.com/chef/knife-ec2/tree/v1.0.9) (2019-07-15)
-
-#### Merged Pull Requests
-- Attach emphemeral disks with using --emphemeral flag &amp; avoid tagging error [#600](https://github.com/chef/knife-ec2/pull/600) ([dheerajd-msys](https://github.com/dheerajd-msys))
+<!-- latest_release -->
 <!-- latest_release -->
 
-<!-- release_rollup since=1.0.8 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Attach emphemeral disks with using --emphemeral flag &amp; avoid tagging error [#600](https://github.com/chef/knife-ec2/pull/600) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 1.0.9 -->
+<!-- release_rollup -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
+## [v1.0.9](https://github.com/chef/knife-ec2/tree/v1.0.9) (2019-07-29)
+
+#### Merged Pull Requests
+- Attach emphemeral disks with using --emphemeral flag &amp; avoid tagging error [#600](https://github.com/chef/knife-ec2/pull/600) ([dheerajd-msys](https://github.com/dheerajd-msys))
+<!-- latest_stable_release -->
+
 ## [v1.0.8](https://github.com/chef/knife-ec2/tree/v1.0.8) (2019-07-11)
 
 #### Merged Pull Requests
 - Remove deprecated options &amp; set default value for ec2 ami list owner option [#586](https://github.com/chef/knife-ec2/pull/586) ([vsingh-msys](https://github.com/vsingh-msys))
-<!-- latest_stable_release -->
 
 ## [v1.0.7](https://github.com/chef/knife-ec2/tree/v1.0.7) (2019-07-08)
 
