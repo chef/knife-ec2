@@ -873,7 +873,7 @@ class Chef
           network_attrs[:associate_public_ip_address] = config_value(:associate_public_ip)
         end
 
-        if network_attrs.compact.length > 0
+        if network_attrs.length > 0
           network_attrs[:device_index] = 0
           attributes[:network_interfaces] = [network_attrs]
         else
@@ -1125,23 +1125,30 @@ class Chef
         subnet.map_public_ip_on_launch
       end
 
+      # Assign connection host based on attribute passed
+      # @return [String]
       def connection_host
-        unless @connection_host
-          if config[:server_connect_attribute]
-            connect_attribute = config[:server_connect_attribute]
-            server.send(config[:server_connect_attribute])
-          elsif vpc_mode? && !(subnet_public_ip_on_launch? || config[:associate_public_ip] || config[:associate_eip])
-            connect_attribute = "private_ip_address"
-            server.private_ip_address
-          else
-            connect_attribute = server.public_dns_name ? "public_dns_name" : "public_ip_address"
-            server.send(connect_attribute)
-          end
-          @connection_host = server.send(connect_attribute)
-        end
+        @connection_host ||= server.send(connect_attribute)
 
         puts "\nSSH Target Address: #{@connection_host}(#{connect_attribute})"
         @connection_host
+      end
+
+      # Identify connection attribute if:
+      # Option --server-connect-attribute is set.
+      # For VPC mode check if public IP or elastic IP has been requested.
+      # Otherwise assign public DNS or public IP.
+      # @return [String]
+      def connect_attribute
+        @connect_attribute ||= begin
+          if !!config[:server_connect_attribute]
+            config[:server_connect_attribute]
+          elsif vpc_mode? && !(subnet_public_ip_on_launch? || config[:associate_public_ip] || config[:associate_eip])
+            "private_ip_address"
+          else
+            server.public_dns_name ? "public_dns_name" : "public_ip_address"
+          end
+        end
       end
 
       def create_tags(hashed_tags)
