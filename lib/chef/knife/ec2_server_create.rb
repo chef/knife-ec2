@@ -269,6 +269,12 @@ class Chef
           Chef::Config[:knife][:aws_tag]
         }
 
+      option :cpu_credits,
+        long: "--cpu-credits CPU_CREDITS",
+        description: "The credit option for CPU usage of the instance. Valid values are standard and unlimited. T3 instances launch as unlimited by default. T2 instances launch as standard by default.",
+        default: "standard",
+        in: %w{standard unlimited}
+
       def plugin_create_instance!
         requested_elastic_ip = config[:associate_eip] if config[:associate_eip]
 
@@ -334,6 +340,7 @@ class Chef
         msg_pair("AWS Tags", printed_aws_tags)
         msg_pair("Volume Tags", printed_volume_tags)
         msg_pair("SSH Key", server.key_name)
+        msg_pair("T2/T3 Unlimited", printed_t2_t3_unlimited)
 
         puts("\n")
 
@@ -718,6 +725,13 @@ class Chef
           config[:tags] += config_value(:chef_tag)
           ui.warn("[DEPRECATED] --chef-tag option is deprecated and will be removed in future release. Use --tags TAGS option instead.")
         end
+
+        if config_value(:cpu_credits)
+          if !config_value(:flavor)
+            ui.error("Instance type should be specified and should be any of T2/T3 type.")
+            exit 1
+          end
+        end
       end
 
       def parse_aws_tags
@@ -958,6 +972,11 @@ class Chef
         attributes[:disable_api_termination] = config_value(:disable_api_termination) if config_value(:spot_price).nil?
 
         attributes[:instance_initiated_shutdown_behavior] = config_value(:instance_initiated_shutdown_behavior)
+
+        attributes[:credit_specification] =
+         {
+           cpu_credits: config[:cpu_credits]
+         }
         attributes
       end
 
@@ -1400,6 +1419,14 @@ class Chef
 
       def printed_aws_tags
         hashed_tags.map { |tag, val| "#{tag}: #{val}" }.join(", ")
+      end
+
+      def printed_t2_t3_unlimited
+        if config[:cpu_credits] == "unlimited"
+          "Enabled"
+        else
+          "Disabled"
+        end
       end
     end
   end
