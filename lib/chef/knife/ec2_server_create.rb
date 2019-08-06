@@ -726,11 +726,9 @@ class Chef
           ui.warn("[DEPRECATED] --chef-tag option is deprecated and will be removed in future release. Use --tags TAGS option instead.")
         end
 
-        if config_value(:cpu_credits)
-          if !config_value(:flavor)
-            ui.error("Instance type should be specified and should be any of T2/T3 type.")
-            exit 1
-          end
+        if config_value(:cpu_credits) && !config_value(:flavor)
+          ui.error("Instance type should be specified and should be any of T2/T3 type.")
+          exit 1
         end
       end
 
@@ -974,9 +972,9 @@ class Chef
         attributes[:instance_initiated_shutdown_behavior] = config_value(:instance_initiated_shutdown_behavior)
 
         attributes[:credit_specification] =
-         {
-           cpu_credits: config[:cpu_credits]
-         }
+          {
+            cpu_credits: config[:cpu_credits],
+          }
         attributes
       end
 

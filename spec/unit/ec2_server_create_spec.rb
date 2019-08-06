@@ -1238,6 +1238,20 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(server_def[:type]).to eq("one-time")
     end
 
+    it "sets cpu credit as unlimited for T2 instance" do
+      knife_ec2_create.config[:cpu_credits] = "unlimited"
+      knife_ec2_create.config[:flavor] = "t2.micro"
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:credit_specification][:cpu_credits]).to eq("unlimited")
+    end
+
+    it "sets cpu credit as standard for T3 instance" do
+      knife_ec2_create.config[:cpu_credits] = "standard"
+      knife_ec2_create.config[:flavor] = "t3.micro"
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:credit_specification][:cpu_credits]).to eq("standard")
+    end
+
     context "when using ebs volume type and ebs provisioned iops rate options" do
       before do
         allow(knife_ec2_create).to receive(:ami).and_return(ami)
