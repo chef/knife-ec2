@@ -1110,6 +1110,25 @@ describe Chef::Knife::Ec2ServerCreate do
         expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
       end
     end
+
+    context "when cpu_credits option is specified" do
+      it "raise error on missing flavor" do
+        knife_ec2_create.config[:cpu_credits] = "unlimited"
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
+      end
+
+      it "raise error when invalid string is passed other than 'unlimited' and 'standard'" do
+        knife_ec2_create.config[:cpu_credits] = "xyz"
+        knife_ec2_create.config[:flavor] = "t2.medium"
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
+      end
+
+      it "raise error on flavor type other than T2/T3" do
+        knife_ec2_create.config[:cpu_credits] = "unlimited"
+        knife_ec2_create.config[:flavor] = "m3.medium"
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
+      end
+    end
   end
 
   describe "when creating the server definition" do
