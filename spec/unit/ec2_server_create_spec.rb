@@ -1110,6 +1110,25 @@ describe Chef::Knife::Ec2ServerCreate do
         expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
       end
     end
+
+    context "when cpu_credits option is specified" do
+      it "raise error on missing flavor" do
+        knife_ec2_create.config[:cpu_credits] = "unlimited"
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
+      end
+
+      it "raise error when invalid string is passed other than 'unlimited' and 'standard'" do
+        knife_ec2_create.config[:cpu_credits] = "xyz"
+        knife_ec2_create.config[:flavor] = "t2.medium"
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
+      end
+
+      it "raise error on flavor type other than T2/T3" do
+        knife_ec2_create.config[:cpu_credits] = "unlimited"
+        knife_ec2_create.config[:flavor] = "m3.medium"
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
+      end
+    end
   end
 
   describe "when creating the server definition" do
@@ -1236,6 +1255,20 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.config[:spot_request_type] = "one-time"
       server_def = knife_ec2_create.spot_instances_attributes
       expect(server_def[:type]).to eq("one-time")
+    end
+
+    it "sets cpu credit as unlimited for T2 instance" do
+      knife_ec2_create.config[:cpu_credits] = "unlimited"
+      knife_ec2_create.config[:flavor] = "t2.micro"
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:credit_specification][:cpu_credits]).to eq("unlimited")
+    end
+
+    it "sets cpu credit as standard for T3 instance" do
+      knife_ec2_create.config[:cpu_credits] = "standard"
+      knife_ec2_create.config[:flavor] = "t3.micro"
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:credit_specification][:cpu_credits]).to eq("standard")
     end
 
     context "when using ebs volume type and ebs provisioned iops rate options" do
