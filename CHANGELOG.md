@@ -4,17 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.10 -->
-## [v1.0.10](https://github.com/chef/knife-ec2/tree/v1.0.10) (2019-08-08)
+<!-- latest_release 1.0.11 -->
+## [v1.0.11](https://github.com/chef/knife-ec2/tree/v1.0.11) (2019-08-08)
 
 #### Merged Pull Requests
-- Add --cpu-credits option for launching T2/T3 instances as unlimited [#603](https://github.com/chef/knife-ec2/pull/603) ([dheerajd-msys](https://github.com/dheerajd-msys))
+- Update README for OSS Best Practices [#604](https://github.com/chef/knife-ec2/pull/604) ([dheerajd-msys](https://github.com/dheerajd-msys))
 <!-- latest_release -->
 
 <!-- release_rollup since=1.0.9 -->
 ### Changes not yet released to rubygems.org
 
 #### Merged Pull Requests
+- Update README for OSS Best Practices [#604](https://github.com/chef/knife-ec2/pull/604) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 1.0.11 -->
 - Add --cpu-credits option for launching T2/T3 instances as unlimited [#603](https://github.com/chef/knife-ec2/pull/603) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 1.0.10 -->
 <!-- release_rollup -->
 
