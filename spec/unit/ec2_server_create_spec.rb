@@ -1398,6 +1398,30 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
+  describe "#reload_server_data_required?" do
+    it "returns true if associate_eip is set" do
+      knife_ec2_create.config[:associate_eip] = "10.0.0.1"
+      expect(knife_ec2_create.reload_server_data_required?).to eq(true)
+    end
+
+    it "returns true if classic_link_vpc_id is set" do
+      knife_ec2_create.config[:classic_link_vpc_id] = @vpc_id
+      expect(knife_ec2_create.reload_server_data_required?).to eq(true)
+    end
+
+    it "returns true if network_interfaces is set" do
+      knife_ec2_create.config[:network_interfaces] = %w{eni-12345678 eni-87654321}
+      expect(knife_ec2_create.reload_server_data_required?).to eq(true)
+    end
+
+    it "returns false if associate_eip, classic_link_vpc_id, network_interfaces are not set" do
+      knife_ec2_create.config[:associate_eip] = nil
+      knife_ec2_create.config[:classic_link_vpc_id] = nil
+      knife_ec2_create.config[:network_interfaces] = nil
+      expect(knife_ec2_create.reload_server_data_required?).to eq(false)
+    end
+  end
+
   describe "ssh_connect_host" do
     let(:new_ec2_server) { double }
 
@@ -2630,6 +2654,15 @@ describe Chef::Knife::Ec2ServerCreate do
         server_def = ec2_server_create.server_attributes
         expect(server_def[:network_interfaces]).to eq([{ network_interface_id: "eni-12345678", device_index: 0 }])
       end
+    end
+  end
+
+  describe "device_index for network interfaces" do
+    let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--subnet", "subnet-12345678"]) }
+    it "when a subnet_id is present set device index 0" do
+      allow(ec2_server_create).to receive(:ami).and_return(ami)
+      server_def = ec2_server_create.server_attributes
+      expect(server_def[:network_interfaces][0][:device_index]).to eq(0)
     end
   end
 end

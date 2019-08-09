@@ -361,6 +361,9 @@ class Chef
 
         attach_nics if config[:network_interfaces]
 
+        # Re-fetch the latest server data after assigning vpc or network interfaces
+        @server = fetch_ec2_instance(instance_id) if reload_server_data_required?
+
         if vpc_mode?
           msg_pair("Subnet ID", server.subnet_id)
           msg_pair("Tenancy", server.tenancy)
@@ -856,23 +859,25 @@ class Chef
             availability_zone: config_value(:availability_zone),
           },
         }
+
         network_attrs = {}
-        if primary_eni = config_value(:primary_eni)
-          network_attrs[:network_interface_id] = primary_eni
-          network_attrs[:device_index] = 0
-        else
-          attributes[:security_group_ids] = config_value(:security_group_ids)
-          network_attrs[:subnet_id] = config_value(:subnet_id) if vpc_mode?
+        if !!config_value(:primary_eni)
+          network_attrs[:network_interface_id] = config_value(:primary_eni)
+        elsif vpc_mode?
+          network_attrs[:subnet_id] = config_value(:subnet_id)
         end
 
         if vpc_mode?
-          network_attrs[:groups] = attributes[:security_group_ids]
+          network_attrs[:groups] = config_value(:security_group_ids) if !!config_value(:security_group_ids)
           network_attrs[:private_ip_address] = config_value(:private_ip_address)
-          network_attrs[:associate_public_ip_address] = config_value(:associate_public_ip) if config[:associate_public_ip]
+          network_attrs[:associate_public_ip_address] = config_value(:associate_public_ip)
         end
 
         if network_attrs.length > 0
+          network_attrs[:device_index] = 0
           attributes[:network_interfaces] = [network_attrs]
+        else
+          attributes[:security_group_ids] = config_value(:security_group_ids)
         end
 
         attributes[:placement][:group_name] = config_value(:placement_group)
@@ -1120,23 +1125,30 @@ class Chef
         subnet.map_public_ip_on_launch
       end
 
+      # Assign connection host based on attribute passed
+      # @return [String]
       def connection_host
-        unless @connection_host
-          if config[:server_connect_attribute]
-            connect_attribute = config[:server_connect_attribute]
-            server.send(config[:server_connect_attribute])
-          elsif vpc_mode? && !(subnet_public_ip_on_launch? || config[:associate_public_ip] || config[:associate_eip])
-            connect_attribute = "private_ip_address"
-            server.private_ip_address
-          else
-            connect_attribute = server.public_dns_name ? "public_dns_name" : "public_ip_address"
-            server.send(connect_attribute)
-          end
-          @connection_host = server.send(connect_attribute)
-        end
+        @connection_host ||= server.send(connect_attribute)
 
         puts "\nSSH Target Address: #{@connection_host}(#{connect_attribute})"
         @connection_host
+      end
+
+      # Identify connection attribute if:
+      # Option --server-connect-attribute is set.
+      # For VPC mode check if public IP or elastic IP has been requested.
+      # Otherwise assign public DNS or public IP.
+      # @return [String]
+      def connect_attribute
+        @connect_attribute ||= begin
+          if !!config[:server_connect_attribute]
+            config[:server_connect_attribute]
+          elsif vpc_mode? && !(subnet_public_ip_on_launch? || config[:associate_public_ip] || config[:associate_eip])
+            "private_ip_address"
+          else
+            server.public_dns_name ? "public_dns_name" : "public_ip_address"
+          end
+        end
       end
 
       def create_tags(hashed_tags)
@@ -1165,7 +1177,6 @@ class Chef
         ec2_connection.associate_address({
           allocation_id: elastic_ip.allocation_id,
           instance_id: server.id,
-          public_ip: elastic_ip.public_ip,
         })
       end
 
@@ -1425,6 +1436,10 @@ class Chef
         else
           "Disabled"
         end
+      end
+
+      def reload_server_data_required?
+        !!config[:associate_eip] || !!config[:classic_link_vpc_id] || !!config[:network_interfaces]
       end
     end
   end
