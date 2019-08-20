@@ -158,6 +158,7 @@ class Chef
         server_data["security_group_ids"] = server_obj.instances[0].security_groups.map(&:group_id)
         server_data["state"] = server_obj.instances[0].state.name
         server_data["subnet_id"] = server_obj.instances[0].network_interfaces[0].subnet_id
+        server_data["source_dest_check"] = server_obj.instances[0].network_interfaces[0].source_dest_check
         server_data["tags"] = tags
         server_data["tenancy"] = server_obj.instances[0].placement.tenancy
         server_data["volume_id"] = server_obj.instances[0].block_device_mappings[0]&.ebs&.volume_id

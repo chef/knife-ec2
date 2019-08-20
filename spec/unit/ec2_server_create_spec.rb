@@ -2515,6 +2515,32 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
+  describe "disable_source_dest_check option" do
+    before do
+      expect(knife_ec2_create).to receive(:plugin_validate_options!)
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
+      expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
+      knife_ec2_create.config[:yes] = true
+      allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
+      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+    end
+
+    context "when subnet_id and disable_source_dest_check are passed on CLI" do
+      let(:network_interfaces) { OpenStruct.new(subnet_id: "subnet-9d4a7b6", source_dest_check: false) }
+
+      it "modify instance attribute source_dest_check as false" do
+        allow(knife_ec2_create).to receive_messages(vpc_mode?: true)
+        knife_ec2_create.config[:disable_source_dest_check] = true
+        expect(ec2_connection).to receive(:modify_instance_attribute)
+        server_def = knife_ec2_create.fetch_ec2_instance("i-00fe186450a2e8e97")
+        expect(server_def.source_dest_check).to eq(false)
+        knife_ec2_create.run
+      end
+    end
+  end
+
   describe "--security-group-id option" do
     before do
       allow(ec2_server_create).to receive(:validate_aws_config!)
@@ -2663,6 +2689,13 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(ec2_server_create).to receive(:ami).and_return(ami)
       server_def = ec2_server_create.server_attributes
       expect(server_def[:network_interfaces][0][:device_index]).to eq(0)
+    end
+  end
+
+  describe "disable_source_dest_check option is passed on CLI" do
+    let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--disable-source-dest-check"]) }
+    it "when a disable_source_dest_check is present" do
+      expect(ec2_server_create.config[:disable_source_dest_check]).to eq(true)
     end
   end
 end
