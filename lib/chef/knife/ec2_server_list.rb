@@ -133,7 +133,7 @@ class Chef
             servers_list << v["public_ip_address"]
             servers_list << v["private_ip_address"]
             servers_list << v["instance_type"]
-            servers_list << v["az"] if config[:az]
+            servers_list << ui.color(v["az"], azcolor(v["az"])) if config[:az]
             servers_list << v["image_id"]
             servers_list << v["key_name"]
             servers_list << v["security_groups"].join(",")
@@ -143,7 +143,7 @@ class Chef
               end
             end
             servers_list << v["iam_instance_profile"].to_s if config[:iamprofile] # may be nil
-            servers_list << v["state"]
+            servers_list << ui.color(v["state"], state_color(v["state"]))
           end
           puts ui.list(servers_list, :uneven_columns_across, output_column_count)
         else
@@ -170,12 +170,12 @@ class Chef
           end
 
           if config[:az]
-            server_data["az"] = ui.color(i.instances[0].placement.availability_zone, azcolor(i.instances[0].placement.availability_zone))
+            server_data["az"] = i.instances[0].placement.availability_zone
           end
 
           server_data["iam_instance_profile"] = ( i.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[%r{instance-profile/(.*)}] )
 
-          server_data["state"] = ui.color(i.instances[0].state.name, state_color(i.instances[0].state.name))
+          server_data["state"] = i.instances[0].state.name
 
           if config[:tags]
             server_data["tags"] = tags
