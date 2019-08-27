@@ -242,6 +242,12 @@ class Chef
         boolean: true,
         default: false
 
+      option :disable_source_dest_check,
+        long: "--disable-source-dest-check",
+        description: "Disables the source destination check if this option is passed. This value must be passed for a NAT instance to perform NAT.",
+        boolean: true,
+        default: false
+
       option :volume_tags,
         long: "--volume-tags Tag=Value[,Tag=Value...]",
         description: "Tag the Root volume",
@@ -326,7 +332,6 @@ class Chef
             exit
           end
         end
-
         msg_pair("Instance ID", server.id)
         msg_pair("Flavor", server.instance_type)
         msg_pair("Image", server.image_id)
@@ -347,6 +352,8 @@ class Chef
         # occasionally 'ready?' isn't, so retry a couple times if needed.
         tries = 6
         begin
+          disable_source_dest_check if vpc_mode? && config_value(:disable_source_dest_check)
+
           create_tags(hashed_tags) unless hashed_tags.empty?
           create_volume_tags(hashed_volume_tags) unless hashed_volume_tags.empty?
           associate_address(elastic_ip) if config[:associate_eip]
@@ -1232,6 +1239,18 @@ class Chef
           instance_id: server.id,
           groups: security_group_ids,
           vpc_id: vpc_id,
+        })
+      end
+
+      # disable_source_dest_check option is used to set value of source_dest_check attribute in ec2.
+      # By default the source destination check is enabled in ec2.
+      # This value must be disable for a NAT instance to perform NAT.
+      def disable_source_dest_check
+        ec2_connection.modify_instance_attribute({
+          source_dest_check: {
+            value: false,
+          },
+          instance_id: server.id,
         })
       end
 
