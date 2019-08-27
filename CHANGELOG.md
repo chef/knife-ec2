@@ -4,10 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release -->
+<!-- latest_release 1.0.13 -->
+## [v1.0.13](https://github.com/chef/knife-ec2/tree/v1.0.13) (2019-08-27)
+
+#### Merged Pull Requests
+- Color code fixes in json format output of knife ec2 server list [#606](https://github.com/chef/knife-ec2/pull/606) ([dheerajd-msys](https://github.com/dheerajd-msys))
 <!-- latest_release -->
 
-<!-- release_rollup -->
+<!-- release_rollup since=1.0.12 -->
+### Changes not yet released to rubygems.org
+
+#### Merged Pull Requests
+- Color code fixes in json format output of knife ec2 server list [#606](https://github.com/chef/knife-ec2/pull/606) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 1.0.13 -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
