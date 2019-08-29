@@ -599,6 +599,47 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
+  describe "ssh_key_name option" do
+    before do
+      allow(knife_ec2_create).to receive(:ami).and_return(ami)
+      allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:validate_nics!)
+    end
+
+    context "when ssh_key_name option is not passed on the CLI" do
+      let(:keypair) do
+        Aws::EC2::Types::KeyPair.new(
+          key_fingerprint: "a9:00:ec:1d:bd:80:ae:00",
+          key_material: "test private key",
+          key_name: "ubuntu-07f692a0d8d1fcc4a086"
+        )
+      end
+      let(:file_path) { "/root/.chef/#{keypair.key_name}.pem" }
+      let(:file_like_object) { double(path: file_path) }
+
+      before do
+        knife_ec2_create.config[:connection_user] = "ubuntu"
+        Chef::Config[:knife].delete(:ssh_key_name)
+        allow(File).to receive(:open).with(file_path, "w+").and_return(file_like_object)
+      end
+
+      it "should be call create_key_pair method and Generate new keypair" do
+        expect(ec2_connection).to receive(:create_key_pair).and_return(keypair)
+        knife_ec2_create.plugin_validate_options!
+        expect(Chef::Config[:knife][:ssh_key_name]).to eq(keypair.key_name)
+        expect(Chef::Config[:knife][:ssh_identity_file]).to eq(file_path)
+      end
+    end
+
+    context "when ssh_key_name option is passed on the CLI" do
+      it "should not be call create_key_pair method" do
+        expect(ec2_connection).not_to receive(:create_key_pair)
+        knife_ec2_create.plugin_validate_options!
+        expect(Chef::Config[:knife][:ssh_key_name]).to eq("ssh_key_name")
+      end
+    end
+  end
+
   describe "when configuring the bootstrap process" do
     before do
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
