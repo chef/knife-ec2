@@ -115,7 +115,10 @@ class Chef
         params["owners"] = [locate_config_value(:owner).to_s]
 
         filters = []
-        filters << { platform: locate_config_value(:platform) } if locate_config_value(:platform)
+        if locate_config_value(:platform)
+          filters << { name: "platform",
+                       values: [locate_config_value(:platform)] }
+        end
 
         # TODO: Need to find substring to match in the description
         # filters << { description: locate_config_value(:search) } if locate_config_value(:search)
