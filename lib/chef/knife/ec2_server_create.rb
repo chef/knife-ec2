@@ -586,6 +586,7 @@ class Chef
           Chef::Config[:knife].delete(:aws_ssh_key_id)
           ui.warn("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
         end
+        create_key_pair unless config_value(:ssh_key_name)
 
         validate_aws_config!(%i{image ssh_key_name aws_access_key_id aws_secret_access_key})
 
@@ -1178,6 +1179,24 @@ class Chef
         if request_tags.length > 0
           ec2_connection.create_tags(tags: request_tags, resources: [server.volume_id])
         end
+      end
+
+      def create_key_pair
+        key_name = "#{config[:connection_user]}-#{SecureRandom.hex(10)}"
+        key_pair = ec2_connection.create_key_pair({
+          key_name: key_name,
+        })
+
+        save_keypair_file(key_pair) if key_pair
+      end
+
+      def save_keypair_file(key_pair)
+        file_path = File.join(Config.config_dir, "#{key_pair.key_name}.pem")
+        file = File.open(file_path, "w+") { |f| f << key_pair.key_material }
+
+        Chef::Config[:knife][:ssh_key_name] = key_pair.key_name
+        Chef::Config[:knife][:ssh_identity_file] = file.path
+        puts "\nGenerated keypair file: #{file.path}"
       end
 
       def associate_address(elastic_ip)
