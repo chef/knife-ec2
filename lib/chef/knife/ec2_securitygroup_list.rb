@@ -29,7 +29,7 @@ class Chef
       def run
         validate_aws_config!
         custom_warnings!
-
+        mfa_creds
         sg_list = [
           ui.color("ID", :bold),
           ui.color("Name", :bold),

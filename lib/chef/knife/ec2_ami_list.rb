@@ -62,7 +62,7 @@ class Chef
 
         validate_aws_config!
         custom_warnings!
-
+        mfa_creds
         servers_list = [
           ui.color("AMI ID", :bold),
           ui.color("Platform", :bold),

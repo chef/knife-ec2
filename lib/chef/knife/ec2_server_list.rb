@@ -87,6 +87,7 @@ class Chef
         $stdout.sync = true
 
         validate_aws_config!
+        mfa_creds
 
         servers_list = [
           ui.color("Instance ID", :bold),

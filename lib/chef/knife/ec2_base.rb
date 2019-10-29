@@ -76,6 +76,21 @@ class Chef
             boolean: true,
             default: false,
             proc: Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key }
+
+          option :duration_seconds,
+            long: "--duration-seconds DURATION_SECONDS",
+            description: "The duration, in seconds, that the credentials should remain valid. Acceptable durations for IAM user sessions range from 900 seconds (15 minutes) to 129,600 seconds (36 hours), with 43,200 seconds (12 hours) as the default. Sessions for AWS account owners are restricted to a maximum of 3,600 seconds (one hour). If the duration is longer than one hour, the session for AWS account owners defaults to one hour.",
+            default: 43200
+
+          option :mfa_enabled_user,
+            long: "--mfa-enabled-user",
+            description: "Use MFA enabled IAM user.",
+            boolean: true,
+            default: false
+
+          option :serial_number,
+            long: "--serial-number SERIAL_NUMBER",
+            description: "Serial number of user."
         end
       end
 
@@ -97,6 +112,14 @@ class Chef
       # @return [Aws::EC2::Client]
       def ec2_connection
         @ec2_connection ||= Aws::EC2::Client.new(connection_string)
+      end
+
+      # @return [Aws::STS::Client]
+      def sts_connection
+        @sts_connection ||= begin
+          require "aws-sdk-core" # lazy load the aws sdk to speed up the knife run
+          Aws::STS::Client.new(connection_string)
+        end
       end
 
       def fetch_ami(image_id)
@@ -307,6 +330,7 @@ class Chef
       unless aws_config.values.empty?
         if aws_config[profile_key]
           Chef::Config[:knife][:region] = aws_config[profile_key]["region"]
+          Chef::Config[:knife][:serial_number] = aws_config[profile_key]["mfa_serial"]
         else
           raise ArgumentError, "The provided --aws-profile '#{profile_key}' is invalid."
         end
@@ -345,6 +369,30 @@ class Chef
       else
         raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid. Does the credential file at '#{aws_cred_file_location}' contain this profile?"
       end
+    end
+
+    def mfa_creds
+      if config[:mfa_enabled_user]
+        puts("Enter MFA code for #{config[:serial_number]}")
+        token_code = STDIN.gets.chomp
+        generate_credentials(config[:duration_seconds], config[:serial_number], token_code)
+      end
+    end
+
+    def generate_credentials(duration_seconds, mfa_serial, token_code)
+      creds = sts_connection.get_session_token({
+                duration_seconds: duration_seconds,
+                serial_number: mfa_serial,
+                token_code: token_code,
+      })
+
+      save_credentials(creds)
+    end
+
+    def save_credentials(creds)
+      Chef::Config[:knife][:aws_access_key_id] = creds.credentials.access_key_id
+      Chef::Config[:knife][:aws_secret_access_key] = creds.credentials.secret_access_key
+      Chef::Config[:knife][:aws_session_token] = creds.credentials.session_token
     end
   end
 end

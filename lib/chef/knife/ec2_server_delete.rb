@@ -69,6 +69,7 @@ class Chef
 
       def run
         validate_aws_config!
+        mfa_creds
         validate_instances!
 
         server_hashes.each do |h|

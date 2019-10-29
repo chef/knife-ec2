@@ -586,6 +586,10 @@ class Chef
           Chef::Config[:knife].delete(:aws_ssh_key_id)
           ui.warn("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
         end
+        # require 'byebug'
+        # byebug
+        mfa_creds
+
         create_key_pair unless config_value(:ssh_key_name)
 
         validate_aws_config!(%i{image ssh_key_name aws_access_key_id aws_secret_access_key})
