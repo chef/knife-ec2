@@ -278,7 +278,6 @@ class Chef
       option :cpu_credits,
         long: "--cpu-credits CPU_CREDITS",
         description: "The credit option for CPU usage of the instance. Valid values are standard and unlimited. T3 instances launch as unlimited by default. T2 instances launch as standard by default.",
-        default: "standard",
         in: %w{standard unlimited}
 
       def plugin_create_instance!
@@ -984,10 +983,12 @@ class Chef
 
         attributes[:instance_initiated_shutdown_behavior] = config_value(:instance_initiated_shutdown_behavior)
 
-        attributes[:credit_specification] =
-          {
-            cpu_credits: config[:cpu_credits],
-          }
+        if config[:cpu_credits]
+          attributes[:credit_specification] =
+            {
+              cpu_credits: config[:cpu_credits],
+            }
+        end
         attributes
       end
 
