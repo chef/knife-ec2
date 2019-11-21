@@ -4,27 +4,24 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.17 -->
+<!-- latest_release -->
+<!-- latest_release -->
+
+<!-- release_rollup -->
+<!-- release_rollup -->
+
+<!-- latest_stable_release -->
 ## [v1.0.17](https://github.com/chef/knife-ec2/tree/v1.0.17) (2019-11-21)
 
 #### Merged Pull Requests
 - Insert conditional to avoid error for non T2/T3 instance [#616](https://github.com/chef/knife-ec2/pull/616) ([dheerajd-msys](https://github.com/dheerajd-msys))
-<!-- latest_release -->
-
-<!-- release_rollup since=1.0.16 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Insert conditional to avoid error for non T2/T3 instance [#616](https://github.com/chef/knife-ec2/pull/616) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 1.0.17 -->
-<!-- release_rollup -->
-
 <!-- latest_stable_release -->
+
 ## [v1.0.16](https://github.com/chef/knife-ec2/tree/v1.0.16) (2019-09-16)
 
 #### Merged Pull Requests
 - Fix argument error for --platform option [#609](https://github.com/chef/knife-ec2/pull/609) ([dheerajd-msys](https://github.com/dheerajd-msys))
 - Fix for Generate temporary keypair when none is supplied [#608](https://github.com/chef/knife-ec2/pull/608) ([kapilchouhan99](https://github.com/kapilchouhan99))
-<!-- latest_stable_release -->
 
 ## [v1.0.14](https://github.com/chef/knife-ec2/tree/v1.0.14) (2019-08-27)
 
