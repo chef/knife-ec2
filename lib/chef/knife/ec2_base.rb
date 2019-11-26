@@ -294,6 +294,7 @@ class Chef
     # @return [String]
     def region_from_config_file(config_file)
       return if config_file.nil?
+
       aws_config = ini_parse(File.read(config_file))
       profile_key = locate_config_value(:aws_profile)
       profile_key = "profile #{profile_key}" if profile_key != "default"
