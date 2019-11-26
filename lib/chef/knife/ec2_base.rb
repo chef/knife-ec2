@@ -81,8 +81,8 @@ class Chef
 
       def connection_string
         conn = {}
-        conn[:region] = locate_config_value(:region)
-        Chef::Log.debug "Using AWS region #{locate_config_value(:region)}"
+        conn[:region] = region_from_config_file(locate_config_value(:aws_config_file)) || locate_config_value(:region)
+        Chef::Log.debug "Using AWS region #{conn[:region]}"
         conn[:credentials] =
           if locate_config_value(:use_iam_profile)
             Chef::Log.debug "Using iam profile for authentication as use_iam_profile set"
@@ -287,6 +287,23 @@ class Chef
     def custom_warnings!
       if !config[:region] && Chef::Config[:knife][:region].nil?
         ui.warn "No region was specified in knife.rb/config.rb or as an argument. The default region, us-east-1, will be used:"
+      end
+    end
+
+    # Return region from aws_config_file
+    # @return [String]
+    def region_from_config_file(config_file)
+      return if config_file.nil?
+      aws_config = ini_parse(File.read(config_file))
+      profile_key = locate_config_value(:aws_profile)
+      profile_key = "profile #{profile_key}" if profile_key != "default"
+
+      unless aws_config.values.empty?
+        if aws_config[profile_key]
+          Chef::Config[:knife][:region] = aws_config[profile_key]["region"]
+        else
+          raise ArgumentError, "The provided --aws-profile '#{profile_key}' is invalid."
+        end
       end
     end
 
