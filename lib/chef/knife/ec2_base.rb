@@ -1,3 +1,4 @@
+
 #
 # Author:: Seth Chisamore (<schisamo@chef.io>)
 # Copyright:: Copyright (c) 2011-2019 Chef Software, Inc.
@@ -67,8 +68,7 @@ class Chef
           option :region,
             long: "--region REGION",
             description: "Your AWS region",
-            proc: Proc.new { |key| Chef::Config[:knife][:region] = key },
-            default: "us-east-1"
+            proc: Proc.new { |key| Chef::Config[:knife][:region] = key }
 
           option :use_iam_profile,
             long: "--use-iam-profile",
@@ -81,7 +81,7 @@ class Chef
 
       def connection_string
         conn = {}
-        conn[:region] = region_from_config_file(locate_config_value(:aws_config_file)) || locate_config_value(:region)
+        conn[:region] = locate_config_value(:region) || "us-east-1"
         Chef::Log.debug "Using AWS region #{conn[:region]}"
         conn[:credentials] =
           if locate_config_value(:use_iam_profile)
@@ -145,7 +145,6 @@ class Chef
         %w{ebs_optimized image_id instance_id instance_type key_name platform public_dns_name public_ip_address private_dns_name private_ip_address root_device_type}.each do |id|
           server_data[id] = server_obj.instances[0].send(id)
         end
-
         server_data["availability_zone"] = server_obj.instances[0].placement.availability_zone
         server_data["groups"] = server_obj.groups.map(&:name)
         server_data["iam_instance_profile"] = ( server_obj.instances[0].iam_instance_profile.nil? ? nil : server_obj.instances[0].iam_instance_profile.arn[%r{instance-profile/(.*)}] )
@@ -204,7 +203,6 @@ class Chef
         errors = [] # track all errors so we report on all of them
 
         validate_aws_config_file! if locate_config_value(:aws_config_file)
-
         unless locate_config_value(:use_iam_profile) # skip config file / key validation if we're using iam profile
           # validate the creds file if:
           #   aws keys have not been passed in config / CLI and the default cred file location does exist
@@ -290,24 +288,6 @@ class Chef
       end
     end
 
-    # Return region from aws_config_file
-    # @return [String]
-    def region_from_config_file(config_file)
-      return if config_file.nil?
-
-      aws_config = ini_parse(File.read(config_file))
-      profile_key = locate_config_value(:aws_profile)
-      profile_key = "profile #{profile_key}" if profile_key != "default"
-
-      unless aws_config.values.empty?
-        if aws_config[profile_key]
-          Chef::Config[:knife][:region] = aws_config[profile_key]["region"]
-        else
-          raise ArgumentError, "The provided --aws-profile '#{profile_key}' is invalid."
-        end
-      end
-    end
-
     private
 
     # validate the contents of the aws configuration file
@@ -349,7 +329,6 @@ class Chef
       profile = locate_config_value(:aws_profile)
 
       Chef::Log.debug "Using AWS profile #{profile}"
-
       entries = if aws_creds.values.first.key?("AWSAccessKeyId")
                   aws_creds.values.first
                 else
