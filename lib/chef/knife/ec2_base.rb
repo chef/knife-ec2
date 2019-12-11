@@ -88,7 +88,8 @@ class Chef
             Chef::Log.debug "Using iam profile for authentication as use_iam_profile set"
             Aws::InstanceProfileCredentials.new
           else
-            Chef::Log.debug "Setting up AWS connection using aws_access_key_id #{locate_config_value(:aws_access_key_id)} aws_secret_access_key: #{locate_config_value(:aws_secret_access_key)} aws_session_token: #{locate_config_value(:aws_session_token)}"
+            Chef::Log.debug "Setting up AWS connection using aws_access_key_id: #{mask(locate_config_value(:aws_access_key_id))} aws_secret_access_key: #{mask(locate_config_value(:aws_secret_access_key))} aws_session_token: #{mask(locate_config_value(:aws_session_token))}"
+
             Aws::Credentials.new(locate_config_value(:aws_access_key_id), locate_config_value(:aws_secret_access_key), locate_config_value(:aws_session_token))
           end
         conn
@@ -342,6 +343,17 @@ class Chef
       else
         raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid. Does the credential file at '#{aws_cred_file_location}' contain this profile?"
       end
+    end
+
+    # Mask the given string with char `X`
+    # Discard the chars based on from value
+    def mask(key, from = 4)
+      str = key.dup
+      if str && str.length > from
+        str[from...str.length] = "X" * (str[from...str.length].length)
+      end
+
+      str
     end
   end
 end
