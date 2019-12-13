@@ -1400,7 +1400,7 @@ class Chef
       end
 
       def connection_user
-        @connection_user ||= config_value(:connection_user, knife_key_for_protocol(connection_protocol, :user))
+        @connection_user ||= config_value(:connection_user, knife_key_for_protocol(connection_protocol_ec2, :user))
       end
 
       def server_name
