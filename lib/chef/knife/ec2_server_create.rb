@@ -717,15 +717,11 @@ class Chef
           exit 1
         end
 
-        if winrm? && config_value(:connection_password).to_s.length > 14
-          ui.warn("The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):")
-          password_promt = STDIN.gets.chomp.upcase
-          if password_promt == "N"
-            raise "Exiting as operation with password greater than 14 characters not accepted"
-          elsif password_promt == "Y"
-            @allow_long_password = "/yes"
-          else
-            raise "The input provided is incorrect."
+        if winrm?
+          reg = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,40}$/
+          unless config_value(:connection_password) =~ reg
+            ui.error("Complexity requirements are not met. Password length should be 8-40 characters and include: 1 uppercase, 1 lowercase, 1 digit, and 1 special character")
+            exit 1
           end
         end
 
@@ -891,7 +887,6 @@ class Chef
         attributes[:placement][:tenancy] = "dedicated" if vpc_mode? && config_value(:dedicated_instance)
         attributes[:iam_instance_profile] = {}
         attributes[:iam_instance_profile][:name] = config_value(:iam_instance_profile)
-
         if config_value(:winrm_ssl)
           if config_value(:aws_user_data)
             begin
@@ -919,7 +914,6 @@ class Chef
             end
           end
         end
-
         attributes[:ebs_optimized] = !!config_value(:ebs_optimized)
 
         if ami.root_device_type == "ebs"
