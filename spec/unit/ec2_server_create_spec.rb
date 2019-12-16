@@ -164,7 +164,7 @@ describe Chef::Knife::Ec2ServerCreate do
       image: "ami-005bdb005fb00e791",
       ssh_key_name: "ssh_key_name",
       connection_user: "user",
-      connection_password: "password",
+      connection_password: "Password@123",
       network_interfaces: %w{eni-12345678 eni-87654321},
     }.each do |key, value|
       Chef::Config[:knife][key] = value
@@ -511,6 +511,15 @@ describe Chef::Knife::Ec2ServerCreate do
       it "sets the secret to the expected test string" do
         expect(bootstrap.config[:secret]).to eql(@secret_content)
       end
+    end
+  end
+
+  shared_examples "invalid password" do
+    it "raises error" do
+      expect(knife_ec2_create.ui).to receive(:error).with(
+        "Complexity requirements are not met. Password length should be 8-40 characters and include: 1 uppercase, 1 lowercase, 1 digit, and 1 special character"
+      )
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error(SystemExit)
     end
   end
 
@@ -2008,7 +2017,6 @@ describe Chef::Knife::Ec2ServerCreate do
       it "appends ssl config to user supplied user_data at the end of <powershell> tag section" do
         encoded_data = Base64.encode64(@server_def_user_data)
         server_def = knife_ec2_create.server_attributes
-
         expect(server_def[:user_data]).to eq(encoded_data)
       end
 
@@ -2671,45 +2679,58 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
-  describe "Handle password greater than 14 characters" do
+  describe "Check Password valid on not" do
     before do
       allow(knife_ec2_create).to receive(:validate_aws_config!)
       allow(knife_ec2_create).to receive(:validate_nics!)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       knife_ec2_create.config[:connection_user] = "domain\\ec2"
-      knife_ec2_create.config[:connection_password] = "LongPassword@123"
       knife_ec2_create.config[:connection_protocol] = "winrm"
     end
 
-    context "when user enters Y after prompt" do
+    context "when user enters a valid password" do
       before do
-        allow(STDIN).to receive_message_chain(:gets, chomp: "Y")
+        knife_ec2_create.config[:connection_password] = "Password@123"
       end
-      it "user addition command is executed forcefully" do
-        expect(knife_ec2_create.ui).to receive(:warn).with("The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):")
-        knife_ec2_create.plugin_validate_options!
-        expect(knife_ec2_create.instance_variable_get(:@allow_long_password)).to eq ("/yes")
+
+      it "does not raise an error" do
+        expect(knife_ec2_create.ui).not_to receive(:error).with(
+          "Complexity requirement not met. Password length should be 8-40 characters and include: 1 uppercase, 1 lowercase, 1 digit and 1 special character"
+        )
+        expect { knife_ec2_create.plugin_validate_options! }.not_to raise_error(SystemExit)
       end
     end
 
-    context "when user enters n after prompt" do
+    context "when password does not contain with atleast one uppercase character" do
       before do
-        allow(STDIN).to receive_message_chain(:gets, chomp: "N")
+        knife_ec2_create.config[:connection_password] = "password@123"
       end
-      it "operation exits" do
-        expect(knife_ec2_create.ui).to receive(:warn).with("The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):")
-        expect { knife_ec2_create.plugin_validate_options! }.to raise_error("Exiting as operation with password greater than 14 characters not accepted")
-      end
+
+      it_behaves_like "invalid password"
     end
 
-    context "when user enters xyz instead of (Y/N) after prompt" do
+    context "when password does not contain with atleast one lowercase character" do
       before do
-        allow(STDIN).to receive_message_chain(:gets, chomp: "xyz")
+        knife_ec2_create.config[:connection_password] = "PASSWORD@123"
       end
-      it "operation exits" do
-        expect(knife_ec2_create.ui).to receive(:warn).with("The password provided is longer than 14 characters. Computers with Windows prior to Windows 2000 will not be able to use this account. Do you want to continue this operation? (Y/N):")
-        expect { knife_ec2_create.plugin_validate_options! }.to raise_error("The input provided is incorrect.")
+
+      it_behaves_like "invalid password"
+    end
+
+    context "when password does not contain with atleast one digit from 0-9" do
+      before do
+        knife_ec2_create.config[:connection_password] = "password@"
       end
+
+      it_behaves_like "invalid password"
+    end
+
+    context "when password does not contain with atleast one special character" do
+      before do
+        knife_ec2_create.config[:connection_password] = "password123"
+      end
+
+      it_behaves_like "invalid password"
     end
   end
 
