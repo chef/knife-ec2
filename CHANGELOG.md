@@ -4,27 +4,24 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.21 -->
+<!-- latest_release -->
+<!-- latest_release -->
+
+<!-- release_rollup -->
+<!-- release_rollup -->
+
+<!-- latest_stable_release -->
 ## [v1.0.21](https://github.com/chef/knife-ec2/tree/v1.0.21) (2019-12-17)
 
 #### Merged Pull Requests
 - Fix missing credential error for aws-profile [#621](https://github.com/chef/knife-ec2/pull/621) ([dheerajd-msys](https://github.com/dheerajd-msys))
-<!-- latest_release -->
-
-<!-- release_rollup since=1.0.20 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Fix missing credential error for aws-profile [#621](https://github.com/chef/knife-ec2/pull/621) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 1.0.21 -->
-<!-- release_rollup -->
-
 <!-- latest_stable_release -->
+
 ## [v1.0.20](https://github.com/chef/knife-ec2/tree/v1.0.20) (2019-12-16)
 
 #### Merged Pull Requests
 - Mask AWS access keys data from logs [#622](https://github.com/chef/knife-ec2/pull/622) ([vsingh-msys](https://github.com/vsingh-msys))
 - Raises an error if password length is less than 8 chars [#623](https://github.com/chef/knife-ec2/pull/623) ([kapilchouhan99](https://github.com/kapilchouhan99))
-<!-- latest_stable_release -->
 
 ## [v1.0.18](https://github.com/chef/knife-ec2/tree/v1.0.18) (2019-12-03)
 
