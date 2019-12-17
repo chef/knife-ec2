@@ -391,7 +391,7 @@ class Chef
           Chef::Config[:validation_key] = validation_key_path
         end
 
-        config[:connection_protocol] ||= connection_protocol
+        config[:connection_protocol] ||= connection_protocol_ec2
         config[:connection_port] ||= connection_port
 
         # Check if Server is Windows or Linux
@@ -1369,7 +1369,7 @@ class Chef
 
       # TODO: connection_protocol and connection_port used to choose winrm/ssh or 5985/22 based on the image chosen
       def connection_port
-        port = config_value(:connection_port, knife_key_for_protocol(connection_protocol, :port))
+        port = config_value(:connection_port, knife_key_for_protocol(connection_protocol_ec2, :port))
         return port if port
 
         assign_default_port
@@ -1388,19 +1388,19 @@ class Chef
 
       # url values override CLI flags, if you provide both
       # we'll use the one that you gave in the URL.
-      def connection_protocol
-        return @connection_protocol if @connection_protocol
+      def connection_protocol_ec2
+        return @connection_protocol_ec2 if @connection_protocol_ec2
 
         default_protocol = is_image_windows? ? "winrm" : "ssh"
 
         from_url = host_descriptor =~ %r{^(.*)://} ? $1 : nil
         from_cli = config[:connection_protocol]
         from_knife = Chef::Config[:knife][:connection_protocol]
-        @connection_protocol = from_url || from_cli || from_knife || default_protocol
+        @connection_protocol_ec2 = from_url || from_cli || from_knife || default_protocol
       end
 
       def connection_user
-        @connection_user ||= config_value(:connection_user, knife_key_for_protocol(connection_protocol, :user))
+        @connection_user ||= config_value(:connection_user, knife_key_for_protocol(connection_protocol_ec2, :user))
       end
 
       def server_name

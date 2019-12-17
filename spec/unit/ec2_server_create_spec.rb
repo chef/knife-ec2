@@ -59,9 +59,9 @@ describe Chef::Knife::Ec2ServerCreate do
     OpenStruct.new(
       architecture: "x86_64",
       image_id: "ami-005bdb005fb00e791",
-      platform: "windows",
+      platform: "ubuntu",
       name: "image-test",
-      description: "test windows winrm image",
+      description: "test ubuntu image",
       root_device_type: "ebs",
       block_device_mappings: [block_device_mappings]
     )
@@ -205,6 +205,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:print)
       allow(knife_ec2_create.ui).to receive(:color).and_return("")
       allow(knife_ec2_create).to receive(:confirm)
+      allow(knife_ec2_create).to receive(:wait_for_sshd)
     end
 
     it "creates a new spot instance request with request type as persistent" do
@@ -309,6 +310,7 @@ describe Chef::Knife::Ec2ServerCreate do
   describe "run" do
     before do
       expect(knife_ec2_create).to receive(:plugin_validate_options!)
+      allow(knife_ec2_create).to receive(:wait_for_sshd)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
@@ -390,6 +392,7 @@ describe Chef::Knife::Ec2ServerCreate do
   describe "when setting tags" do
     before do
       allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:wait_for_sshd)
       allow(knife_ec2_create).to receive(:validate_nics!)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
@@ -437,6 +440,7 @@ describe Chef::Knife::Ec2ServerCreate do
   describe "when setting volume tags" do
     before do
       allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:wait_for_sshd)
       allow(knife_ec2_create).to receive(:validate_nics!)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
@@ -720,6 +724,7 @@ describe Chef::Knife::Ec2ServerCreate do
     before do
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:wait_for_sshd)
       allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
@@ -777,6 +782,7 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.config[:fqdn] = "ec2-75.101.253.10.compute-1.amazonaws.com"
 
       allow(knife_ec2_create).to receive(:validate_aws_config!)
+      allow(knife_ec2_create).to receive(:wait_for_sshd)
       allow(knife_ec2_create).to receive(:validate_nics!)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
@@ -903,7 +909,7 @@ describe Chef::Knife::Ec2ServerCreate do
       it "loads the correct profile" do
         Chef::Config[:knife][:aws_profile] = "other"
         allow(File).to receive(:read)
-          .and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET\n\n[other]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
+          .and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET\n\n[profile other]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
         knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
@@ -913,7 +919,7 @@ describe Chef::Knife::Ec2ServerCreate do
         it "raises exception" do
           Chef::Config[:knife][:aws_profile] = "xyz"
           allow(File).to receive(:read).and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET")
-          expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws-profile 'xyz' is invalid. Does the credential file at '/apple/pear' contain this profile?")
+          expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws-profile 'profile xyz' is invalid. Does the credential file at '/apple/pear' contain this profile?")
         end
       end
 
@@ -2567,6 +2573,7 @@ describe Chef::Knife::Ec2ServerCreate do
   describe "disable_source_dest_check option" do
     before do
       expect(knife_ec2_create).to receive(:plugin_validate_options!)
+      allow(knife_ec2_create).to receive(:wait_for_sshd)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)

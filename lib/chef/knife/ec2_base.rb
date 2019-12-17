@@ -328,7 +328,7 @@ class Chef
 
       aws_creds = ini_parse(File.read(aws_cred_file_location))
       profile = locate_config_value(:aws_profile)
-
+      profile = "profile #{profile}" if profile != "default"
       Chef::Log.debug "Using AWS profile #{profile}"
       entries = if aws_creds.values.first.key?("AWSAccessKeyId")
                   aws_creds.values.first
