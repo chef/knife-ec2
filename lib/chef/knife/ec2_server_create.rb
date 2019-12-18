@@ -1177,7 +1177,7 @@ class Chef
       end
 
       def create_key_pair
-        key_name = "#{config[:connection_user]}-#{SecureRandom.hex(10)}"
+        key_name = "#{config[:connection_user].delete(".\\")}-#{SecureRandom.hex(10)}"
         key_pair = ec2_connection.create_key_pair({
           key_name: key_name,
         })
