@@ -31,6 +31,7 @@ class Chef
         require "tempfile"
         require "uri"
         require "net/ssh"
+        require "net/ssh/gateway"
         Chef::Knife::Bootstrap.load_deps
       end
 
