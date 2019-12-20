@@ -580,7 +580,7 @@ class Chef
       end
 
       def plugin_validate_options!
-        if Chef::Config[:knife].keys.include? :aws_ssh_key_id
+        if Chef::Config[:knife].key?(:aws_ssh_key_id)
           Chef::Config[:knife][:ssh_key_name] = Chef::Config[:knife][:aws_ssh_key_id] unless Chef::Config[:knife][:ssh_key_name]
           Chef::Config[:knife].delete(:aws_ssh_key_id)
           ui.warn("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
@@ -1448,7 +1448,7 @@ class Chef
         parse_aws_tags.map { |t| key, val = t.split("="); ht[key] = val } unless parse_aws_tags.nil?
 
         # Always set the Name tag
-        unless ht.keys.include? "Name"
+        unless ht.key?("Name")
           if config_value(:chef_node_name)
             ht["Name"] = evaluate_node_name(config_value(:chef_node_name))
           else
