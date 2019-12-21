@@ -4,26 +4,23 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.22 -->
+<!-- latest_release -->
+<!-- latest_release -->
+
+<!-- release_rollup -->
+<!-- release_rollup -->
+
+<!-- latest_stable_release -->
 ## [v1.0.22](https://github.com/chef/knife-ec2/tree/v1.0.22) (2019-12-21)
 
 #### Merged Pull Requests
 - Substitute require for require_relative [#628](https://github.com/chef/knife-ec2/pull/628) ([tas50](https://github.com/tas50))
-<!-- latest_release -->
-
-<!-- release_rollup since=1.0.21 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Substitute require for require_relative [#628](https://github.com/chef/knife-ec2/pull/628) ([tas50](https://github.com/tas50)) <!-- 1.0.22 -->
-<!-- release_rollup -->
-
 <!-- latest_stable_release -->
+
 ## [v1.0.21](https://github.com/chef/knife-ec2/tree/v1.0.21) (2019-12-17)
 
 #### Merged Pull Requests
 - Fix missing credential error for aws-profile [#621](https://github.com/chef/knife-ec2/pull/621) ([dheerajd-msys](https://github.com/dheerajd-msys))
-<!-- latest_stable_release -->
 
 ## [v1.0.20](https://github.com/chef/knife-ec2/tree/v1.0.20) (2019-12-16)
 
