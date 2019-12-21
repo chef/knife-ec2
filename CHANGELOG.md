@@ -4,10 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release -->
+<!-- latest_release 1.0.23 -->
+## [v1.0.23](https://github.com/chef/knife-ec2/tree/v1.0.23) (2019-12-21)
+
+#### Merged Pull Requests
+- Fix ssh_gateway uninitialised error [#625](https://github.com/chef/knife-ec2/pull/625) ([dheerajd-msys](https://github.com/dheerajd-msys))
 <!-- latest_release -->
 
-<!-- release_rollup -->
+<!-- release_rollup since=1.0.22 -->
+### Changes not yet released to rubygems.org
+
+#### Merged Pull Requests
+- Fix ssh_gateway uninitialised error [#625](https://github.com/chef/knife-ec2/pull/625) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 1.0.23 -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
