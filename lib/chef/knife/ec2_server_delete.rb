@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-require "chef/knife/ec2_base"
+require_relative "ec2_base"
 
 class Chef
   class Knife
