@@ -4,28 +4,25 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.25 -->
-## [v1.0.25](https://github.com/chef/knife-ec2/tree/v1.0.25) (2019-12-23)
-
-#### Merged Pull Requests
-- Use .key? instead of .keys.include? [#629](https://github.com/chef/knife-ec2/pull/629) ([tas50](https://github.com/tas50))
+<!-- latest_release -->
 <!-- latest_release -->
 
-<!-- release_rollup since=1.0.22 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Use .key? instead of .keys.include? [#629](https://github.com/chef/knife-ec2/pull/629) ([tas50](https://github.com/tas50)) <!-- 1.0.25 -->
-- Fix for invalid format of auto generated keypair file name [#626](https://github.com/chef/knife-ec2/pull/626) ([kapilchouhan99](https://github.com/kapilchouhan99)) <!-- 1.0.24 -->
-- Fix ssh_gateway uninitialised error [#625](https://github.com/chef/knife-ec2/pull/625) ([dheerajd-msys](https://github.com/dheerajd-msys)) <!-- 1.0.23 -->
+<!-- release_rollup -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
+## [v1.0.25](https://github.com/chef/knife-ec2/tree/v1.0.25) (2019-12-23)
+
+#### Merged Pull Requests
+- Fix ssh_gateway uninitialised error [#625](https://github.com/chef/knife-ec2/pull/625) ([dheerajd-msys](https://github.com/dheerajd-msys))
+- Fix for invalid format of auto generated keypair file name [#626](https://github.com/chef/knife-ec2/pull/626) ([kapilchouhan99](https://github.com/kapilchouhan99))
+- Use .key? instead of .keys.include? [#629](https://github.com/chef/knife-ec2/pull/629) ([tas50](https://github.com/tas50))
+<!-- latest_stable_release -->
+
 ## [v1.0.22](https://github.com/chef/knife-ec2/tree/v1.0.22) (2019-12-21)
 
 #### Merged Pull Requests
 - Substitute require for require_relative [#628](https://github.com/chef/knife-ec2/pull/628) ([tas50](https://github.com/tas50))
-<!-- latest_stable_release -->
 
 ## [v1.0.21](https://github.com/chef/knife-ec2/tree/v1.0.21) (2019-12-17)
 
