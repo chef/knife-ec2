@@ -392,9 +392,6 @@ class Chef
           Chef::Config[:validation_key] = validation_key_path
         end
 
-        config[:connection_protocol] ||= connection_protocol_ec2
-        config[:connection_port] ||= connection_port
-
         # Check if Server is Windows or Linux
         if is_image_windows?
           if winrm?
@@ -574,6 +571,13 @@ class Chef
         # Amazon Virtual Private Cloud requires a subnet_id. If
         # present, do a few things differently
         !!config_value(:subnet_id)
+      end
+
+      # When options connection_protocol and connection_port are not provided
+      # It will set as default
+      def plugin_setup!
+        config[:connection_protocol] ||= connection_protocol_ec2
+        config[:connection_port] ||= connection_port
       end
 
       def validate_name_args!
