@@ -4,28 +4,25 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.26 -->
-## [v1.0.26](https://github.com/chef/knife-ec2/tree/v1.0.26) (2019-12-27)
-
-#### Merged Pull Requests
-- Set connection_protocol and connection_port as default before the create instance [#630](https://github.com/chef/knife-ec2/pull/630) ([kapilchouhan99](https://github.com/kapilchouhan99))
+<!-- latest_release -->
 <!-- latest_release -->
 
-<!-- release_rollup since=1.0.25 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Set connection_protocol and connection_port as default before the create instance [#630](https://github.com/chef/knife-ec2/pull/630) ([kapilchouhan99](https://github.com/kapilchouhan99)) <!-- 1.0.26 -->
+<!-- release_rollup -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
+## [v1.0.26](https://github.com/chef/knife-ec2/tree/v1.0.26) (2019-12-28)
+
+#### Merged Pull Requests
+- Set connection_protocol and connection_port as default before the create instance [#630](https://github.com/chef/knife-ec2/pull/630) ([kapilchouhan99](https://github.com/kapilchouhan99))
+<!-- latest_stable_release -->
+
 ## [v1.0.25](https://github.com/chef/knife-ec2/tree/v1.0.25) (2019-12-23)
 
 #### Merged Pull Requests
 - Fix ssh_gateway uninitialised error [#625](https://github.com/chef/knife-ec2/pull/625) ([dheerajd-msys](https://github.com/dheerajd-msys))
 - Fix for invalid format of auto generated keypair file name [#626](https://github.com/chef/knife-ec2/pull/626) ([kapilchouhan99](https://github.com/kapilchouhan99))
 - Use .key? instead of .keys.include? [#629](https://github.com/chef/knife-ec2/pull/629) ([tas50](https://github.com/tas50))
-<!-- latest_stable_release -->
 
 ## [v1.0.22](https://github.com/chef/knife-ec2/tree/v1.0.22) (2019-12-21)
 
