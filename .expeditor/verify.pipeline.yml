@@ -1,20 +1,25 @@
 ---
 
 steps:
+
 - label: run-specs-ruby-2.5
   command:
-    - bundle install --jobs=7 --retry=3 --without docs development
-    - bundle exec rake
+    - .expeditor/run_linux_tests.sh rake
   expeditor:
     executor:
       docker:
-        image: ruby:2.5-stretch
-
+        image: ruby:2.5-buster
 - label: run-specs-ruby-2.6
   command:
-    - bundle install --jobs=7 --retry=3 --without docs development
-    - bundle exec rake
+    - .expeditor/run_linux_tests.sh rake
   expeditor:
     executor:
       docker:
-        image: ruby:2.6-stretch
+        image: ruby:2.6-buster
+- label: run-specs-ruby-2.7
+  command:
+    - .expeditor/run_linux_tests.sh rake
+  expeditor:
+    executor:
+      docker:
+        image: ruby:2.7-buster
