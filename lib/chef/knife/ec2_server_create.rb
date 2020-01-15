@@ -576,6 +576,7 @@ class Chef
       # When options connection_protocol and connection_port are not provided
       # It will set as default
       def plugin_setup!
+        validate_aws_config!(%i{image aws_access_key_id aws_secret_access_key})
         config[:connection_protocol] ||= connection_protocol_ec2
         config[:connection_port] ||= connection_port
       end
@@ -591,8 +592,6 @@ class Chef
           ui.warn("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
         end
         create_key_pair unless config_value(:ssh_key_name)
-
-        validate_aws_config!(%i{image ssh_key_name aws_access_key_id aws_secret_access_key})
 
         validate_nics! if config_value(:network_interfaces)
 
@@ -1397,7 +1396,6 @@ class Chef
         return @connection_protocol_ec2 if @connection_protocol_ec2
 
         default_protocol = is_image_windows? ? "winrm" : "ssh"
-
         from_url = host_descriptor =~ %r{^(.*)://} ? $1 : nil
         from_cli = config[:connection_protocol]
         from_knife = Chef::Config[:knife][:connection_protocol]
