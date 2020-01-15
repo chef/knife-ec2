@@ -4,27 +4,24 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.28 -->
-## [v1.0.28](https://github.com/chef/knife-ec2/tree/v1.0.28) (2020-01-15)
-
-#### Merged Pull Requests
-- Fix for Aws MissingCredentialsError [#634](https://github.com/chef/knife-ec2/pull/634) ([kapilchouhan99](https://github.com/kapilchouhan99))
+<!-- latest_release -->
 <!-- latest_release -->
 
-<!-- release_rollup since=1.0.26 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Fix for Aws MissingCredentialsError [#634](https://github.com/chef/knife-ec2/pull/634) ([kapilchouhan99](https://github.com/kapilchouhan99)) <!-- 1.0.28 -->
-- Cache gem installs in testing + test on Ruby 2.7 [#631](https://github.com/chef/knife-ec2/pull/631) ([tas50](https://github.com/tas50)) <!-- 1.0.27 -->
+<!-- release_rollup -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
+## [v1.0.28](https://github.com/chef/knife-ec2/tree/v1.0.28) (2020-01-15)
+
+#### Merged Pull Requests
+- Cache gem installs in testing + test on Ruby 2.7 [#631](https://github.com/chef/knife-ec2/pull/631) ([tas50](https://github.com/tas50))
+- Fix for Aws MissingCredentialsError [#634](https://github.com/chef/knife-ec2/pull/634) ([kapilchouhan99](https://github.com/kapilchouhan99))
+<!-- latest_stable_release -->
+
 ## [v1.0.26](https://github.com/chef/knife-ec2/tree/v1.0.26) (2019-12-28)
 
 #### Merged Pull Requests
 - Set connection_protocol and connection_port as default before the create instance [#630](https://github.com/chef/knife-ec2/pull/630) ([kapilchouhan99](https://github.com/kapilchouhan99))
-<!-- latest_stable_release -->
 
 ## [v1.0.25](https://github.com/chef/knife-ec2/tree/v1.0.25) (2019-12-23)
 
