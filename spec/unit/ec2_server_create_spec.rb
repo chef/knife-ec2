@@ -166,6 +166,8 @@ describe Chef::Knife::Ec2ServerCreate do
       connection_user: "user",
       connection_password: "Password@123",
       network_interfaces: %w{eni-12345678 eni-87654321},
+      aws_access_key_id: "ABCDEFGHIJKLMNOPQR",
+      aws_secret_access_key: "aBcDEFghi64HKLmin789kldjKj123",
     }.each do |key, value|
       Chef::Config[:knife][key] = value
     end
