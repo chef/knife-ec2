@@ -366,6 +366,23 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(File).to receive(:open).with(@validation_key_file, "w")
       knife_ec2_create.run
     end
+
+    context "when server public_dns_name returns a blank string" do
+      it "return a private_dns_name" do
+        allow(ec2_server_attribs).to receive(:public_dns_name).and_return("")
+        knife_ec2_create.run
+        expect(knife_ec2_create.server_name).to eql("ip-10-251-75-20.ec2.internal")
+      end
+    end
+
+    context "when server public_dns_name and private_dns_name both returns a blank string" do
+      it "return a private_ip_address" do
+        allow(ec2_server_attribs).to receive(:public_dns_name).and_return("")
+        allow(ec2_server_attribs).to receive(:private_dns_name).and_return("")
+        knife_ec2_create.run
+        expect(knife_ec2_create.server_name).to eql("10.251.75.20")
+      end
+    end
   end
 
   describe "run for EC2 Windows instance" do

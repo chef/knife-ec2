@@ -1409,7 +1409,13 @@ class Chef
       def server_name
         return nil unless server
 
-        server.public_dns_name || server.private_dns_name || server.private_ip_address
+        if !server.public_dns_name.empty?
+          server.public_dns_name
+        elsif !server.private_dns_name.empty?
+          server.private_dns_name
+        else
+          server.private_ip_address
+        end
       end
 
       alias host_descriptor server_name
