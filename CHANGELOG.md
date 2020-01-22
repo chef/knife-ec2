@@ -4,10 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release -->
+<!-- latest_release 1.0.29 -->
+## [v1.0.29](https://github.com/chef/knife-ec2/tree/v1.0.29) (2020-01-22)
+
+#### Merged Pull Requests
+- Fix for Train SSH Connection Error [#635](https://github.com/chef/knife-ec2/pull/635) ([kapilchouhan99](https://github.com/kapilchouhan99))
 <!-- latest_release -->
 
-<!-- release_rollup -->
+<!-- release_rollup since=1.0.28 -->
+### Changes not yet released to rubygems.org
+
+#### Merged Pull Requests
+- Fix for Train SSH Connection Error [#635](https://github.com/chef/knife-ec2/pull/635) ([kapilchouhan99](https://github.com/kapilchouhan99)) <!-- 1.0.29 -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
