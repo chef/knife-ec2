@@ -4,17 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 1.0.30 -->
-## [v1.0.30](https://github.com/chef/knife-ec2/tree/v1.0.30) (2020-02-12)
+<!-- latest_release 1.0.31 -->
+## [v1.0.31](https://github.com/chef/knife-ec2/tree/v1.0.31) (2020-02-12)
 
 #### Merged Pull Requests
-- Update github templates and .rubocop.yml [#638](https://github.com/chef/knife-ec2/pull/638) ([tas50](https://github.com/tas50))
+- Move helpers to their own dir to speedup loading [#637](https://github.com/chef/knife-ec2/pull/637) ([tas50](https://github.com/tas50))
 <!-- latest_release -->
 
 <!-- release_rollup since=1.0.28 -->
 ### Changes not yet released to rubygems.org
 
 #### Merged Pull Requests
+- Move helpers to their own dir to speedup loading [#637](https://github.com/chef/knife-ec2/pull/637) ([tas50](https://github.com/tas50)) <!-- 1.0.31 -->
 - Update github templates and .rubocop.yml [#638](https://github.com/chef/knife-ec2/pull/638) ([tas50](https://github.com/tas50)) <!-- 1.0.30 -->
 - Fix for Train SSH Connection Error [#635](https://github.com/chef/knife-ec2/pull/635) ([kapilchouhan99](https://github.com/kapilchouhan99)) <!-- 1.0.29 -->
 <!-- release_rollup -->
