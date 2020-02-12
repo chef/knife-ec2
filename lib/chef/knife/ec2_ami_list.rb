@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require_relative "ec2_base"
+require_relative "helpers/ec2_base"
 
 class Chef
   class Knife

@@ -17,8 +17,8 @@
 # limitations under the License.
 #
 
-require_relative "ec2_base"
-require_relative "s3_source"
+require_relative "helpers/ec2_base"
+require_relative "helpers/s3_source"
 require "chef/knife/bootstrap"
 
 class Chef
