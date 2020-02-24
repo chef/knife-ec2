@@ -951,7 +951,7 @@ describe Chef::Knife::Ec2ServerCreate do
       it "loads the correct profile" do
         Chef::Config[:knife][:aws_profile] = "other"
         allow(File).to receive(:read)
-          .and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET\n\n[profile other]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
+          .and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET\n\n[other]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
         knife_ec2_create.validate_aws_config!
         expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
         expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
@@ -961,7 +961,7 @@ describe Chef::Knife::Ec2ServerCreate do
         it "raises exception" do
           Chef::Config[:knife][:aws_profile] = "xyz"
           allow(File).to receive(:read).and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET")
-          expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws-profile 'profile xyz' is invalid. Does the credential file at '/apple/pear' contain this profile?")
+          expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws-profile 'xyz' is invalid. Does the credential file at '/apple/pear' contain this profile?")
         end
       end
 
