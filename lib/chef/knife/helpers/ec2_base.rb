@@ -253,7 +253,7 @@ class Chef
       if profile && profile.key?("arn")
         name = profile["arn"].split("/")[-1]
       end
-      name ||= ""
+      name || ""
     end
 
     def ini_parse(file)
@@ -325,10 +325,8 @@ class Chef
       # [default]
       # aws_access_key_id = somethingsomethingdarkside
       # aws_secret_access_key = somethingsomethingdarkside
-
       aws_creds = ini_parse(File.read(aws_cred_file_location))
       profile = locate_config_value(:aws_profile)
-      profile = "profile #{profile}" if profile != "default"
       Chef::Log.debug "Using AWS profile #{profile}"
       entries = if aws_creds.values.first.key?("AWSAccessKeyId")
                   aws_creds.values.first
