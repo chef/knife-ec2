@@ -332,10 +332,21 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(knife_ec2_create.server).to_not be_nil
     end
 
-    it "creates an EC2 instance, assigns existing EIP and bootstraps it" do
+    it "creates an EC2 instance in EC2 classic, assigns existing EIP via public_ip and bootstraps it" do
       knife_ec2_create.config[:associate_eip] = @eip
       allow(ec2_server_attribs).to receive(:public_ip_address).and_return(@eip)
-      expect(ec2_connection).to receive(:associate_address)
+      expect(ec2_connection).to receive(:associate_address).with(instance_id: "i-00fe186450a2e8e97", public_ip: "111.111.111.111")
+
+      knife_ec2_create.run
+      expect(knife_ec2_create.server).to_not be_nil
+    end
+
+    it "creates an EC2 instance in VPC, assigns existing EIP via allocation_id and bootstraps it" do
+      knife_ec2_create.config[:subnet_id] = "subnet"
+
+      knife_ec2_create.config[:associate_eip] = @eip
+      allow(ec2_server_attribs).to receive(:public_ip_address).and_return(@eip)
+      expect(ec2_connection).to receive(:associate_address).with(instance_id: "i-00fe186450a2e8e97", allocation_id: "eipalloc-12345678")
 
       knife_ec2_create.run
       expect(knife_ec2_create.server).to_not be_nil
@@ -547,7 +558,7 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   shared_examples "create keypair" do
-    let(:file_path) { "/root/.chef/#{keypair.key_name}.pem" }
+    let(:file_path) { "#{ENV.fetch("HOME", "/root")}/.chef/#{keypair.key_name}.pem" }
     let(:file_like_object) { double(path: file_path) }
     before do
       Chef::Config[:knife].delete(:ssh_key_name)
@@ -1244,7 +1255,7 @@ describe Chef::Knife::Ec2ServerCreate do
     it "sets the specified security group names" do
       knife_ec2_create.config[:security_groups] = ["groupname"]
       server_def = knife_ec2_create.server_attributes
-      expect(server_def[:groups]).to eq(["groupname"])
+      expect(server_def[:security_groups]).to eq(["groupname"])
     end
 
     it "sets the specified security group ids" do

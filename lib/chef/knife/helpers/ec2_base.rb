@@ -100,6 +100,10 @@ class Chef
         @ec2_connection ||= Aws::EC2::Client.new(connection_string)
       end
 
+      def vpc_mode?
+        !!config_value(:subnet_id)
+      end
+
       def fetch_ami(image_id)
         return nil unless image_id
 
@@ -147,7 +151,7 @@ class Chef
           server_data[id] = server_obj.instances[0].send(id)
         end
         server_data["availability_zone"] = server_obj.instances[0].placement.availability_zone
-        server_data["groups"] = server_obj.groups.map(&:name)
+        server_data["groups"] = vpc_mode? ? server_obj.groups.map(&:name) : server_obj.groups.map(&:group_name)
         server_data["iam_instance_profile"] = ( server_obj.instances[0].iam_instance_profile.nil? ? nil : server_obj.instances[0].iam_instance_profile.arn[%r{instance-profile/(.*)}] )
         server_data["id"] = server_data["instance_id"]
 
@@ -157,8 +161,8 @@ class Chef
         server_data["security_groups"] = server_obj.instances[0].security_groups.map(&:group_name)
         server_data["security_group_ids"] = server_obj.instances[0].security_groups.map(&:group_id)
         server_data["state"] = server_obj.instances[0].state.name
-        server_data["subnet_id"] = server_obj.instances[0].network_interfaces[0].subnet_id
-        server_data["source_dest_check"] = server_obj.instances[0].network_interfaces[0].source_dest_check
+        server_data["subnet_id"] = server_obj.instances[0].network_interfaces[0].subnet_id if vpc_mode?
+        server_data["source_dest_check"] = server_obj.instances[0].network_interfaces[0].source_dest_check if vpc_mode?
         server_data["tags"] = tags
         server_data["tenancy"] = server_obj.instances[0].placement.tenancy
         server_data["volume_id"] = server_obj.instances[0].block_device_mappings[0]&.ebs&.volume_id
