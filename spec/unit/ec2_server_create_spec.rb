@@ -26,16 +26,15 @@ Chef::Knife::Bootstrap.load_deps
 
 describe Chef::Knife::Ec2ServerCreate do
   let(:knife_ec2_create) { Chef::Knife::Ec2ServerCreate.new }
-  let(:ec2_connection)   { Aws::EC2::Client.new(stub_responses: true) }
-  let(:ebs)              { OpenStruct.new(volume_size: 30, iops: 123) }
-  let(:groups)           { [OpenStruct.new(name: "grp-646rswg")] }
-  let(:groups_classic)   { [instance_double(Aws::EC2::Types::GroupIdentifier, group_name: "default")] }
-  let(:placement)        { OpenStruct.new(tenancy: "default", group_name: "some_placement_group") }
-  let(:state)            { OpenStruct.new(name: "running") }
-  let(:security_groups)  { [OpenStruct.new(group_id: "s-gr446f", group_name: "default-vpc")] }
-  let(:tags)             { [OpenStruct.new(key: "Name", value: "ec2-test")] }
+  let(:ec2_connection) { Aws::EC2::Client.new(stub_responses: true) }
+  let(:ebs) { OpenStruct.new(volume_size: 30, iops: 123) }
+  let(:groups) { [instance_double(Aws::EC2::Types::GroupIdentifier, group_name: "default")] }
+  let(:placement) { OpenStruct.new(tenancy: "default", group_name: "some_placement_group") }
+  let(:state) { OpenStruct.new(name: "running") }
+  let(:security_groups) { [OpenStruct.new(group_id: "s-gr446f", group_name: "default-vpc")] }
+  let(:tags) { [OpenStruct.new(key: "Name", value: "ec2-test")] }
   let(:block_device_mappings) { OpenStruct.new(ebs: ebs) }
-  let(:network_interfaces)    { OpenStruct.new(subnet_id: "subnet-9d4a7b6") }
+  let(:network_interfaces) { OpenStruct.new(subnet_id: "subnet-9d4a7b6") }
   let(:instance1) do
     OpenStruct.new(
       architecture: "x86_64",
@@ -106,7 +105,7 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   let(:server_instances) { OpenStruct.new(groups: groups, instances: [instance1]) }
-  let(:server_instances_classic) { OpenStruct.new(groups: groups_classic, instances: [instance_classic]) }
+  let(:server_instances_classic) { OpenStruct.new(groups: groups, instances: [instance_classic]) }
   let(:ec2_servers) { OpenStruct.new(reservations: [server_instances]) }
   let(:ec2_servers_classic) { OpenStruct.new(reservations: [server_instances_classic]) }
 

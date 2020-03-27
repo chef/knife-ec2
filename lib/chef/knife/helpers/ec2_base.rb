@@ -151,7 +151,7 @@ class Chef
           server_data[id] = server_obj.instances[0].send(id)
         end
         server_data["availability_zone"] = server_obj.instances[0].placement.availability_zone
-        server_data["groups"] = vpc_mode? ? server_obj.groups.map(&:name) : server_obj.groups.map(&:group_name)
+        server_data["groups"] = server_obj.groups.map(&:group_name) unless vpc_mode?
         server_data["iam_instance_profile"] = ( server_obj.instances[0].iam_instance_profile.nil? ? nil : server_obj.instances[0].iam_instance_profile.arn[%r{instance-profile/(.*)}] )
         server_data["id"] = server_data["instance_id"]
 
