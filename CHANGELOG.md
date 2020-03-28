@@ -4,10 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release -->
+<!-- latest_release 1.0.34 -->
+## [v1.0.34](https://github.com/chef/knife-ec2/tree/v1.0.34) (2020-03-28)
+
+#### Merged Pull Requests
+- Fix Ruby 2.5 tests by pinning the chef-zero Gemfile dep [#644](https://github.com/chef/knife-ec2/pull/644) ([tas50](https://github.com/tas50))
 <!-- latest_release -->
 
-<!-- release_rollup -->
+<!-- release_rollup since=1.0.33 -->
+### Changes not yet released to rubygems.org
+
+#### Merged Pull Requests
+- Fix Ruby 2.5 tests by pinning the chef-zero Gemfile dep [#644](https://github.com/chef/knife-ec2/pull/644) ([tas50](https://github.com/tas50)) <!-- 1.0.34 -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
