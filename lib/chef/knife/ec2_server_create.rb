@@ -623,7 +623,7 @@ class Chef
         if config[:associate_eip]
           eips = ec2_connection.describe_addresses.addresses.collect { |addr| addr if addr.domain == eip_scope }.compact
 
-          unless eips.detect { |addr| addr.public_ip == config[:associate_eip] && addr.instance_id.nil? }
+          unless eips.detect { |addr| addr.public_ip == config[:associate_eip] && (addr.instance_id.nil? || addr.instance_id.empty?) }
             ui.error("Elastic IP requested is not available.")
             exit 1
           end
@@ -858,7 +858,6 @@ class Chef
         attributes = {
           image_id: config_value(:image),
           instance_type: config_value(:flavor),
-          groups: config[:security_groups],
           key_name: config_value(:ssh_key_name),
           max_count: 1,
           min_count: 1,
@@ -878,6 +877,8 @@ class Chef
           network_attrs[:groups] = config_value(:security_group_ids) if !!config_value(:security_group_ids)
           network_attrs[:private_ip_address] = config_value(:private_ip_address)
           network_attrs[:associate_public_ip_address] = config_value(:associate_public_ip)
+        else
+          attributes[:security_groups] = config[:security_groups]
         end
 
         if network_attrs.length > 0
@@ -1199,10 +1200,17 @@ class Chef
       end
 
       def associate_address(elastic_ip)
-        ec2_connection.associate_address({
-          allocation_id: elastic_ip.allocation_id,
-          instance_id: server.id,
-        })
+        if vpc_mode?
+          ec2_connection.associate_address({
+            allocation_id: elastic_ip.allocation_id,
+            instance_id: server.id,
+          })
+        else
+          ec2_connection.associate_address({
+            public_ip: elastic_ip.public_ip,
+            instance_id: server.id,
+          })
+        end
       end
 
       def validate_nics!

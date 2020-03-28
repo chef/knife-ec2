@@ -26,15 +26,15 @@ Chef::Knife::Bootstrap.load_deps
 
 describe Chef::Knife::Ec2ServerCreate do
   let(:knife_ec2_create) { Chef::Knife::Ec2ServerCreate.new }
-  let(:ec2_connection)   { Aws::EC2::Client.new(stub_responses: true) }
-  let(:ebs)              { OpenStruct.new(volume_size: 30, iops: 123) }
-  let(:groups)           { [OpenStruct.new(name: "grp-646rswg")] }
-  let(:placement)        { OpenStruct.new(tenancy: "default", group_name: "some_placement_group") }
-  let(:state)            { OpenStruct.new(name: "running") }
-  let(:security_groups)  { [OpenStruct.new(group_id: "s-gr446f", group_name: "default-vpc")] }
-  let(:tags)             { [OpenStruct.new(key: "Name", value: "ec2-test")] }
+  let(:ec2_connection) { Aws::EC2::Client.new(stub_responses: true) }
+  let(:ebs) { OpenStruct.new(volume_size: 30, iops: 123) }
+  let(:groups) { [instance_double(Aws::EC2::Types::GroupIdentifier, group_name: "default")] }
+  let(:placement) { OpenStruct.new(tenancy: "default", group_name: "some_placement_group") }
+  let(:state) { OpenStruct.new(name: "running") }
+  let(:security_groups) { [OpenStruct.new(group_id: "s-gr446f", group_name: "default-vpc")] }
+  let(:tags) { [OpenStruct.new(key: "Name", value: "ec2-test")] }
   let(:block_device_mappings) { OpenStruct.new(ebs: ebs) }
-  let(:network_interfaces)    { OpenStruct.new(subnet_id: "subnet-9d4a7b6") }
+  let(:network_interfaces) { OpenStruct.new(subnet_id: "subnet-9d4a7b6") }
   let(:instance1) do
     OpenStruct.new(
       architecture: "x86_64",
@@ -48,6 +48,24 @@ describe Chef::Knife::Ec2ServerCreate do
       block_device_mappings: [block_device_mappings],
       network_interfaces: [network_interfaces],
       groups: groups,
+      placement: placement,
+      state: state,
+      security_groups: security_groups,
+      tags: tags
+    )
+  end
+
+  let(:instance_classic) do
+    OpenStruct.new(
+      architecture: "x86_64",
+      image_id: "ami-005bdb005fb00e791",
+      instance_id: "i-00fe186450a2e8e97",
+      instance_type: "t2.micro",
+      key_name: "ssh_key_name",
+      platform: "windows",
+      name: "image-test",
+      description: "test windows winrm image",
+      block_device_mappings: [block_device_mappings],
       placement: placement,
       state: state,
       security_groups: security_groups,
@@ -86,8 +104,10 @@ describe Chef::Knife::Ec2ServerCreate do
     )
   end
 
-  let(:server_instances)  { OpenStruct.new(groups: groups, instances: [instance1]) }
-  let(:ec2_servers)       { OpenStruct.new(reservations: [server_instances]) }
+  let(:server_instances) { OpenStruct.new(groups: groups, instances: [instance1]) }
+  let(:server_instances_classic) { OpenStruct.new(groups: groups, instances: [instance_classic]) }
+  let(:ec2_servers) { OpenStruct.new(reservations: [server_instances]) }
+  let(:ec2_servers_classic) { OpenStruct.new(reservations: [server_instances_classic]) }
 
   let(:server_attributes) do
     {
@@ -177,6 +197,19 @@ describe Chef::Knife::Ec2ServerCreate do
     @validation_key_body = "TEST VALIDATION KEY\n"
     @vpc_id = "vpc-1a2b3c4d"
     @vpc_security_group_ids = ["sg-1a2b3c4d"]
+  end
+
+  it "avoids exporting VPC attributes when instance is on Classic" do
+    expect(knife_ec2_create).to receive(:plugin_validate_options!)
+    allow(knife_ec2_create).to receive(:wait_for_sshd)
+    allow(knife_ec2_create).to receive(:ami).and_return(ami)
+    allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
+    expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances_classic)
+    allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
+    allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers_classic)
+    allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+
+    expect { knife_ec2_create.run }.not_to raise_error
   end
 
   describe "Spot Instance creation" do
@@ -332,10 +365,21 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(knife_ec2_create.server).to_not be_nil
     end
 
-    it "creates an EC2 instance, assigns existing EIP and bootstraps it" do
+    it "creates an EC2 instance in EC2 classic, assigns existing EIP via public_ip and bootstraps it" do
       knife_ec2_create.config[:associate_eip] = @eip
       allow(ec2_server_attribs).to receive(:public_ip_address).and_return(@eip)
-      expect(ec2_connection).to receive(:associate_address)
+      expect(ec2_connection).to receive(:associate_address).with(instance_id: "i-00fe186450a2e8e97", public_ip: "111.111.111.111")
+
+      knife_ec2_create.run
+      expect(knife_ec2_create.server).to_not be_nil
+    end
+
+    it "creates an EC2 instance in VPC, assigns existing EIP via allocation_id and bootstraps it" do
+      knife_ec2_create.config[:subnet_id] = "subnet"
+
+      knife_ec2_create.config[:associate_eip] = @eip
+      allow(ec2_server_attribs).to receive(:public_ip_address).and_return(@eip)
+      expect(ec2_connection).to receive(:associate_address).with(instance_id: "i-00fe186450a2e8e97", allocation_id: "eipalloc-12345678")
 
       knife_ec2_create.run
       expect(knife_ec2_create.server).to_not be_nil
@@ -547,7 +591,7 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   shared_examples "create keypair" do
-    let(:file_path) { "/root/.chef/#{keypair.key_name}.pem" }
+    let(:file_path) { "#{ENV.fetch("HOME", "/root")}/.chef/#{keypair.key_name}.pem" }
     let(:file_like_object) { double(path: file_path) }
     before do
       Chef::Config[:knife].delete(:ssh_key_name)
@@ -1244,7 +1288,7 @@ describe Chef::Knife::Ec2ServerCreate do
     it "sets the specified security group names" do
       knife_ec2_create.config[:security_groups] = ["groupname"]
       server_def = knife_ec2_create.server_attributes
-      expect(server_def[:groups]).to eq(["groupname"])
+      expect(server_def[:security_groups]).to eq(["groupname"])
     end
 
     it "sets the specified security group ids" do
