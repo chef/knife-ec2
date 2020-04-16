@@ -1419,8 +1419,6 @@ class Chef
 
         if !server.public_dns_name.empty?
           server.public_dns_name
-        elsif !server.private_dns_name.empty?
-          server.private_dns_name
         else
           server.private_ip_address
         end
