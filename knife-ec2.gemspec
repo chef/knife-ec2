@@ -13,9 +13,9 @@ Gem::Specification.new do |s|
   s.license      = "Apache-2.0"
 
   s.files        = %w{LICENSE} + Dir.glob("lib/**/*")
-  s.required_ruby_version = ">= 2.5"
+  s.required_ruby_version = ">= 2.6"
 
-  s.add_dependency "chef", ">= 15.1"
+  s.add_dependency "chef", ">= 15.11" # needs this version for Chef 16 backports
   s.add_dependency "aws-sdk-s3", "~> 1.43"
   s.add_dependency "aws-sdk-ec2", "~> 1.95"
 

@@ -60,15 +60,15 @@ class Chef
 
       def connection_string
         conn = {}
-        conn[:region] = Chef::Config[:knife][:region]
+        conn[:region] = config[:region]
         conn[:credentials] =
-          if Chef::Config[:knife][:use_iam_profile]
+          if config[:use_iam_profile]
             Aws::InstanceProfileCredentials.new
           else
             Aws::Credentials.new(
-              Chef::Config[:knife][:aws_access_key_id],
-              Chef::Config[:knife][:aws_secret_access_key],
-              Chef::Config[:knife][:aws_session_token]
+              config[:aws_access_key_id],
+              config[:aws_secret_access_key],
+              config[:aws_session_token]
             )
           end
         conn
