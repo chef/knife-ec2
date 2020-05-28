@@ -1267,7 +1267,6 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(server_def[:security_group_ids]).to eq(["sg-00aa11bb"])
     end
 
-
     it "adds the specified ephemeral device mappings" do
       knife_ec2_create.config[:ephemeral] = [ "/dev/sdb", "/dev/sdc", "/dev/sdd", "/dev/sde" ]
       server_def = knife_ec2_create.server_attributes
