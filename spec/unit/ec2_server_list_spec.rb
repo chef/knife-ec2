@@ -76,7 +76,6 @@ describe Chef::Knife::Ec2ServerList do
     context "when region is not specified" do
       it "shows warning that default region will be will be used" do
         knife_ec2_list.config.delete(:region)
-        Chef::Config[:knife].delete(:region)
         allow(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
         allow(knife_ec2_list).to receive(:validate_aws_config!)
         expect(knife_ec2_list.ui).to receive(:warn).with("No region was specified in knife.rb/config.rb or as an argument. The default region, us-east-1, will be used:")

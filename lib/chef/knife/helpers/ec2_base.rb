@@ -1,7 +1,7 @@
 
 #
 # Author:: Seth Chisamore (<schisamo@chef.io>)
-# Copyright:: Copyright (c) 2011-2019 Chef Software, Inc.
+# Copyright:: Copyright (c) Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -51,46 +51,41 @@ class Chef
           option :aws_access_key_id,
             short: "-A ID",
             long: "--aws-access-key-id KEY",
-            description: "Your AWS Access Key ID",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_access_key_id] = key }
+            description: "Your AWS Access Key ID"
 
           option :aws_secret_access_key,
             short: "-K SECRET",
             long: "--aws-secret-access-key SECRET",
-            description: "Your AWS API Secret Access Key",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_secret_access_key] = key }
+            description: "Your AWS API Secret Access Key"
 
           option :aws_session_token,
             long: "--aws-session-token TOKEN",
-            description: "Your AWS Session Token, for use with AWS STS Federation or Session Tokens",
-            proc: Proc.new { |key| Chef::Config[:knife][:aws_session_token] = key }
+            description: "Your AWS Session Token, for use with AWS STS Federation or Session Tokens"
 
           option :region,
             long: "--region REGION",
-            description: "Your AWS region",
-            proc: Proc.new { |key| Chef::Config[:knife][:region] = key }
+            description: "Your AWS region"
 
           option :use_iam_profile,
             long: "--use-iam-profile",
             description: "Use IAM profile assigned to current machine",
             boolean: true,
-            default: false,
-            proc: Proc.new { |key| Chef::Config[:knife][:use_iam_profile] = key }
+            default: false
         end
       end
 
       def connection_string
         conn = {}
-        conn[:region] = locate_config_value(:region) || "us-east-1"
+        conn[:region] = config[:region] || "us-east-1"
         Chef::Log.debug "Using AWS region #{conn[:region]}"
         conn[:credentials] =
-          if locate_config_value(:use_iam_profile)
+          if config[:use_iam_profile]
             Chef::Log.debug "Using iam profile for authentication as use_iam_profile set"
             Aws::InstanceProfileCredentials.new
           else
-            Chef::Log.debug "Setting up AWS connection using aws_access_key_id: #{mask(locate_config_value(:aws_access_key_id))} aws_secret_access_key: #{mask(locate_config_value(:aws_secret_access_key))} aws_session_token: #{mask(locate_config_value(:aws_session_token))}"
+            Chef::Log.debug "Setting up AWS connection using aws_access_key_id: #{mask(config[:aws_access_key_id])} aws_secret_access_key: #{mask(config[:aws_secret_access_key])} aws_session_token: #{mask(config[:aws_session_token])}"
 
-            Aws::Credentials.new(locate_config_value(:aws_access_key_id), locate_config_value(:aws_secret_access_key), locate_config_value(:aws_session_token))
+            Aws::Credentials.new(config[:aws_access_key_id], config[:aws_secret_access_key], config[:aws_session_token])
           end
         conn
       end
@@ -101,7 +96,7 @@ class Chef
       end
 
       def vpc_mode?
-        !!config_value(:subnet_id)
+        !!config[:subnet_id]
       end
 
       def fetch_ami(image_id)
@@ -176,16 +171,6 @@ class Chef
         OpenStruct.new(server_hashes)
       end
 
-      # @return [String]
-      def locate_config_value(key)
-        key = key.to_sym
-        if defined?(config_value) # Inherited by bootstrap
-          config_value(key) || default_config[key]
-        else
-          config[key] || Chef::Config[:knife][key] || default_config[key]
-        end
-      end
-
       def msg_pair(label, value, color = :cyan)
         if value && !value.to_s.empty?
           ui.info("#{ui.color(label, color)}: #{value}")
@@ -193,7 +178,7 @@ class Chef
       end
 
       def ami
-        @ami ||= fetch_ami(locate_config_value(:image))
+        @ami ||= fetch_ami(config[:image])
       end
 
       # Platform value return for Windows AMIs; otherwise, it is blank.
@@ -207,16 +192,16 @@ class Chef
       def validate_aws_config!(keys = %i{aws_access_key_id aws_secret_access_key})
         errors = [] # track all errors so we report on all of them
 
-        validate_aws_config_file! if locate_config_value(:aws_config_file)
-        unless locate_config_value(:use_iam_profile) # skip config file / key validation if we're using iam profile
+        validate_aws_config_file! if config[:aws_config_file]
+        unless config[:use_iam_profile] # skip config file / key validation if we're using iam profile
           # validate the creds file if:
           #   aws keys have not been passed in config / CLI and the default cred file location does exist
           #   OR
           #   the user passed aws_credential_file
-          if (Chef::Config[:knife].keys & %i{aws_access_key_id aws_secret_access_key}).empty? && aws_cred_file_location ||
-              locate_config_value(:aws_credential_file)
+          if (config.keys & %i{aws_access_key_id aws_secret_access_key}).empty? && aws_cred_file_location ||
+              config[:aws_credential_file]
 
-            unless (Chef::Config[:knife].keys & %i{aws_access_key_id aws_secret_access_key}).empty?
+            unless (config.keys & %i{aws_access_key_id aws_secret_access_key}).empty?
               errors << "Either provide a credentials file or the access key and secret keys but not both."
             end
 
@@ -225,7 +210,7 @@ class Chef
 
           keys.each do |k|
             pretty_key = k.to_s.tr("_", " ").gsub(/\w+/) { |w| (w =~ /(ssh)|(aws)/i) ? w.upcase : w.capitalize }
-            if Chef::Config[:knife][k].nil?
+            if config[k].nil?
               errors << "You did not provide a valid '#{pretty_key}' value."
             end
           end
@@ -243,8 +228,8 @@ class Chef
     # @return [String, nil] location to aws credentials file or nil if none exists
     def aws_cred_file_location
       @cred_file ||= begin
-        if !locate_config_value(:aws_credential_file).nil?
-          locate_config_value(:aws_credential_file)
+        if !config[:aws_credential_file].nil?
+          config[:aws_credential_file]
         else
           Chef::Util::PathHelper.home(".aws", "credentials") if ::File.exist?(Chef::Util::PathHelper.home(".aws", "credentials"))
         end
@@ -288,7 +273,7 @@ class Chef
 
     # Custom Warning
     def custom_warnings!
-      if !config[:region] && Chef::Config[:knife][:region].nil?
+      unless config[:region]
         ui.warn "No region was specified in knife.rb/config.rb or as an argument. The default region, us-east-1, will be used:"
       end
     end
@@ -298,18 +283,18 @@ class Chef
     # validate the contents of the aws configuration file
     # @return [void]
     def validate_aws_config_file!
-      config_file = locate_config_value(:aws_config_file)
+      config_file = config[:aws_config_file]
       Chef::Log.debug "Using AWS config file at #{config_file}"
 
       raise ArgumentError, "The provided --aws_config_file (#{config_file}) cannot be found on disk." unless File.exist?(config_file)
 
       aws_config = ini_parse(File.read(config_file))
-      profile_key = locate_config_value(:aws_profile)
+      profile_key = config[:aws_profile]
       profile_key = "profile #{profile_key}" if profile_key != "default"
 
       unless aws_config.values.empty?
         if aws_config[profile_key]
-          Chef::Config[:knife][:region] = aws_config[profile_key]["region"]
+          config[:region] = aws_config[profile_key]["region"]
         else
           raise ArgumentError, "The provided --aws-profile '#{profile_key}' is invalid."
         end
@@ -330,7 +315,7 @@ class Chef
       # aws_access_key_id = somethingsomethingdarkside
       # aws_secret_access_key = somethingsomethingdarkside
       aws_creds = ini_parse(File.read(aws_cred_file_location))
-      profile = locate_config_value(:aws_profile)
+      profile = config[:aws_profile]
       Chef::Log.debug "Using AWS profile #{profile}"
       entries = if aws_creds.values.first.key?("AWSAccessKeyId")
                   aws_creds.values.first
@@ -339,9 +324,9 @@ class Chef
                 end
 
       if entries
-        Chef::Config[:knife][:aws_access_key_id] = entries["AWSAccessKeyId"] || entries["aws_access_key_id"]
-        Chef::Config[:knife][:aws_secret_access_key] = entries["AWSSecretKey"] || entries["aws_secret_access_key"]
-        Chef::Config[:knife][:aws_session_token] = entries["AWSSessionToken"] || entries["aws_session_token"]
+        config[:aws_access_key_id] = entries["AWSAccessKeyId"] || entries["aws_access_key_id"]
+        config[:aws_secret_access_key] = entries["AWSSecretKey"] || entries["aws_secret_access_key"]
+        config[:aws_session_token] = entries["AWSSessionToken"] || entries["aws_session_token"]
       else
         raise ArgumentError, "The provided --aws-profile '#{profile}' is invalid. Does the credential file at '#{aws_cred_file_location}' contain this profile?"
       end

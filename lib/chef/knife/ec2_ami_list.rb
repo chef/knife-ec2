@@ -1,6 +1,6 @@
 #
 # Author:: Piyush Awasthi (<piyush.awasthi@msystechnologies.com>)
-# Copyright:: Copyright (c) 2017-2019 Chef Software, Inc.
+# Copyright:: Copyright (c) Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -95,8 +95,8 @@ class Chef
         all_data = {}
         ec2_connection.describe_images(image_params).images.each do |v|
           v_data = {}
-          if locate_config_value(:search)
-            next unless v.description.downcase.include?(locate_config_value(:search).downcase)
+          if config[:search]
+            next unless v.description.downcase.include?(config[:search].downcase)
           end
 
           %w{image_id platform description architecture}.each do |id|
@@ -112,16 +112,16 @@ class Chef
 
       def image_params
         params = {}
-        params["owners"] = [locate_config_value(:owner).to_s]
+        params["owners"] = [config[:owner].to_s]
 
         filters = []
-        if locate_config_value(:platform)
+        if config[:platform]
           filters << { name: "platform",
-                       values: [locate_config_value(:platform)] }
+                       values: [config[:platform]] }
         end
 
         # TODO: Need to find substring to match in the description
-        # filters << { description: locate_config_value(:search) } if locate_config_value(:search)
+        # filters << { description: config[:search] } if config[:search]
 
         if filters.length > 0
           params["filters"] = filters

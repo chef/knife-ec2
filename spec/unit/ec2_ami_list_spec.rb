@@ -1,17 +1,17 @@
-  # License:: Apache License, Version 2.0
-  #
-  # Licensed under the Apache License, Version 2.0 (the "License");
-  # you may not use this file except in compliance with the License.
-  # You may obtain a copy of the License at
-  #
-  #     http://www.apache.org/licenses/LICENSE-2.0
-  #
-  # Unless required by applicable law or agreed to in writing, software
-  # distributed under the License is distributed on an "AS IS" BASIS,
-  # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  # See the License for the specific language governing permissions and
-  # limitations under the License.
-  #
+# License:: Apache License, Version 2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
 require File.expand_path("../../spec_helper", __FILE__)
 require "aws-sdk-ec2"
@@ -76,7 +76,6 @@ describe Chef::Knife::Ec2AmiList do
     context "when region is not specified" do
       it "shows warning that default region will be will be used" do
         knife_ec2_ami_list.config.delete(:region)
-        Chef::Config[:knife].delete(:region)
         allow(ec2_connection).to receive(:describe_images).and_return(empty_images)
         allow(knife_ec2_ami_list).to receive(:validate_aws_config!)
         expect(knife_ec2_ami_list.ui).to receive(:warn).with("No region was specified in knife.rb/config.rb or as an argument. The default region, us-east-1, will be used:")

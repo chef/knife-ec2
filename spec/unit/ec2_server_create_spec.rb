@@ -163,6 +163,7 @@ describe Chef::Knife::Ec2ServerCreate do
     allow(knife_ec2_create).to receive(:msg_pair)
     allow(knife_ec2_create).to receive(:puts)
     allow(knife_ec2_create).to receive(:print)
+    allow(knife_ec2_create).to receive(:attach_nics)
     allow(ec2_connection).to receive(:describe_addresses).and_return(elastic_address_response)
     allow(ec2_connection).to receive(:tags).and_return double("create", create: true)
     allow(ec2_connection).to receive(:volume_tags).and_return double("create", create: true)
@@ -189,7 +190,7 @@ describe Chef::Knife::Ec2ServerCreate do
       aws_access_key_id: "ABCDEFGHIJKLMNOPQR",
       aws_secret_access_key: "aBcDEFghi64HKLmin789kldjKj123",
     }.each do |key, value|
-      Chef::Config[:knife][key] = value
+      knife_ec2_create.config[key] = value
     end
 
     @validation_key_url = "s3://bucket/foo/bar"
@@ -245,6 +246,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "creates a new spot instance request with request type as persistent" do
       expect(knife_ec2_create).to receive(:plugin_validate_options!)
+      allow(knife_ec2_create).to receive(:reload_server_data_required?)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:spot_instances_attributes).and_return(spot_instance_server_def)
       expect(ec2_connection).to receive(:request_spot_instances).with(spot_instance_server_def).and_return(spot_response)
@@ -257,6 +259,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "successfully creates a new spot instance" do
       expect(knife_ec2_create).to receive(:plugin_validate_options!)
+      allow(knife_ec2_create).to receive(:reload_server_data_required?)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:spot_instances_attributes).and_return(spot_instance_server_def)
       expect(ec2_connection).to receive(:request_spot_instances).with(spot_instance_server_def).and_return(spot_response)
@@ -402,7 +405,6 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "actually writes to the validation key tempfile" do
-      Chef::Config[:knife][:validation_key_url] = @validation_key_url
       knife_ec2_create.config[:validation_key_url] = @validation_key_url
 
       allow(knife_ec2_create).to receive_message_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
@@ -522,7 +524,7 @@ describe Chef::Knife::Ec2ServerCreate do
   shared_examples "generic bootstrap configurations" do
     context "data bag secret" do
       before(:each) do
-        Chef::Config[:knife][:secret] = "sys-knife-secret"
+        knife_ec2_create.config[:secret] = "sys-knife-secret"
       end
 
       it "uses the the knife configuration when no explicit value is provided" do
@@ -532,16 +534,11 @@ describe Chef::Knife::Ec2ServerCreate do
       it "sets encrypted_data_bag_secret" do
         expect(bootstrap.config[:encrypted_data_bag_secret]).to eql("sys-knife-secret")
       end
-
-      it "prefers using a provided value instead of the knife confiuration" do
-        subject.config[:secret] = "cli-provided-secret"
-        expect(bootstrap.config[:secret]).to eql("cli-provided-secret")
-      end
     end
 
     context "data bag secret file" do
       before(:each) do
-        Chef::Config[:knife][:secret_file] = "sys-knife-secret-file"
+        bootstrap.config[:secret_file] = "sys-knife-secret-file"
       end
 
       it "uses the the knife configuration when no explicit value is provided" do
@@ -560,7 +557,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     context "S3-based secret" do
       before(:each) do
-        Chef::Config[:knife][:s3_secret] =
+        knife_ec2_coreate.config[:s3_secret] =
           "s3://test.bucket/folder/encrypted_data_bag_secret"
         @secret_content = "TEST DATA BAG SECRET\n"
         allow(knife_ec2_create).to receive(:s3_secret).and_return(@secret_content)
@@ -585,21 +582,21 @@ describe Chef::Knife::Ec2ServerCreate do
     let(:file_path) { "#{ENV.fetch("HOME", "/root")}/.chef/#{keypair.key_name}.pem" }
     let(:file_like_object) { double(path: file_path) }
     before do
-      Chef::Config[:knife].delete(:ssh_key_name)
+      knife_ec2_create.config.delete(:ssh_key_name)
       allow(File).to receive(:open).with(file_path, "w+").and_return(file_like_object)
     end
 
     it "calls create_key_pair method and Generate new keypair" do
       expect(ec2_connection).to receive(:create_key_pair).and_return(keypair)
       knife_ec2_create.plugin_validate_options!
-      expect(Chef::Config[:knife][:ssh_key_name]).to eq(keypair.key_name)
-      expect(Chef::Config[:knife][:ssh_identity_file]).to eq(file_path)
+      expect(knife_ec2_create.config[:ssh_key_name]).to eq(keypair.key_name)
+      expect(knife_ec2_create.config[:ssh_identity_file]).to eq(file_path)
     end
   end
 
   describe "S3 secret test cases" do
     before do
-      Chef::Config[:knife][:s3_secret] =
+      knife_ec2_create.config[:s3_secret] =
         "s3://test.bucket/folder/encrypted_data_bag_secret"
       @secret_content = "TEST DATA BAG SECRET\n"
       allow(knife_ec2_create).to receive(:s3_secret).and_return(@secret_content)
@@ -608,25 +605,25 @@ describe Chef::Knife::Ec2ServerCreate do
     context "when s3 secret option is passed" do
       it "sets the s3 secret value to cl_secret key" do
         knife_ec2_create.bootstrap_common_params
-        expect(Chef::Config[:knife][:cl_secret]).to eql(@secret_content)
+        expect(knife_ec2_create.config[:cl_secret]).to eql(@secret_content)
       end
     end
 
     context "when s3 secret option is not passed" do
-      it "sets the cl_secret value to nil" do
-        Chef::Config[:knife].delete(:s3_secret)
-        Chef::Config[:knife].delete(:cl_secret)
+      it "sets the config[:cl_secret] value to nil" do
+        knife_ec2_create.config.delete(:s3_secret)
+        knife_ec2_create.config.delete(:cl_secret)
         knife_ec2_create.bootstrap_common_params
-        expect(Chef::Config[:knife][:cl_secret]).to eql(nil)
+        expect(knife_ec2_create.config[:cl_secret]).to eql(nil)
       end
     end
   end
 
   context "when deprecated aws_ssh_key_id option is used in knife config and no ssh-key is supplied on the CLI" do
     before do
-      Chef::Config[:knife][:aws_ssh_key_id] = "ssh_key_name"
-      Chef::Config[:knife].delete(:ssh_key_name)
-      @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
+      knife_ec2_create.config[:aws_ssh_key_id] = "ssh_key_name"
+      knife_ec2_create.config.delete(:ssh_key_name)
+      @aws_key = knife_ec2_create.config[:aws_ssh_key_id]
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:validate_aws_config!)
       allow(knife_ec2_create).to receive(:validate_nics!)
@@ -635,14 +632,14 @@ describe Chef::Knife::Ec2ServerCreate do
     it "gives warning message and creates the attribute with the required name" do
       expect(knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
       knife_ec2_create.plugin_validate_options!
-      expect(Chef::Config[:knife][:ssh_key_name]).to eq(@aws_key)
+      expect(knife_ec2_create.config[:ssh_key_name]).to eq(@aws_key)
     end
   end
 
   context "when deprecated aws_ssh_key_id option is used in knife config but ssh-key is also supplied on the CLI" do
     before do
-      Chef::Config[:knife][:aws_ssh_key_id] = "ssh_key_name"
-      @aws_key = Chef::Config[:knife][:aws_ssh_key_id]
+      knife_ec2_create.config[:aws_ssh_key_id] = "ssh_key_name"
+      @aws_key = knife_ec2_create.config[:aws_ssh_key_id]
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:validate_aws_config!)
       allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
@@ -651,13 +648,13 @@ describe Chef::Knife::Ec2ServerCreate do
     it "gives warning message and gives preference to CLI value over knife config's value" do
       expect(knife_ec2_create.ui).to receive(:warn).with("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
       knife_ec2_create.plugin_validate_options!
-      expect(Chef::Config[:knife][:ssh_key_name]).to eq(@aws_key)
+      expect(knife_ec2_create.config[:ssh_key_name]).to eq(@aws_key)
     end
   end
 
   context "when ssh_key_name option is used in knife config instead of deprecated aws_ssh_key_id option" do
     before do
-      Chef::Config[:knife][:ssh_key_name] = "mykey"
+      knife_ec2_create.config[:ssh_key_name] = "mykey"
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       allow(knife_ec2_create).to receive(:validate_aws_config!)
       allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
@@ -668,20 +665,6 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
-  context "when ssh_key_name option is used in knife config also it is passed on the CLI" do
-    before do
-      Chef::Config[:knife][:ssh_key_name] = "mykey"
-      knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
-    end
-
-    it "ssh-key passed over CLI gets preference over knife config value" do
-      allow(knife_ec2_create).to receive(:ami).and_return(ami)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
-      server_def = knife_ec2_create.fetch_ec2_instance("i-00fe186450a2e8e97")
-      expect(server_def.key_name).to eq(knife_ec2_create.config[:ssh_key_name])
-    end
-  end
-
   describe "ssh_key_name option" do
     before do
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
@@ -689,7 +672,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:validate_nics!)
     end
 
-    context "when ssh_key_name option is not passed on the CLI" do
+    context "when ssh_key_name option is not passed in the config" do
       let(:keypair) do
         Aws::EC2::Types::KeyPair.new(
           key_fingerprint: "a9:00:ec:1d:bd:80:ae:00",
@@ -705,7 +688,7 @@ describe Chef::Knife::Ec2ServerCreate do
       it_behaves_like "create keypair"
     end
 
-    context "when user name is passed with system domain (.\\) and ssh_key_name option is not provided on the CLI" do
+    context "when user name is passed with system domain (.\\) and ssh_key_name option is not provided in the config" do
       let(:keypair) do
         Aws::EC2::Types::KeyPair.new(
           key_fingerprint: "a9:00:ec:1d:bd:80:ae:00",
@@ -721,11 +704,11 @@ describe Chef::Knife::Ec2ServerCreate do
       it_behaves_like "create keypair"
     end
 
-    context "when ssh_key_name option is passed on the CLI" do
+    context "when ssh_key_name option is not passed in the config" do
       it "should not be call create_key_pair method" do
         expect(ec2_connection).not_to receive(:create_key_pair)
         knife_ec2_create.plugin_validate_options!
-        expect(Chef::Config[:knife][:ssh_key_name]).to eq("ssh_key_name")
+        expect(knife_ec2_create.config[:ssh_key_name]).to eq("ssh_key_name")
       end
     end
   end
@@ -793,7 +776,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "configured the bootstrap to set an ec2 hint (via Chef::Config)" do
-      expect(Chef::Config[:knife][:hints]["ec2"]).not_to be_nil
+      expect(knife_ec2_create.config[:hints]["ec2"]).not_to be_nil
     end
   end
 
@@ -932,7 +915,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
-  describe "when validating the command-line parameters" do
+  describe "when validating the config parameters" do
     before do
       allow(knife_ec2_create.ui).to receive(:error)
       allow(knife_ec2_create.ui).to receive(:msg)
@@ -940,11 +923,11 @@ describe Chef::Knife::Ec2ServerCreate do
 
     describe "when reading aws_credential_file" do
       before do
-        Chef::Config[:knife].delete(:aws_access_key_id)
-        Chef::Config[:knife].delete(:aws_secret_access_key)
+        knife_ec2_create.config.delete(:aws_access_key_id)
+        knife_ec2_create.config.delete(:aws_secret_access_key)
 
         allow(File).to receive(:exist?).with("/apple/pear").and_return(true)
-        Chef::Config[:knife][:aws_credential_file] = "/apple/pear"
+        knife_ec2_create.config[:aws_credential_file] = "/apple/pear"
         @access_key_id = "access_key_id"
         @secret_key = "secret_key"
       end
@@ -953,48 +936,48 @@ describe Chef::Knife::Ec2ServerCreate do
         allow(File).to receive(:read)
           .and_return("AWSAccessKeyId=#{@access_key_id}\nAWSSecretKey=#{@secret_key}")
         knife_ec2_create.validate_aws_config!
-        expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
-        expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
+        expect(knife_ec2_create.config[:aws_access_key_id]).to eq(@access_key_id)
+        expect(knife_ec2_create.config[:aws_secret_access_key]).to eq(@secret_key)
       end
 
       it "reads DOS Line endings" do
         allow(File).to receive(:read)
           .and_return("AWSAccessKeyId=#{@access_key_id}\r\nAWSSecretKey=#{@secret_key}")
         knife_ec2_create.validate_aws_config!
-        expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
-        expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
+        expect(knife_ec2_create.config[:aws_access_key_id]).to eq(@access_key_id)
+        expect(knife_ec2_create.config[:aws_secret_access_key]).to eq(@secret_key)
       end
 
       it "reads UNIX Line endings for new format" do
-        Chef::Config[:knife][:aws_profile] = "default"
+        knife_ec2_create.config[:aws_profile] = "default"
         allow(File).to receive(:read)
           .and_return("[default]\naws_access_key_id=#{@access_key_id}\naws_secret_access_key=#{@secret_key}")
         knife_ec2_create.validate_aws_config!
-        expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
-        expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
+        expect(knife_ec2_create.config[:aws_access_key_id]).to eq(@access_key_id)
+        expect(knife_ec2_create.config[:aws_secret_access_key]).to eq(@secret_key)
       end
 
       it "reads DOS Line endings for new format" do
-        Chef::Config[:knife][:aws_profile] = "default"
+        knife_ec2_create.config[:aws_profile] = "default"
         allow(File).to receive(:read)
           .and_return("[default]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
         knife_ec2_create.validate_aws_config!
-        expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
-        expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
+        expect(knife_ec2_create.config[:aws_access_key_id]).to eq(@access_key_id)
+        expect(knife_ec2_create.config[:aws_secret_access_key]).to eq(@secret_key)
       end
 
       it "loads the correct profile" do
-        Chef::Config[:knife][:aws_profile] = "other"
+        knife_ec2_create.config[:aws_profile] = "other"
         allow(File).to receive(:read)
           .and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET\n\n[other]\naws_access_key_id=#{@access_key_id}\r\naws_secret_access_key=#{@secret_key}")
         knife_ec2_create.validate_aws_config!
-        expect(Chef::Config[:knife][:aws_access_key_id]).to eq(@access_key_id)
-        expect(Chef::Config[:knife][:aws_secret_access_key]).to eq(@secret_key)
+        expect(knife_ec2_create.config[:aws_access_key_id]).to eq(@access_key_id)
+        expect(knife_ec2_create.config[:aws_secret_access_key]).to eq(@secret_key)
       end
 
       context "when invalid --aws-profile is given" do
         it "raises exception" do
-          Chef::Config[:knife][:aws_profile] = "xyz"
+          knife_ec2_create.config[:aws_profile] = "xyz"
           allow(File).to receive(:read).and_return("[default]\naws_access_key_id=TESTKEY\r\naws_secret_access_key=TESTSECRET")
           expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws-profile 'xyz' is invalid. Does the credential file at '/apple/pear' contain this profile?")
         end
@@ -1002,7 +985,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
       context "when non-existent --aws_credential_file is given" do
         it "raises exception" do
-          Chef::Config[:knife][:aws_credential_file] = "/foo/bar"
+          knife_ec2_create.config[:aws_credential_file] = "/foo/bar"
           allow(File).to receive(:exist?).and_return(false)
           expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws_credential_file (/foo/bar) cannot be found on disk.")
         end
@@ -1011,9 +994,10 @@ describe Chef::Knife::Ec2ServerCreate do
 
     describe "when reading aws_config_file" do
       before do
-        Chef::Config[:knife][:aws_config_file] = "/apple/pear"
-        Chef::Config[:knife][:aws_access_key_id] = "aws_access_key_id"
-        Chef::Config[:knife][:aws_secret_access_key] = "aws_secret_access_key"
+        knife_ec2_create.config[:aws_config_file] = "/apple/pear"
+        knife_ec2_create.config[:aws_access_key_id] = "aws_access_key_id"
+        knife_ec2_create.config[:aws_secret_access_key] = "aws_secret_access_key"
+        knife_ec2_create.merge_configs
 
         allow(File).to receive(:exist?).and_return(true)
         allow(knife_ec2_create).to receive(:aws_cred_file_location).and_return(nil)
@@ -1021,44 +1005,39 @@ describe Chef::Knife::Ec2ServerCreate do
       end
 
       it "reads UNIX Line endings" do
-        allow(File).to receive(:read)
-          .and_return("[default]\r\nregion=#{@region}")
+        allow(File).to receive(:read).and_return("[default]\r\nregion=#{@region}")
         knife_ec2_create.validate_aws_config!
-        expect(Chef::Config[:knife][:region]).to eq(@region)
+        expect(knife_ec2_create.config[:region]).to eq(@region)
       end
 
       it "reads DOS Line endings" do
-        allow(File).to receive(:read)
-          .and_return("[default]\r\nregion=#{@region}")
+        allow(File).to receive(:read).and_return("[default]\r\nregion=#{@region}")
         knife_ec2_create.validate_aws_config!
-        expect(Chef::Config[:knife][:region]).to eq(@region)
+        expect(knife_ec2_create.config[:region]).to eq(@region)
       end
 
       it "reads UNIX Line endings for new format" do
-        allow(File).to receive(:read)
-          .and_return("[default]\nregion=#{@region}")
+        allow(File).to receive(:read).and_return("[default]\nregion=#{@region}")
         knife_ec2_create.validate_aws_config!
-        expect(Chef::Config[:knife][:region]).to eq(@region)
+        expect(knife_ec2_create.config[:region]).to eq(@region)
       end
 
       it "reads DOS Line endings for new format" do
-        allow(File).to receive(:read)
-          .and_return("[default]\nregion=#{@region}")
+        allow(File).to receive(:read).and_return("[default]\nregion=#{@region}")
         knife_ec2_create.validate_aws_config!
-        expect(Chef::Config[:knife][:region]).to eq(@region)
+        expect(knife_ec2_create.config[:region]).to eq(@region)
       end
 
       it "loads the correct profile" do
-        Chef::Config[:knife][:aws_profile] = "other"
-        allow(File).to receive(:read)
-          .and_return("[default]\nregion=TESTREGION\n\n[profile other]\nregion=#{@region}")
+        knife_ec2_create.config[:aws_profile] = "other"
+        allow(File).to receive(:read).and_return("[default]\nregion=TESTREGION\n\n[profile other]\nregion=#{@region}")
         knife_ec2_create.validate_aws_config!
-        expect(Chef::Config[:knife][:region]).to eq(@region)
+        expect(knife_ec2_create.config[:region]).to eq(@region)
       end
 
       context "when invalid --aws-profile is given" do
         it "raises exception" do
-          Chef::Config[:knife][:aws_profile] = "xyz"
+          knife_ec2_create.config[:aws_profile] = "xyz"
           allow(File).to receive(:read).and_return("[default]\nregion=TESTREGION")
           expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws-profile 'profile xyz' is invalid.")
         end
@@ -1066,30 +1045,30 @@ describe Chef::Knife::Ec2ServerCreate do
 
       context "when non-existent --aws_config_file is given" do
         it "raises exception" do
-          Chef::Config[:knife][:aws_config_file] = "/foo/bar"
+          knife_ec2_create.config[:aws_config_file] = "/foo/bar"
           allow(File).to receive(:exist?).and_return(false)
           expect { knife_ec2_create.validate_aws_config! }.to raise_error("The provided --aws_config_file (/foo/bar) cannot be found on disk.")
         end
       end
 
-      context "when aws_profile is passed a 'default' from CLI or knife.rb file" do
+      context "when aws_profile is passed a 'default' in the config" do
         it "loads the default profile successfully" do
-          Chef::Config[:knife][:aws_profile] = "default"
+          knife_ec2_create.config[:aws_profile] = "default"
           allow(File).to receive(:read).and_return("[default]\nregion=#{@region}\n\n[profile other]\nregion=TESTREGION")
           knife_ec2_create.validate_aws_config!
-          expect(Chef::Config[:knife][:region]).to eq(@region)
+          expect(knife_ec2_create.config[:region]).to eq(@region)
         end
       end
     end
 
     it "understands that file:// validation key URIs are just paths" do
-      Chef::Config[:knife][:validation_key_url] = "file:///foo/bar"
+      knife_ec2_create.config[:validation_key_url] = "file:///foo/bar"
       expect(knife_ec2_create.validation_key_path).to eq("/foo/bar")
     end
 
     it "returns a path to a tmp file when presented with a URI for the " \
       "validation key" do
-        Chef::Config[:knife][:validation_key_url] = @validation_key_url
+        knife_ec2_create.config[:validation_key_url] = @validation_key_url
 
         allow(knife_ec2_create).to receive_message_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
 
@@ -1134,7 +1113,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "disallows specifying credentials file and aws keys" do
-      Chef::Config[:knife][:aws_credential_file] = "/apple/pear"
+      knife_ec2_create.config[:aws_credential_file] = "/apple/pear"
       allow(File).to receive(:exist?).with("/apple/pear").and_return(true)
       allow(File).to receive(:read).and_return("AWSAccessKeyId=b\nAWSSecretKey=a")
 
@@ -1288,26 +1267,6 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(server_def[:security_group_ids]).to eq(["sg-00aa11bb"])
     end
 
-    it "sets the image id from CLI arguments over knife config" do
-      knife_ec2_create.config[:image] = "ami-005bdb005fb00e791"
-      Chef::Config[:knife][:image] = "ami-54354"
-      server_def = knife_ec2_create.server_attributes
-      expect(server_def[:image_id]).to eq("ami-005bdb005fb00e791")
-    end
-
-    it "sets the flavor id from CLI arguments over knife config" do
-      knife_ec2_create.config[:flavor] = "m1.small"
-      Chef::Config[:knife][:flavor] = "bitty"
-      server_def = knife_ec2_create.server_attributes
-      expect(server_def[:instance_type]).to eq("m1.small")
-    end
-
-    it "sets the availability zone from CLI arguments over knife config" do
-      knife_ec2_create.config[:availability_zone] = "us-west-2a"
-      Chef::Config[:knife][:availability_zone] = "dat-one"
-      server_def = knife_ec2_create.server_attributes
-      expect(server_def[:placement][:availability_zone]).to eq("us-west-2a")
-    end
 
     it "adds the specified ephemeral device mappings" do
       knife_ec2_create.config[:ephemeral] = [ "/dev/sdb", "/dev/sdc", "/dev/sdd", "/dev/sde" ]
@@ -1680,9 +1639,9 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
 
-    it "configures the ssh gateway with the key specified on the knife config / command line" do
+    it "configures the ssh gateway with the key specified in the config" do
       knife_ec2_create.config[:ssh_gateway_identity] = "/home/fireman/.ssh/gateway.pem"
-      # Net::SSH::Config.stub(:for).and_return({ :keys => ['configuredkey'] })
+      expect(Net::SSH::Config).to receive(:for).and_return({ keys: ["configuredkey"] })
       expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, port: 22, keys: ["/home/fireman/.ssh/gateway.pem"])
       knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
@@ -1943,7 +1902,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:validate_aws_config!)
       allow(knife_ec2_create).to receive(:validate_nics!)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
-      Chef::Config[:knife][:ssh_key_name] = "mykey"
+      knife_ec2_create.config[:ssh_key_name] = "mykey"
       knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
       knife_ec2_create.config[:winrm_ssl] = true
       knife_ec2_create.config[:create_ssl_listener] = true
@@ -2468,7 +2427,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     after(:each) do
       knife_ec2_create.config.delete(:ssh_key_name)
-      Chef::Config[:knife].delete(:ssh_key_name)
+      knife_ec2_create.config.delete(:ssh_key_name)
       knife_ec2_create.config.delete(:winrm_ssl)
       knife_ec2_create.config.delete(:create_ssl_listener)
     end
@@ -2479,7 +2438,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:validate_aws_config!)
       allow(knife_ec2_create).to receive(:validate_nics!)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
-      Chef::Config[:knife][:ssh_key_name] = "mykey"
+      knife_ec2_create.config[:ssh_key_name] = "mykey"
       knife_ec2_create.config[:ssh_key_name] = "ssh_key_name"
       knife_ec2_create.config[:winrm_ssl] = false
     end
@@ -2533,7 +2492,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
     after(:each) do
       knife_ec2_create.config.delete(:ssh_key_name)
-      Chef::Config[:knife].delete(:ssh_key_name)
+      knife_ec2_create.config.delete(:ssh_key_name)
       knife_ec2_create.config.delete(:winrm_ssl)
     end
   end
@@ -2545,7 +2504,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
     end
     context "spot instance" do
-      context "disable_api_termination is not passed on CLI or in knife config" do
+      context "disable_api_termination is not passed in the config" do
         before do
           knife_ec2_create.config[:spot_price] = 0.001
         end
@@ -2563,7 +2522,7 @@ describe Chef::Knife::Ec2ServerCreate do
         end
       end
 
-      context "disable_api_termination is passed on CLI" do
+      context "disable_api_termination is passed in the config" do
         before do
           knife_ec2_create.config[:spot_price] = 0.001
           knife_ec2_create.config[:disable_api_termination] = true
@@ -2580,7 +2539,7 @@ describe Chef::Knife::Ec2ServerCreate do
       context "disable_api_termination is passed in knife config" do
         before do
           knife_ec2_create.config[:spot_price] = 0.001
-          Chef::Config[:knife][:disable_api_termination] = true
+          knife_ec2_create.config[:disable_api_termination] = true
         end
 
         it "raises error" do
@@ -2593,7 +2552,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     context "non-spot instance" do
-      context "when disable_api_termination option is not passed on the CLI or in the knife config" do
+      context "when disable_api_termination option is not passed in the config" do
 
         it "sets disable_api_termination option in server_def with value as false" do
           knife_ec2_create.config[:disable_api_termination] = false # Default
@@ -2609,7 +2568,7 @@ describe Chef::Knife::Ec2ServerCreate do
         end
       end
 
-      context "when disable_api_termination option is passed on the CLI" do
+      context "when disable_api_termination option is passed in the config" do
         before do
           knife_ec2_create.config[:disable_api_termination] = true
         end
@@ -2629,7 +2588,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
       context "when disable_api_termination option is passed in the knife config" do
         before do
-          Chef::Config[:knife][:disable_api_termination] = true
+          knife_ec2_create.config[:disable_api_termination] = true
         end
 
         it "sets disable_api_termination option in server_def with value as true" do
@@ -2660,7 +2619,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
     end
 
-    context "when subnet_id and disable_source_dest_check are passed on CLI" do
+    context "when subnet_id and disable_source_dest_check are passed in the config" do
       let(:network_interfaces) { OpenStruct.new(subnet_id: "subnet-9d4a7b6", source_dest_check: false) }
 
       it "modify instance attribute source_dest_check as false" do
@@ -2704,6 +2663,12 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(ec2_server_create).to receive(:ami).and_return(ami)
       ec2_server_create.config[:tags] = []
       expect(ec2_server_create.ui).to receive(:warn).with("[DEPRECATED] --chef-tag option is deprecated and will be removed in future release. Use --tags TAGS option instead.")
+      ec2_server_create.config[:ssh_key_name] = "mykey"
+      ec2_server_create.config[:ssh_key_name] = "ssh_key_name"
+      ec2_server_create.config[:winrm_ssl] = true
+      ec2_server_create.config[:create_ssl_listener] = true
+      ec2_server_create.config[:connection_user] = "domain\\ec2"
+      ec2_server_create.config[:connection_password] = "ec2@123"
       ec2_server_create.plugin_validate_options!
     end
     context 'when mulitple values provided from cli for e.g. --chef-tag "foo" --chef-tag "bar"' do
@@ -2781,7 +2746,7 @@ describe Chef::Knife::Ec2ServerCreate do
         expect(knife_ec2_create.ui).not_to receive(:error).with(
           "Complexity requirement not met. Password length should be 8-40 characters and include: 1 uppercase, 1 lowercase, 1 digit and 1 special character"
         )
-        expect { knife_ec2_create.plugin_validate_options! }.not_to raise_error(SystemExit)
+        expect { knife_ec2_create.plugin_validate_options! }.not_to raise_error
       end
     end
 
@@ -2838,7 +2803,7 @@ describe Chef::Knife::Ec2ServerCreate do
     end
   end
 
-  describe "disable_source_dest_check option is passed on CLI" do
+  describe "disable_source_dest_check option is passed " do
     let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["--disable-source-dest-check"]) }
     it "when a disable_source_dest_check is present" do
       expect(ec2_server_create.config[:disable_source_dest_check]).to eq(true)

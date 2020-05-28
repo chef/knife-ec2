@@ -1,7 +1,7 @@
 #
 # Author:: Adam Jacob (<adam@chef.io>)
 # Author:: Seth Chisamore (<schisamo@chef.io>)
-# Copyright:: Copyright (c) 2010-2019 Chef Software, Inc.
+# Copyright:: Copyright (c) Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -43,14 +43,12 @@ class Chef
       option :flavor,
         short: "-f FLAVOR",
         long: "--flavor FLAVOR",
-        description: "The flavor of server (m1.small, m1.medium, etc)",
-        proc: Proc.new { |f| Chef::Config[:knife][:flavor] = f }
+        description: "The flavor of server (m1.small, m1.medium, etc)"
 
       option :image,
         short: "-I IMAGE",
         long: "--image IMAGE",
-        description: "The AMI for the server",
-        proc: Proc.new { |i| Chef::Config[:knife][:image] = i }
+        description: "The AMI for the server"
 
       option :iam_instance_profile,
         long: "--iam-profile NAME",
@@ -62,14 +60,14 @@ class Chef
         description: "The security groups for this server; not allowed when using VPC",
         proc: Proc.new { |groups| groups.split(",") }
 
-      option :security_group_id,
+      option :security_group_ids,
         short: "-g SECURITY_GROUP_ID",
         long: "--security-group-id ID",
         description: "The security group id for this server; required when using VPC. Use the --security-group-id option multiple times when specifying multiple groups for e.g. -g sg-e985168d -g sg-e7f06383 -g sg-ec1b7e88.",
-        proc: Proc.new { |security_group_id|
-          Chef::Config[:knife][:security_group_ids] ||= []
-          Chef::Config[:knife][:security_group_ids].push(security_group_id)
-          Chef::Config[:knife][:security_group_ids]
+        proc: Proc.new { |security_group_id, accumulator|
+          accumulator ||= []
+          accumulator.push(security_group_id)
+          accumulator
         }
 
       option :associate_eip,
@@ -82,8 +80,7 @@ class Chef
 
       option :placement_group,
         long: "--placement-group PLACEMENT_GROUP",
-        description: "The placement group to place a cluster compute instance",
-        proc: Proc.new { |pg| Chef::Config[:knife][:placement_group] = pg }
+        description: "The placement group to place a cluster compute instance"
 
       option :primary_eni,
         long: "--primary-eni ENI_ID",
@@ -92,14 +89,12 @@ class Chef
       option :availability_zone,
         short: "-Z ZONE",
         long: "--availability-zone ZONE",
-        description: "The Availability Zone",
-        proc: Proc.new { |key| Chef::Config[:knife][:availability_zone] = key }
+        description: "The Availability Zone"
 
       option :ssh_key_name,
         short: "-S KEY",
         long: "--ssh-key KEY",
-        description: "The AWS SSH key id",
-        proc: Proc.new { |key| Chef::Config[:knife][:ssh_key_name] = key }
+        description: "The AWS SSH key id"
 
       option :ebs_size,
         long: "--ebs-size SIZE",
@@ -115,40 +110,33 @@ class Chef
 
       option :secret,
         long: "--secret ",
-        description: "The secret key to use to encrypt data bag item values",
-        proc: lambda { |s| Chef::Config[:knife][:secret] = s }
+        description: "The secret key to use to encrypt data bag item values"
 
       option :secret_file,
         long: "--secret-file SECRET_FILE",
-        description: "A file containing the secret key to use to encrypt data bag item values",
-        proc: lambda { |sf| Chef::Config[:knife][:secret_file] = sf }
+        description: "A file containing the secret key to use to encrypt data bag item values"
 
       option :s3_secret,
         long: "--s3-secret S3_SECRET_URL",
-        description: "S3 URL (e.g. s3://bucket/file) for the encrypted_data_bag_secret_file",
-        proc: lambda { |url| Chef::Config[:knife][:s3_secret] = url }
+        description: "S3 URL (e.g. s3://bucket/file) for the encrypted_data_bag_secret_file"
 
       option :subnet_id,
         long: "--subnet SUBNET-ID",
-        description: "create node in this Virtual Private Cloud Subnet ID (implies VPC mode)",
-        proc: Proc.new { |key| Chef::Config[:knife][:subnet_id] = key }
+        description: "create node in this Virtual Private Cloud Subnet ID (implies VPC mode)"
 
       option :private_ip_address,
         long: "--private-ip-address IP-ADDRESS",
-        description: "allows to specify the private IP address of the instance in VPC mode",
-        proc: Proc.new { |ip| Chef::Config[:knife][:private_ip_address] = ip }
+        description: "allows to specify the private IP address of the instance in VPC mode"
 
       option :fqdn,
         long: "--fqdn FQDN",
         description: "Pre-defined FQDN. This is used for Kerberos Authentication purpose only",
-        proc: Proc.new { |key| Chef::Config[:knife][:fqdn] = key },
         default: nil
 
       option :aws_user_data,
         long: "--user-data USER_DATA_FILE",
         short: "-u USER_DATA_FILE",
         description: "The EC2 User Data file to provision the instance with",
-        proc: Proc.new { |m| Chef::Config[:knife][:aws_user_data] = m },
         default: nil
 
       option :ephemeral,
@@ -172,19 +160,16 @@ class Chef
       option :ebs_volume_type,
         long: "--ebs-volume-type TYPE",
         description: "Possible values are standard (magnetic) | io1 | gp2 | sc1 | st1. Default is gp2",
-        proc: Proc.new { |key| Chef::Config[:knife][:ebs_volume_type] = key },
         default: "gp2"
 
       option :ebs_provisioned_iops,
         long: "--provisioned-iops IOPS",
         description: "IOPS rate, only used when ebs volume type is 'io1'",
-        proc: Proc.new { |key| Chef::Config[:knife][:provisioned_iops] = key },
         default: nil
 
       option :validation_key_url,
         long: "--validation-key-url URL",
-        description: "Path to the validation key",
-        proc: proc { |m| Chef::Config[:validation_key_url] = m }
+        description: "Path to the validation key"
 
       option :ebs_encrypted,
         long: "--ebs-encrypted",
@@ -213,7 +198,7 @@ class Chef
       option :aws_connection_timeout,
         long: "--aws-connection-timeout MINUTES",
         description: "The maximum time in minutes to wait to for aws connection. Default is 10 min",
-        proc: proc { |t| t = t.to_i * 60; Chef::Config[:aws_connection_timeout] = t },
+        proc: proc { |t| t = t.to_i * 60 },
         default: 600
 
       option :create_ssl_listener,
@@ -261,19 +246,19 @@ class Chef
       option :chef_tag,
         long: "--chef-tag CHEF_TAG",
         description: "Use to tag the node in chef server; Provide --chef-tag option multiple times when specifying multiple tags e.g. --chef-tag tag1 --chef-tag tag2.",
-        proc: Proc.new { |chef_tag|
-          Chef::Config[:knife][:chef_tag] ||= []
-          Chef::Config[:knife][:chef_tag].push(chef_tag)
-          Chef::Config[:knife][:chef_tag]
+        proc: Proc.new { |chef_tag, accumulator|
+          accumulator ||= []
+          accumulator.push(chef_tag)
+          accumulator
         }
 
       option :aws_tag,
         long: "--aws-tag AWS_TAG",
         description: "AWS tag for this server; Use the --aws-tag option multiple times when specifying multiple tags e.g. --aws-tag key1=value1 --aws-tag key2=value2.",
-        proc: Proc.new { |aws_tag|
-          Chef::Config[:knife][:aws_tag] ||= []
-          Chef::Config[:knife][:aws_tag].push(aws_tag)
-          Chef::Config[:knife][:aws_tag]
+        proc: Proc.new { |aws_tag, accumulator|
+          accumulator ||= []
+          accumulator.push(aws_tag)
+          accumulator
         }
 
       option :cpu_credits,
@@ -287,7 +272,7 @@ class Chef
         # For VPC EIP assignment we need the allocation ID so fetch full EIP details
         elastic_ip = ec2_connection.describe_addresses.addresses.detect { |addr| addr if addr.public_ip == requested_elastic_ip }
 
-        if config_value(:spot_price)
+        if config[:spot_price]
           server_def = spot_instances_attributes
           spot_request = ec2_connection.request_spot_instances(server_def)
           msg_pair("Spot Request ID", spot_request.spot_instance_request_id)
@@ -340,7 +325,7 @@ class Chef
         msg_pair("Security Groups", printed_security_groups) unless vpc_mode? || (server.groups && server.security_groups_ids)
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? || server.security_groups_ids
 
-        msg_pair("IAM Profile", config_value(:iam_instance_profile))
+        msg_pair("IAM Profile", config[:iam_instance_profile])
 
         msg_pair("AWS Tags", printed_aws_tags)
         msg_pair("Volume Tags", printed_volume_tags)
@@ -352,7 +337,7 @@ class Chef
         # occasionally 'ready?' isn't, so retry a couple times if needed.
         tries = 6
         begin
-          disable_source_dest_check if vpc_mode? && config_value(:disable_source_dest_check)
+          disable_source_dest_check if vpc_mode? && config[:disable_source_dest_check]
 
           create_tags(hashed_tags) unless hashed_tags.empty?
           create_volume_tags(hashed_volume_tags) unless hashed_volume_tags.empty?
@@ -387,7 +372,7 @@ class Chef
         end
         msg_pair("Private IP Address", server.private_ip_address)
 
-        if Chef::Config[:knife][:validation_key_url]
+        if config[:validation_key_url]
           download_validation_key(validation_key_path)
           Chef::Config[:validation_key] = validation_key_path
         end
@@ -415,16 +400,16 @@ class Chef
 
         fqdn = connection_host
         if winrm?
-          if config_value(:kerberos_realm)
+          if config[:kerberos_realm]
             # Fetch AD/WINS based fqdn if any for Kerberos-based Auth
-            fqdn = config_value(:fqdn) || fetch_server_fqdn(server.private_ip_address)
+            fqdn = config[:fqdn] || fetch_server_fqdn(server.private_ip_address)
           end
           config[:connection_password] = windows_password
         end
         @name_args = [fqdn]
 
-        if config_value(:chef_node_name)
-          config[:chef_node_name] = evaluate_node_name(config_value(:chef_node_name))
+        if config[:chef_node_name]
+          config[:chef_node_name] = evaluate_node_name(config[:chef_node_name])
         else
           config[:chef_node_name] = server.id
         end
@@ -441,10 +426,10 @@ class Chef
         msg_pair("Availability Zone", server.availability_zone)
         msg_pair("Security Groups", printed_security_groups) unless vpc_mode? || (server.groups.nil? && server.security_group_ids)
         msg_pair("Security Group Ids", printed_security_group_ids) if vpc_mode? || server.security_group_ids
-        msg_pair("IAM Profile", config_value(:iam_instance_profile)) if config_value(:iam_instance_profile)
-        msg_pair("Primary ENI", config_value(:primary_eni)) if config_value(:primary_eni)
+        msg_pair("IAM Profile", config[:iam_instance_profile]) if config[:iam_instance_profile]
+        msg_pair("Primary ENI", config[:primary_eni]) if config[:primary_eni]
         msg_pair("AWS Tags", printed_aws_tags)
-        msg_pair("Chef Tags", config_value(:tags)) if config_value(:tags).any?
+        msg_pair("Chef Tags", config[:tags]) if config[:tags].any?
         msg_pair("SSH Key", server.key_name)
         msg_pair("Root Device Type", server.root_device_type)
         msg_pair("Root Volume Tags", printed_volume_tags)
@@ -509,8 +494,8 @@ class Chef
 
       def validation_key_path
         @validation_key_path ||= begin
-          if URI(Chef::Config[:knife][:validation_key_url]).scheme == "file"
-            URI(Chef::Config[:knife][:validation_key_url]).path
+          if URI(config[:validation_key_url]).scheme == "file"
+            URI(config[:validation_key_url]).path
           else
             validation_key_tmpfile.path
           end
@@ -524,10 +509,10 @@ class Chef
 
       def download_validation_key(tempfile)
         Chef::Log.debug "Downloading validation key " \
-          "<#{Chef::Config[:knife][:validation_key_url]}> to file " \
+          "<#{config[:validation_key_url]}> to file " \
           "<#{tempfile}>"
 
-        case URI(Chef::Config[:knife][:validation_key_url]).scheme
+        case URI(config[:validation_key_url]).scheme
         when "s3"
           File.open(tempfile, "w") { |f| f.write(s3_validation_key) }
         end
@@ -535,31 +520,31 @@ class Chef
 
       def s3_validation_key
         @s3_validation_key ||= begin
-          Chef::Knife::S3Source.fetch(Chef::Config[:knife][:validation_key_url])
+          Chef::Knife::S3Source.fetch(config[:validation_key_url])
         end
       end
 
       def s3_secret
         @s3_secret ||= begin
-          return false unless config_value(:s3_secret)
+          return false unless config[:s3_secret]
 
-          Chef::Knife::S3Source.fetch(config_value(:s3_secret))
+          Chef::Knife::S3Source.fetch(config[:s3_secret])
         end
       end
 
       def bootstrap_common_params
-        config[:encrypted_data_bag_secret] = s3_secret || config_value(:secret)
-        config[:encrypted_data_bag_secret_file] = config_value(:secret_file)
+        config[:encrypted_data_bag_secret] = s3_secret || config[:secret]
+        config[:encrypted_data_bag_secret_file] = config[:secret_file]
         # retrieving the secret from S3 is unique to knife-ec2, so we need to set "command line secret" to the value fetched from S3
         # When linux vm is spawned, the chef's secret option proc function sets the value "command line secret" and this value is used by
         # chef's code to check if secret option is passed through command line or not
-        Chef::Knife::DataBagSecretOptions.set_cl_secret(s3_secret) if config_value(:s3_secret)
-        config[:secret] = s3_secret || config_value(:secret)
+        config[:cl_secret] = s3_secret if config[:s3_secret]
+        config[:secret] = s3_secret || config[:secret]
 
         # Modify global configuration state to ensure hint gets set by
         # knife-bootstrap
-        Chef::Config[:knife][:hints] ||= {}
-        Chef::Config[:knife][:hints]["ec2"] ||= {}
+        config[:hints] ||= {}
+        config[:hints]["ec2"] ||= {}
       end
 
       def fetch_server_fqdn(ip_addr)
@@ -570,7 +555,7 @@ class Chef
       def vpc_mode?
         # Amazon Virtual Private Cloud requires a subnet_id. If
         # present, do a few things differently
-        !!config_value(:subnet_id)
+        !!config[:subnet_id]
       end
 
       # When options connection_protocol and connection_port are not provided
@@ -586,17 +571,17 @@ class Chef
       end
 
       def plugin_validate_options!
-        if Chef::Config[:knife].key?(:aws_ssh_key_id)
-          Chef::Config[:knife][:ssh_key_name] = Chef::Config[:knife][:aws_ssh_key_id] unless Chef::Config[:knife][:ssh_key_name]
-          Chef::Config[:knife].delete(:aws_ssh_key_id)
+        if config.key?(:aws_ssh_key_id)
+          config[:ssh_key_name] = config[:aws_ssh_key_id] unless config[:ssh_key_name]
+          config.delete(:aws_ssh_key_id)
           ui.warn("Use of aws_ssh_key_id option in knife.rb/config.rb config is deprecated, use ssh_key_name option instead.")
         end
-        create_key_pair unless config_value(:ssh_key_name)
+        create_key_pair unless config[:ssh_key_name]
 
-        validate_nics! if config_value(:network_interfaces)
+        validate_nics! if config[:network_interfaces]
 
         if ami.nil?
-          ui.error("The provided AMI value '#{config_value(:image)}' could not be found. Is this AMI availble in the provided region #{config_value(:region)}?")
+          ui.error("The provided AMI value '#{config[:image]}' could not be found. Is this AMI availble in the provided region #{config[:region]}?")
           exit 1
         end
 
@@ -651,7 +636,7 @@ class Chef
         end
 
         # Validation for security_group_ids passed through knife.rb/config.rb. It will raise error if values are not provided in Array.
-        if config_value(:security_group_ids) && config_value(:security_group_ids).class == String
+        if config[:security_group_ids] && config[:security_group_ids].class == String
           ui.error("Invalid value type for knife[:security_group_ids] in knife configuration file (i.e knife.rb/config.rb). Type should be array. e.g - knife[:security_group_ids] = ['sgroup1']")
           exit 1
         end
@@ -666,14 +651,14 @@ class Chef
           exit 1
         end
 
-        if config_value(:ebs_encrypted)
+        if config[:ebs_encrypted]
           error_message = ""
           errors = []
           # validation for flavor and ebs_encrypted
-          if !config_value(:flavor)
+          if !config[:flavor]
             ui.error("--ebs-encrypted option requires valid flavor to be specified.")
             exit 1
-          elsif config_value(:ebs_encrypted) && ! %w{m3.medium m3.large m3.xlarge m3.2xlarge m4.large m4.xlarge
+          elsif config[:ebs_encrypted] && ! %w{m3.medium m3.large m3.xlarge m3.2xlarge m4.large m4.xlarge
                                              m4.2xlarge m4.4xlarge m4.10xlarge m4.16xlarge t2.nano t2.micro t2.small
                                              t2.medium t2.large t2.xlarge t2.2xlarge d2.xlarge d2.2xlarge d2.4xlarge
                                              d2.8xlarge c4.large c4.xlarge c4.2xlarge c4.4xlarge c4.8xlarge c3.large
@@ -681,19 +666,19 @@ class Chef
                                              r3.2xlarge r3.4xlarge r3.8xlarge r4.large r4.xlarge r4.2xlarge r4.4xlarge
                                              r4.8xlarge r4.16xlarge x1.16xlarge x1.32xlarge i2.xlarge i2.2xlarge i2.4xlarge
                                              i2.8xlarge i3.large i3.xlarge i3.2xlarge i3.4xlarge i3.8xlarge i3.16xlarge
-                                             f1.2xlarge f1.16xlarge g2.2xlarge g2.8xlarge p2.xlarge p2.8xlarge p2.16xlarge}.include?(config_value(:flavor))
-            ui.error("--ebs-encrypted option is not supported for #{config_value(:flavor)} flavor.")
+                                             f1.2xlarge f1.16xlarge g2.2xlarge g2.8xlarge p2.xlarge p2.8xlarge p2.16xlarge}.include?(config[:flavor])
+            ui.error("--ebs-encrypted option is not supported for #{config[:flavor]} flavor.")
             exit 1
           end
 
           # validation for ebs_size and ebs_volume_type and ebs_encrypted
-          if !config_value(:ebs_size)
+          if !config[:ebs_size]
             errors << "--ebs-encrypted option requires valid --ebs-size to be specified."
-          elsif (config_value(:ebs_volume_type) == "gp2") && ! config_value(:ebs_size).to_i.between?(1, 16384)
+          elsif (config[:ebs_volume_type] == "gp2") && ! config[:ebs_size].to_i.between?(1, 16384)
             errors << "--ebs-size should be in between 1-16384 for 'gp2' ebs volume type."
-          elsif (config_value(:ebs_volume_type) == "io1") && ! config_value(:ebs_size).to_i.between?(4, 16384)
+          elsif (config[:ebs_volume_type] == "io1") && ! config[:ebs_size].to_i.between?(4, 16384)
             errors << "--ebs-size should be in between 4-16384 for 'io1' ebs volume type."
-          elsif (config_value(:ebs_volume_type) == "standard") && ! config_value(:ebs_size).to_i.between?(1, 1024)
+          elsif (config[:ebs_volume_type] == "standard") && ! config[:ebs_size].to_i.between?(1, 1024)
             errors << "--ebs-size should be in between 1-1024 for 'standard' ebs volume type."
           end
 
@@ -703,19 +688,19 @@ class Chef
           end
         end
 
-        if config_value(:spot_price) && config_value(:disable_api_termination)
+        if config[:spot_price] && config[:disable_api_termination]
           ui.error("spot-price and disable-api-termination options cannot be passed together as 'Termination Protection' cannot be enabled for spot instances.")
           exit 1
         end
 
-        if config_value(:spot_price).nil? && config_value(:spot_wait_mode)
-          unless config_value(:spot_wait_mode).casecmp("prompt") == 0
+        if config[:spot_price].nil? && config[:spot_wait_mode]
+          unless config[:spot_wait_mode].casecmp("prompt") == 0
             ui.error("spot-wait-mode option requires that a spot-price option is set.")
             exit 1
           end
         end
 
-        volume_tags = config_value(:volume_tags)
+        volume_tags = config[:volume_tags]
         if !volume_tags.nil? && (volume_tags.length != volume_tags.to_s.count("="))
           ui.error("Volume Tags should be entered in a key = value pair")
           exit 1
@@ -723,27 +708,27 @@ class Chef
 
         if winrm?
           reg = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,40}$/
-          unless config_value(:connection_password) =~ reg
+          unless config[:connection_password] =~ reg
             ui.error("Complexity requirements are not met. Password length should be 8-40 characters and include: 1 uppercase, 1 lowercase, 1 digit, and 1 special character")
             exit 1
           end
         end
 
-        if config_value(:chef_tag)
+        if config[:chef_tag]
           # If --chef-tag is provided then it will be set in chef as single value e.g. --chef-tag "myTag"
           # --tags has been removed from knife-ec2, now it's available in core
-          config[:tags] += config_value(:chef_tag)
+          config[:tags] += config[:chef_tag]
           ui.warn("[DEPRECATED] --chef-tag option is deprecated and will be removed in future release. Use --tags TAGS option instead.")
         end
 
-        if config_value(:cpu_credits) && !config_value(:flavor)
+        if config[:cpu_credits] && !config[:flavor]
           ui.error("Instance type should be specified and should be any of T2/T3 type.")
           exit 1
         end
       end
 
       def parse_aws_tags
-        tags = config_value(:aws_tag)
+        tags = config[:aws_tag]
         if !tags.nil? && (tags.length != tags.to_s.count("="))
           ui.error("AWS Tags should be entered in a key = value pair")
           exit 1
@@ -817,7 +802,7 @@ class Chef
       end
 
       def ssl_config_data_already_exist?
-        File.read(config_value(:aws_user_data)).gsub(/\\\\/, "\\").include? ssl_config_user_data.strip
+        File.read(config[:aws_user_data]).gsub(/\\\\/, "\\").include? ssl_config_user_data.strip
       end
 
       def process_user_data(script_lines)
@@ -849,34 +834,34 @@ class Chef
         attributes = {
           instance_count: 1,
           launch_specification: server_attributes,
-          spot_price: config_value(:spot_price),
-          type: config_value(:spot_request_type),
+          spot_price: config[:spot_price],
+          type: config[:spot_request_type],
         }
       end
 
       def server_attributes
         attributes = {
-          image_id: config_value(:image),
-          instance_type: config_value(:flavor),
-          key_name: config_value(:ssh_key_name),
+          image_id: config[:image],
+          instance_type: config[:flavor],
+          key_name: config[:ssh_key_name],
           max_count: 1,
           min_count: 1,
           placement: {
-            availability_zone: config_value(:availability_zone),
+            availability_zone: config[:availability_zone],
           },
         }
 
         network_attrs = {}
-        if !!config_value(:primary_eni)
-          network_attrs[:network_interface_id] = config_value(:primary_eni)
+        if !!config[:primary_eni]
+          network_attrs[:network_interface_id] = config[:primary_eni]
         elsif vpc_mode?
-          network_attrs[:subnet_id] = config_value(:subnet_id)
+          network_attrs[:subnet_id] = config[:subnet_id]
         end
 
         if vpc_mode?
-          network_attrs[:groups] = config_value(:security_group_ids) if !!config_value(:security_group_ids)
-          network_attrs[:private_ip_address] = config_value(:private_ip_address)
-          network_attrs[:associate_public_ip_address] = config_value(:associate_public_ip)
+          network_attrs[:groups] = config[:security_group_ids] if !!config[:security_group_ids]
+          network_attrs[:private_ip_address] = config[:private_ip_address]
+          network_attrs[:associate_public_ip_address] = config[:associate_public_ip]
         else
           attributes[:security_groups] = config[:security_groups]
         end
@@ -885,24 +870,24 @@ class Chef
           network_attrs[:device_index] = 0
           attributes[:network_interfaces] = [network_attrs]
         else
-          attributes[:security_group_ids] = config_value(:security_group_ids)
+          attributes[:security_group_ids] = config[:security_group_ids]
         end
 
-        attributes[:placement][:group_name] = config_value(:placement_group)
-        attributes[:placement][:tenancy] = "dedicated" if vpc_mode? && config_value(:dedicated_instance)
+        attributes[:placement][:group_name] = config[:placement_group]
+        attributes[:placement][:tenancy] = "dedicated" if vpc_mode? && config[:dedicated_instance]
         attributes[:iam_instance_profile] = {}
-        attributes[:iam_instance_profile][:name] = config_value(:iam_instance_profile)
-        if config_value(:winrm_ssl)
-          if config_value(:aws_user_data)
+        attributes[:iam_instance_profile][:name] = config[:iam_instance_profile]
+        if config[:winrm_ssl]
+          if config[:aws_user_data]
             begin
-              user_data = File.readlines(config_value(:aws_user_data))
+              user_data = File.readlines(config[:aws_user_data])
               if config[:create_ssl_listener]
                 user_data = process_user_data(user_data)
               end
               user_data = user_data.join
               attributes.merge!(user_data: encode_data(user_data))
             rescue
-              ui.warn("Cannot read #{config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
+              ui.warn("Cannot read #{config[:aws_user_data]}: #{$!.inspect}. Ignoring option.")
             end
           else
             if config[:create_ssl_listener]
@@ -910,19 +895,19 @@ class Chef
             end
           end
         else
-          if config_value(:aws_user_data)
+          if config[:aws_user_data]
             begin
-              user_data = File.read(config_value(:aws_user_data))
+              user_data = File.read(config[:aws_user_data])
               attributes.merge!(user_data: encode_data(user_data))
             rescue
-              ui.warn("Cannot read #{config_value(:aws_user_data)}: #{$!.inspect}. Ignoring option.")
+              ui.warn("Cannot read #{config[:aws_user_data]}: #{$!.inspect}. Ignoring option.")
             end
           end
         end
-        attributes[:ebs_optimized] = !!config_value(:ebs_optimized)
+        attributes[:ebs_optimized] = !!config[:ebs_optimized]
 
         if ami.root_device_type == "ebs"
-          if config_value(:ebs_encrypted)
+          if config[:ebs_encrypted]
             ami_map = ami.block_device_mappings[1]
           else
             ami_map = ami.block_device_mappings.first
@@ -966,7 +951,7 @@ class Chef
                 },
              }]
           attributes[:block_device_mappings][0][:ebs][:iops] = iops_rate unless iops_rate.nil? || iops_rate.empty?
-          attributes[:block_device_mappings][0][:ebs][:encrypted] = true if config_value(:ebs_encrypted)
+          attributes[:block_device_mappings][0][:ebs][:encrypted] = true if config[:ebs_encrypted]
         end
 
         if config[:ephemeral] && config[:ephemeral].length > 0
@@ -978,9 +963,9 @@ class Chef
         end
 
         ## cannot pass disable_api_termination option to the API when using spot instances ##
-        attributes[:disable_api_termination] = config_value(:disable_api_termination) if config_value(:spot_price).nil?
+        attributes[:disable_api_termination] = config[:disable_api_termination] if config[:spot_price].nil?
 
-        attributes[:instance_initiated_shutdown_behavior] = config_value(:instance_initiated_shutdown_behavior)
+        attributes[:instance_initiated_shutdown_behavior] = config[:instance_initiated_shutdown_behavior]
 
         if config[:cpu_credits]
           attributes[:credit_specification] =
@@ -1016,8 +1001,8 @@ class Chef
         delay = 15 # Default Delay for waiter
         attempts = 40 # Default max attempts for waiter
 
-        if config_value(:aws_connection_timeout)
-          attempts = (config_value(:aws_connection_timeout).to_f / delay).to_i
+        if config[:aws_connection_timeout]
+          attempts = (config[:aws_connection_timeout].to_f / delay).to_i
         end
         attempts
       end
@@ -1102,7 +1087,7 @@ class Chef
 
         # Use the keys specificed on the command line if available (overrides SSH Config)
         if config[:ssh_gateway_identity]
-          gateway_keys = Array(config_value(:ssh_gateway_identity))
+          gateway_keys = Array(config[:ssh_gateway_identity])
         end
 
         unless gateway_keys.nil?
@@ -1194,8 +1179,8 @@ class Chef
         file_path = File.join(Config.config_dir, "#{key_pair.key_name}.pem")
         file = File.open(file_path, "w+") { |f| f << key_pair.key_material }
 
-        Chef::Config[:knife][:ssh_key_name] = key_pair.key_name
-        Chef::Config[:knife][:ssh_identity_file] = file.path
+        config[:ssh_key_name] = key_pair.key_name
+        config[:ssh_identity_file] = file.path
         puts "\nGenerated keypair file: #{file.path}"
       end
 
@@ -1222,7 +1207,7 @@ class Chef
 
         interfaces = ec2_connection.describe_network_interfaces(params)
         valid_nic_ids = interfaces.network_interfaces.map(&:network_interface_id)
-        invalid_nic_ids = config_value(:network_interfaces) - valid_nic_ids
+        invalid_nic_ids = config[:network_interfaces] - valid_nic_ids
 
         return true if invalid_nic_ids.empty?
 
@@ -1232,14 +1217,14 @@ class Chef
       end
 
       def vpc_id
-        @vpc_id ||= fetch_subnet(locate_config_value(:subnet_id)).vpc_id
+        @vpc_id ||= fetch_subnet(config[:subnet_id]).vpc_id
       end
 
       def wait_for_nic_attachment
         attached_nics_count = 0
-        until attached_nics_count == config_value(:network_interfaces).count
+        until attached_nics_count == config[:network_interfaces].count
           attachment_nics =
-            locate_config_value(:network_interfaces).map do |nic_id|
+            config[:network_interfaces].map do |nic_id|
               fetch_network_interfaces(nic_id).attachment.status
             end
           attached_nics_count = attachment_nics.grep("attached").count
@@ -1353,13 +1338,13 @@ class Chef
       end
 
       def windows_password
-        if not config_value(:connection_password)
-          if config_value(:ssh_identity_file)
+        if not config[:connection_password]
+          if config[:ssh_identity_file]
             if server
               print "\n#{ui.color("Waiting for Windows Admin password to be available: ", :magenta)}"
               print(".") until check_windows_password_available(server.id) { puts("done") }
               response = fetch_password_data(server.id)
-              data = File.read(locate_config_value(:ssh_identity_file))
+              data = File.read(config[:ssh_identity_file])
               config[:connection_password] = decrypt_admin_password(response.password_data, data)
             else
               print "\n#{ui.color("Fetchig instance details: \n", :magenta)}"
@@ -1369,7 +1354,7 @@ class Chef
             exit 1
           end
         else
-          config_value(:connection_password)
+          config[:connection_password]
         end
       end
 
@@ -1381,7 +1366,7 @@ class Chef
 
       # TODO: connection_protocol and connection_port used to choose winrm/ssh or 5985/22 based on the image chosen
       def connection_port
-        port = config_value(:connection_port, knife_key_for_protocol(connection_protocol_ec2, :port))
+        port = config[:connection_port] || config[knife_key_for_protocol(:port)]
         return port if port
 
         assign_default_port
@@ -1392,7 +1377,7 @@ class Chef
       # @return [Integer]
       def assign_default_port
         if winrm?
-          config_value(:winrm_ssl) ? 5986 : 5985
+          config[:winrm_ssl] ? 5986 : 5985
         else
           22
         end
@@ -1405,13 +1390,12 @@ class Chef
 
         default_protocol = is_image_windows? ? "winrm" : "ssh"
         from_url = host_descriptor =~ %r{^(.*)://} ? $1 : nil
-        from_cli = config[:connection_protocol]
-        from_knife = Chef::Config[:knife][:connection_protocol]
-        @connection_protocol_ec2 = from_url || from_cli || from_knife || default_protocol
+        from_config = config[:connection_protocol]
+        @connection_protocol_ec2 = from_url || from_config || default_protocol
       end
 
       def connection_user
-        @connection_user ||= config_value(:connection_user, knife_key_for_protocol(connection_protocol_ec2, :user))
+        @connection_user ||= config[:connection_user] || config[knife_key_for_protocol(:user)]
       end
 
       def server_name
@@ -1448,7 +1432,7 @@ class Chef
 
       def hashed_volume_tags
         hvt = {}
-        volume_tags = config_value(:volume_tags)
+        volume_tags = config[:volume_tags]
         volume_tags.map { |t| key, val = t.split("="); hvt[key] = val } unless volume_tags.nil?
 
         hvt
@@ -1464,8 +1448,8 @@ class Chef
 
         # Always set the Name tag
         unless ht.key?("Name")
-          if config_value(:chef_node_name)
-            ht["Name"] = evaluate_node_name(config_value(:chef_node_name))
+          if config[:chef_node_name]
+            ht["Name"] = evaluate_node_name(config[:chef_node_name])
           else
             ht["Name"] = server.id
           end

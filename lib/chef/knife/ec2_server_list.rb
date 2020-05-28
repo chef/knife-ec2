@@ -1,7 +1,7 @@
 #
 # Author:: Adam Jacob (<adam@chef.io>)
 # Author:: Seth Chisamore (<schisamo@chef.io>)
-# Copyright:: Copyright (c) 2010-2019 Chef Software, Inc.
+# Copyright:: Copyright (c) Chef Software Inc.
 # License:: Apache License, Version 2.0
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -122,7 +122,7 @@ class Chef
 
         output_column_count = servers_list.length
 
-        if !config[:region] && Chef::Config[:knife][:region].nil?
+        unless config[:region]
           ui.warn "No region was specified in knife.rb/config.rb or as an argument. The default region, us-east-1, will be used:"
         end
 
