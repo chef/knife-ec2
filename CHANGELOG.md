@@ -4,29 +4,26 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 2.0.0 -->
-## [v2.0.0](https://github.com/chef/knife-ec2/tree/v2.0.0) (2020-05-29)
-
-#### Merged Pull Requests
-- Remove duplicate dep [#649](https://github.com/chef/knife-ec2/pull/649) ([tas50](https://github.com/tas50))
+<!-- latest_release -->
 <!-- latest_release -->
 
-<!-- release_rollup since=1.0.36 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Remove duplicate dep [#649](https://github.com/chef/knife-ec2/pull/649) ([tas50](https://github.com/tas50)) <!-- 2.0.0 -->
-- Chef-16 fixes [#648](https://github.com/chef/knife-ec2/pull/648) ([lamont-granquist](https://github.com/lamont-granquist)) <!-- 1.0.37 -->
+<!-- release_rollup -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
+## [v2.0.0](https://github.com/chef/knife-ec2/tree/v2.0.0) (2020-05-29)
+
+#### Merged Pull Requests
+- Chef-16 fixes [#648](https://github.com/chef/knife-ec2/pull/648) ([lamont-granquist](https://github.com/lamont-granquist))
+- Remove duplicate dep [#649](https://github.com/chef/knife-ec2/pull/649) ([tas50](https://github.com/tas50))
+<!-- latest_stable_release -->
+
 ## [v1.0.36](https://github.com/chef/knife-ec2/tree/v1.0.36) (2020-04-16)
 
 #### Merged Pull Requests
 - Fix Ruby 2.5 tests by pinning the chef-zero Gemfile dep [#644](https://github.com/chef/knife-ec2/pull/644) ([tas50](https://github.com/tas50))
 - Cache gem installs in Expeditor [#645](https://github.com/chef/knife-ec2/pull/645) ([dheerajd-msys](https://github.com/dheerajd-msys))
 - Stop using the Private DNS name to connect [#646](https://github.com/chef/knife-ec2/pull/646) ([kapilchouhan99](https://github.com/kapilchouhan99))
-<!-- latest_stable_release -->
 
 ## [v1.0.33](https://github.com/chef/knife-ec2/tree/v1.0.33) (2020-03-28)
 
