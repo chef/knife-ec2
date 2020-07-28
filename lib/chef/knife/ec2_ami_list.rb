@@ -27,7 +27,7 @@ class Chef
     # By default owner is aws-marketplace but you can specify following owner with the help of -o or --owner
     #   * self => Displays the list of AMIs created by the user
     #   * aws-marketplace => Displays all AMIs form trusted vendors like Ubuntu, Microsoft, SAP, Zend as well as many open source offering
-    #   * micosoft => Displays only Microsoft vendor AMIs
+    #   * microsoft => Displays only Microsoft vendor AMIs
     #
     # == Platform
     # By default all platform AMI's will display but you can filter your response
