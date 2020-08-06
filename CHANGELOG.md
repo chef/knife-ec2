@@ -4,29 +4,26 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 2.0.3 -->
-## [v2.0.3](https://github.com/chef/knife-ec2/tree/v2.0.3) (2020-08-06)
-
-#### Merged Pull Requests
-- Resolve Style/RedundantAssignment warning [#655](https://github.com/chef/knife-ec2/pull/655) ([tas50](https://github.com/tas50))
+<!-- latest_release -->
 <!-- latest_release -->
 
-<!-- release_rollup since=2.0.0 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Resolve Style/RedundantAssignment warning [#655](https://github.com/chef/knife-ec2/pull/655) ([tas50](https://github.com/tas50)) <!-- 2.0.3 -->
-- Fix minor typos [#653](https://github.com/chef/knife-ec2/pull/653) ([tas50](https://github.com/tas50)) <!-- 2.0.2 -->
-- Use match? instead of =~ when MatchData is not used [#654](https://github.com/chef/knife-ec2/pull/654) ([tas50](https://github.com/tas50)) <!-- 2.0.1 -->
+<!-- release_rollup -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
+## [v2.0.3](https://github.com/chef/knife-ec2/tree/v2.0.3) (2020-08-06)
+
+#### Merged Pull Requests
+- Use match? instead of =~ when MatchData is not used [#654](https://github.com/chef/knife-ec2/pull/654) ([tas50](https://github.com/tas50))
+- Fix minor typos [#653](https://github.com/chef/knife-ec2/pull/653) ([tas50](https://github.com/tas50))
+- Resolve Style/RedundantAssignment warning [#655](https://github.com/chef/knife-ec2/pull/655) ([tas50](https://github.com/tas50))
+<!-- latest_stable_release -->
+
 ## [v2.0.0](https://github.com/chef/knife-ec2/tree/v2.0.0) (2020-05-29)
 
 #### Merged Pull Requests
 - Chef-16 fixes [#648](https://github.com/chef/knife-ec2/pull/648) ([lamont-granquist](https://github.com/lamont-granquist))
 - Remove duplicate dep [#649](https://github.com/chef/knife-ec2/pull/649) ([tas50](https://github.com/tas50))
-<!-- latest_stable_release -->
 
 ## [v1.0.36](https://github.com/chef/knife-ec2/tree/v1.0.36) (2020-04-16)
 
