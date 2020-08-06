@@ -1325,8 +1325,7 @@ class Chef
         require "openssl"
         private_key = OpenSSL::PKey::RSA.new(key)
         encrypted_password = Base64.decode64(encoded_password)
-        password = private_key.private_decrypt(encrypted_password)
-        password
+        private_key.private_decrypt(encrypted_password)
       end
 
       def check_windows_password_available(server_id)
