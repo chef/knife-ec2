@@ -27,7 +27,7 @@ class Chef
       banner "knife ec2 flavor list (options) [DEPRECATED]"
 
       def run
-        ui.error("knife ec2 flavor list has been deprecated as this functionality is not provided by the AWS API the previous implementatin relied upon hardcoded values that were often incorrect. For an up to date list of instance types see https://www.ec2instances.info/")
+        ui.error("knife ec2 flavor list has been deprecated as this functionality is not provided by the AWS API the previous implementation relied upon hardcoded values that were often incorrect. For an up to date list of instance types see https://www.ec2instances.info/")
         exit 1
       end
     end

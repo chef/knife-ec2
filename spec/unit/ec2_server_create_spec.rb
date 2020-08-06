@@ -2638,7 +2638,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(ec2_server_create).to receive(:validate_nics!)
       allow(ec2_server_create).to receive(:ami).and_return(ami)
     end
-    context "when mulitple values provided from cli for e.g. -g sg-aab343ytr -g sg-3764sdss" do
+    context "when multiple values provided from cli for e.g. -g sg-aab343ytr -g sg-3764sdss" do
       let(:ec2_server_create) { Chef::Knife::Ec2ServerCreate.new(["-g", "sg-aab343ytr", "-g", "sg-3764sdss"]) }
       it "creates array of security group ids" do
         server_def = ec2_server_create.server_attributes
@@ -2749,7 +2749,7 @@ describe Chef::Knife::Ec2ServerCreate do
       end
     end
 
-    context "when password does not contain with atleast one uppercase character" do
+    context "when password does not contain with at least one uppercase character" do
       before do
         knife_ec2_create.config[:connection_password] = "password@123"
       end
@@ -2757,7 +2757,7 @@ describe Chef::Knife::Ec2ServerCreate do
       it_behaves_like "invalid password"
     end
 
-    context "when password does not contain with atleast one lowercase character" do
+    context "when password does not contain with at least one lowercase character" do
       before do
         knife_ec2_create.config[:connection_password] = "PASSWORD@123"
       end
@@ -2765,7 +2765,7 @@ describe Chef::Knife::Ec2ServerCreate do
       it_behaves_like "invalid password"
     end
 
-    context "when password does not contain with atleast one digit from 0-9" do
+    context "when password does not contain with at least one digit from 0-9" do
       before do
         knife_ec2_create.config[:connection_password] = "password@"
       end
@@ -2773,7 +2773,7 @@ describe Chef::Knife::Ec2ServerCreate do
       it_behaves_like "invalid password"
     end
 
-    context "when password does not contain with atleast one special character" do
+    context "when password does not contain with at least one special character" do
       before do
         knife_ec2_create.config[:connection_password] = "password123"
       end

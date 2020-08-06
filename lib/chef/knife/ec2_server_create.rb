@@ -1347,7 +1347,7 @@ class Chef
               data = File.read(config[:ssh_identity_file])
               config[:connection_password] = decrypt_admin_password(response.password_data, data)
             else
-              print "\n#{ui.color("Fetchig instance details: \n", :magenta)}"
+              print "\n#{ui.color("Fetching instance details: \n", :magenta)}"
             end
           else
             ui.error("Cannot find SSH Identity file, required to fetch dynamically generated password")
