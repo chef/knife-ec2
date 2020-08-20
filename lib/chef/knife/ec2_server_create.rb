@@ -28,9 +28,9 @@ class Chef
       include Knife::Ec2Base
 
       deps do
-        require "tempfile"
-        require "uri"
-        require "net/ssh"
+        require "tempfile" unless defined?(Tempfile)
+        require "uri" unless defined?(URI)
+        require "net/ssh" unless defined?(Net::SSH)
         require "net/ssh/gateway"
         Chef::Knife::Bootstrap.load_deps
       end
@@ -826,7 +826,7 @@ class Chef
 
       # base64-encoded text
       def encode_data(text)
-        require "base64"
+        require "base64" unless defined?(Base64)
         Base64.encode64(text)
       end
 
@@ -1321,8 +1321,8 @@ class Chef
       end
 
       def decrypt_admin_password(encoded_password, key)
-        require "base64"
-        require "openssl"
+        require "base64" unless defined?(Base64)
+        require "openssl" unless defined?(OpenSSL)
         private_key = OpenSSL::PKey::RSA.new(key)
         encrypted_password = Base64.decode64(encoded_password)
         private_key.private_decrypt(encrypted_password)
