@@ -1895,7 +1895,7 @@ describe Chef::Knife::Ec2ServerCreate do
   end
 
   describe "attach ssl config into user data when transport is ssl" do
-    require "base64"
+    require "base64" unless defined?(Base64)
 
     before(:each) do
       allow(knife_ec2_create).to receive(:validate_aws_config!)
