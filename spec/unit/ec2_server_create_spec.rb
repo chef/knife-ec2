@@ -412,12 +412,50 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(File).to receive(:open).with(@validation_key_file, "w")
       knife_ec2_create.run
     end
+  end
 
-    context "when server public_dns_name returns a blank string" do
-      it "return a private_ip_address" do
-        allow(ec2_server_attribs).to receive(:public_dns_name).and_return("")
-        knife_ec2_create.run
+  describe "server_name" do
+    context "when server is not created" do
+      it "should return nil" do
+        allow(knife_ec2_create).to receive(:server).and_return(nil)
+        expect(knife_ec2_create.server_name).to eql(nil)
+      end
+    end
+
+    context "when server is created" do
+      it "should return connection_host value" do
+        allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+        expect(knife_ec2_create.server_name).to eql("ec2-75.101.253.10.compute-1.amazonaws.com")
+      end
+    end
+
+    context "when server_connect_attribute option is passed" do
+      before do
+        allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
+      end
+
+      it "should return private_ip_address when server_connect_attribute passed as private_ip_address" do
+        knife_ec2_create.config[:server_connect_attribute] = "private_ip_address"
+
         expect(knife_ec2_create.server_name).to eql("10.251.75.20")
+      end
+
+      it "should return private_dns_name when server_connect_attribute passed as private_dns_name" do
+        knife_ec2_create.config[:server_connect_attribute] = "private_dns_name"
+
+        expect(knife_ec2_create.server_name).to eql("ip-10-251-75-20.ec2.internal")
+      end
+
+      it "should return public_dns_name when server_connect_attribute passed as public_dns_name" do
+        knife_ec2_create.config[:server_connect_attribute] = "public_dns_name"
+
+        expect(knife_ec2_create.server_name).to eql("ec2-75.101.253.10.compute-1.amazonaws.com")
+      end
+
+      it "should return public_ip_address when server_connect_attribute passed as public_ip_address" do
+        knife_ec2_create.config[:server_connect_attribute] = "public_ip_address"
+
+        expect(knife_ec2_create.server_name).to eql("75.101.253.10")
       end
     end
   end
