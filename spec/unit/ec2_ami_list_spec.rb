@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 
-require File.expand_path("../../spec_helper", __FILE__)
+require File.expand_path("../spec_helper", __dir__)
 require "aws-sdk-ec2"
 
 describe Chef::Knife::Ec2AmiList do
@@ -102,7 +102,7 @@ describe Chef::Knife::Ec2AmiList do
           output_column_count = output_column.length
           images.each do |image|
             output_column << image.image_id
-            output_column << (image.platform ? image.platform : image.name.split(/\W+/).first)
+            output_column << (image.platform || image.name.split(/\W+/).first)
             output_column << image.architecture
             output_column << image.block_device_mappings[0].ebs.volume_size.to_s
             output_column << image.name.split(/\W+/).first
@@ -162,7 +162,7 @@ describe Chef::Knife::Ec2AmiList do
           output_column_count = output_column.length
           images.each do |image|
             output_column << image.image_id
-            output_column << (image.platform ? image.platform : image.name.split(/\W+/).first)
+            output_column << (image.platform || image.name.split(/\W+/).first)
             output_column << image.architecture
             output_column << image.block_device_mappings[0].ebs.volume_size.to_s
             output_column << image.name.split(/\W+/).first

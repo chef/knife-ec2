@@ -13,7 +13,7 @@
 # limitations under the License.
 #
 
-require File.expand_path("../../spec_helper", __FILE__)
+require File.expand_path("../spec_helper", __dir__)
 require "aws-sdk-ec2"
 
 describe Chef::Knife::Ec2ServerList do

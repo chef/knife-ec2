@@ -1,4 +1,4 @@
-$:.unshift File.expand_path("../../lib", __FILE__)
+$:.unshift File.expand_path("../lib", __dir__)
 require "chef"
 require "chef/knife/ec2_server_create"
 require "chef/knife/ec2_server_delete"
