@@ -4,10 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release -->
+<!-- latest_release 2.0.5 -->
+## [v2.0.5](https://github.com/chef/knife-ec2/tree/v2.0.5) (2020-09-25)
+
+#### Merged Pull Requests
+- latest chef-style changes [#658](https://github.com/chef/knife-ec2/pull/658) ([vsingh-msys](https://github.com/vsingh-msys))
 <!-- latest_release -->
 
-<!-- release_rollup -->
+<!-- release_rollup since=2.0.4 -->
+### Changes not yet released to rubygems.org
+
+#### Merged Pull Requests
+- latest chef-style changes [#658](https://github.com/chef/knife-ec2/pull/658) ([vsingh-msys](https://github.com/vsingh-msys)) <!-- 2.0.5 -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
