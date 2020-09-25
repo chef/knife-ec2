@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-require File.expand_path("../../spec_helper", __FILE__)
+require File.expand_path("../spec_helper", __dir__)
 require "net/ssh/proxy/http"
 require "net/ssh/proxy/command"
 require "net/ssh/gateway"

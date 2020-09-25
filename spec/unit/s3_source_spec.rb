@@ -1,4 +1,4 @@
-require File.expand_path("../../spec_helper", __FILE__)
+require File.expand_path("../spec_helper", __dir__)
 require "aws-sdk-s3"
 
 describe Chef::Knife::S3Source do

@@ -1,4 +1,4 @@
-require File.expand_path("../../spec_helper", __FILE__)
+require File.expand_path("../spec_helper", __dir__)
 
 # This spec can only be run separately from the rest due to inclusion of fog library in other specs.
 # rspec spec/unit/s3_source_deps_spec.rb
