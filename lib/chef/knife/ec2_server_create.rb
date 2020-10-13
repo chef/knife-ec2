@@ -1398,13 +1398,7 @@ class Chef
       end
 
       def server_name
-        return nil unless server
-
-        if !server.public_dns_name.empty?
-          server.public_dns_name
-        else
-          server.private_ip_address
-        end
+        server ? connection_host : nil
       end
 
       alias host_descriptor server_name
