@@ -81,7 +81,7 @@ describe Chef::Knife::Ec2ServerCreate do
       name: "image-test",
       description: "test ubuntu image",
       root_device_type: "ebs",
-      block_device_mappings: [block_device_mappings]
+      block_device_mappings: [block_device_mappings, block_device_mappings]
     )
   end
 
@@ -629,6 +629,30 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.plugin_validate_options!
       expect(knife_ec2_create.config[:ssh_key_name]).to eq(keypair.key_name)
       expect(knife_ec2_create.config[:ssh_identity_file]).to eq(file_path)
+    end
+  end
+
+  shared_examples "ebs_volume_type option specified as 'st1' or 'sc1'" do |ebs_volume_type|
+    before do
+      knife_ec2_create.config[:ebs_volume_type] = ebs_volume_type
+      knife_ec2_create.config[:ebs_size] = "500"
+      allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
+    end
+
+    it "raise error if invalid ebs_size specified for #{ebs_volume_type} VolumeType" do
+      knife_ec2_create.config[:ebs_size] = "100"
+      expect(knife_ec2_create.ui).to receive(:error).with("--ebs-size should be in between 500-16384 for 'st1' or 'sc1' ebs volume type.")
+      expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
+    end
+
+    it "does not raise any validation error if valid ebs_size specified" do
+      expect(knife_ec2_create.ui).to_not receive(:error).with("--ebs-size should be in between 500-16384 for 'st1' or 'sc1' ebs volume type.")
+      knife_ec2_create.plugin_validate_options!
+    end
+
+    it "sets the specified #{ebs_volume_type} ebs volume type" do
+      server_def = knife_ec2_create.server_attributes
+      expect(server_def[:block_device_mappings].first[:ebs][:volume_type]).to eq(ebs_volume_type)
     end
   end
 
@@ -1208,6 +1232,79 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.config[:ebs_volume_type] = "io1"
 
       expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
+    end
+
+    context "when ebs_volume_type option specified as a st1" do
+      it_behaves_like "ebs_volume_type option specified as 'st1' or 'sc1'", "st1"
+    end
+
+    context "when ebs_volume_type option specified as a sc1" do
+      it_behaves_like "ebs_volume_type option specified as 'st1' or 'sc1'", "sc1"
+    end
+
+    context "ebs_delete_on_term option" do
+      before do
+        knife_ec2_create.config[:ebs_delete_on_term] = true
+        allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
+      end
+
+      it "should be use default value of ebs_delete_on_term, if does not specified ebs_delete_on_term option" do
+        server_def = knife_ec2_create.server_attributes
+        expect(server_def[:block_device_mappings].first[:ebs][:delete_on_termination]).to eq(true)
+      end
+
+      it "should be use the value of ebs_delete_on_term, if ebs_delete_on_term option is specified" do
+        knife_ec2_create.config[:ebs_delete_on_term] = false
+        server_def = knife_ec2_create.server_attributes
+        expect(server_def[:block_device_mappings].first[:ebs][:delete_on_termination]).to eq(false)
+      end
+    end
+
+    context "ebs_volume_type option" do
+      before do
+        allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
+      end
+
+      let(:validation_error) { "--ebs-volume-type must be 'standard' or 'io1' or 'gp2' or 'st1' or 'sc1'" }
+
+      it "raise error if invalid ebs_volume_type specified" do
+        knife_ec2_create.config[:ebs_volume_type] = "invalid"
+        expect(knife_ec2_create.ui).to receive(:error).with(validation_error)
+        expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
+      end
+
+      it "does not raise any validation error if ebs_volume_type specified as 'gp2'" do
+        knife_ec2_create.config[:ebs_volume_type] = "gp2"
+        expect(knife_ec2_create.ui).to_not receive(:error).with(validation_error)
+        knife_ec2_create.plugin_validate_options!
+      end
+
+      it "does not raise any validation error if ebs_volume_type specified as 'io1'" do
+        knife_ec2_create.config[:ebs_volume_type] = "io1"
+        knife_ec2_create.config[:ebs_provisioned_iops] = "123"
+        expect(knife_ec2_create.ui).to_not receive(:error).with(validation_error)
+        knife_ec2_create.plugin_validate_options!
+      end
+
+      it "does not raise any validation error if ebs_volume_type specified as 'standard'" do
+        knife_ec2_create.config[:ebs_volume_type] = "standard"
+        expect(knife_ec2_create.ui).to_not receive(:error).with(validation_error)
+        knife_ec2_create.plugin_validate_options!
+      end
+
+      it "does not raise any validation error if ebs_volume_type specified as 'st1'" do
+        knife_ec2_create.config[:ebs_volume_type] = "st1"
+        knife_ec2_create.config[:ebs_size] = "500"
+        expect(knife_ec2_create.ui).to_not receive(:error).with(validation_error)
+        knife_ec2_create.plugin_validate_options!
+      end
+
+      it "does not raise any validation error if ebs_volume_type specified as 'sc1'" do
+        knife_ec2_create.config[:ebs_volume_type] = "sc1"
+        knife_ec2_create.config[:ebs_size] = "500"
+        expect(knife_ec2_create.ui).to_not receive(:error).with(validation_error)
+        knife_ec2_create.plugin_validate_options!
+      end
     end
 
     context "when ebs_encrypted option specified" do
