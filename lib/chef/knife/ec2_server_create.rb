@@ -104,9 +104,11 @@ class Chef
         long: "--ebs-optimized",
         description: "Enabled optimized EBS I/O"
 
-      option :ebs_no_delete_on_term,
-        long: "--ebs-no-delete-on-term",
-        description: "Do not delete EBS volume on instance termination"
+      option :ebs_delete_on_term,
+        long: "--ebs-delete-on-term",
+        description: "Delete EBS volume on instance termination",
+        boolean: true,
+        default: true
 
       option :secret,
         long: "--secret ",
@@ -624,9 +626,15 @@ class Chef
           exit 1
         end
 
-        if config[:ebs_volume_type] && ! %w{gp2 io1 standard}.include?(config[:ebs_volume_type])
-          ui.error("--ebs-volume-type must be 'standard' or 'io1' or 'gp2'")
+        if config[:ebs_volume_type] && ! %w{gp2 io1 standard st1 sc1}.include?(config[:ebs_volume_type])
+          ui.error("--ebs-volume-type must be 'standard' or 'io1' or 'gp2' or 'st1' or 'sc1'")
           msg opt_parser
+          exit 1
+        end
+
+        # validation for ebs_size
+        if (%w{st1 sc1}.include?(config[:ebs_volume_type])) && ! config[:ebs_size].to_i.between?(500, 16384)
+          ui.error("--ebs-size should be in between 500-16384 for 'st1' or 'sc1' ebs volume type.")
           exit 1
         end
 
@@ -907,7 +915,7 @@ class Chef
         attributes[:ebs_optimized] = !!config[:ebs_optimized]
 
         if ami.root_device_type == "ebs"
-          if config[:ebs_encrypted]
+          if config[:ebs_encrypted] || %w{st1 sc1}.include?(config[:ebs_volume_type])
             ami_map = ami.block_device_mappings[1]
           else
             ami_map = ami.block_device_mappings.first
@@ -924,11 +932,9 @@ class Chef
                        msg opt_parser
                        exit 1
                      end
-          delete_term = if config[:ebs_no_delete_on_term]
-                          "false"
-                        else
-                          ami_map.ebs.delete_on_termination if ami_map.ebs.respond_to?(:delete_on_termination)
-                        end
+
+          delete_term = config[:ebs_delete_on_term]
+
           iops_rate = begin
                         if config[:ebs_provisioned_iops]
                           Integer(config[:ebs_provisioned_iops]).to_s
