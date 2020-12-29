@@ -148,7 +148,7 @@ class Chef
             server_data[id] = i.instances[0].send(id)
           end
 
-          server_data["name"] = i.instances[0].tags[0].value
+          server_data["name"] = find_name_tag(i.instances[0].tags)
           server_data["az"] = i.instances[0].placement.availability_zone
           server_data["iam_instance_profile"] = ( i.instances[0].iam_instance_profile.nil? ? nil : i.instances[0].iam_instance_profile.arn[%r{instance-profile/(.*)}] )
           server_data["security_groups"] = i.instances[0].security_groups.map(&:group_name).join(", ")
