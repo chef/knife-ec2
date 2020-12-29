@@ -4,26 +4,23 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 2.1.1 -->
+<!-- latest_release -->
+<!-- latest_release -->
+
+<!-- release_rollup -->
+<!-- release_rollup -->
+
+<!-- latest_stable_release -->
 ## [v2.1.1](https://github.com/chef/knife-ec2/tree/v2.1.1) (2020-12-29)
 
 #### Merged Pull Requests
 - Fix for Knife-ec2 server list doesn&#39;t show instance name [#663](https://github.com/chef/knife-ec2/pull/663) ([kapilchouhan99](https://github.com/kapilchouhan99))
-<!-- latest_release -->
-
-<!-- release_rollup since=2.1.0 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Fix for Knife-ec2 server list doesn&#39;t show instance name [#663](https://github.com/chef/knife-ec2/pull/663) ([kapilchouhan99](https://github.com/kapilchouhan99)) <!-- 2.1.1 -->
-<!-- release_rollup -->
-
 <!-- latest_stable_release -->
+
 ## [v2.1.0](https://github.com/chef/knife-ec2/tree/v2.1.0) (2020-10-21)
 
 #### Merged Pull Requests
 - Allow creating intstances with ST1 or SC1 EBS volume types [#660](https://github.com/chef/knife-ec2/pull/660) ([kapilchouhan99](https://github.com/kapilchouhan99))
-<!-- latest_stable_release -->
 
 ## [v2.0.6](https://github.com/chef/knife-ec2/tree/v2.0.6) (2020-10-13)
 
