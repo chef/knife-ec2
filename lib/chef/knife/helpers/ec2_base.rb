@@ -151,7 +151,7 @@ class Chef
         server_data["id"] = server_data["instance_id"]
 
         tags = server_obj.instances[0].tags.map(&:value)
-        server_data["name"] = tags[0]
+        server_data["name"] = find_name_tag(server_obj.instances[0].tags)
         server_data["placement_group"] = server_obj.instances[0].placement.group_name
         server_data["security_groups"] = server_obj.instances[0].security_groups.map(&:group_name)
         server_data["security_group_ids"] = server_obj.instances[0].security_groups.map(&:group_id)
@@ -179,6 +179,13 @@ class Chef
 
       def ami
         @ami ||= fetch_ami(config[:image])
+      end
+
+      # Name tag value return.
+      # @return [String]
+      def find_name_tag(tags)
+        name_tag = tags.find { |tag| tag[:key] == "Name" }
+        name_tag ? name_tag[:value] : nil
       end
 
       # Platform value return for Windows AMIs; otherwise, it is blank.

@@ -166,7 +166,7 @@ class Chef
           tags = extract_tags(i.instances[0].tags)
 
           if config[:name]
-            server_data["name"] = tags[0]
+            server_data["name"] = find_name_tag(i.instances[0].tags)
           end
 
           if config[:az]

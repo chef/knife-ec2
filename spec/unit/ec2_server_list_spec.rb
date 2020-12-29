@@ -22,6 +22,14 @@ describe Chef::Knife::Ec2ServerList do
     let(:knife_ec2_list) { Chef::Knife::Ec2ServerList.new }
     let(:ebs) { OpenStruct.new(volume_size: 30) }
     let(:block_device_mappings) { OpenStruct.new(ebs: ebs) }
+    let(:contact_tag) { OpenStruct.new(key: "X-Contact", value: "test-contact") }
+    let(:created_by_tag) { OpenStruct.new(key: "CreatedBy", value: "test-created-by") }
+    let(:name_tag) { OpenStruct.new(key: "Name", value: "ec2-test") }
+    let(:tags) { [contact_tag, created_by_tag, name_tag] }
+    let(:state) { OpenStruct.new(code: 16, name: "running") }
+    let(:security_groups) { OpenStruct.new(group_name: "kitchen-fabcfy4np", group_id: "sg-09cfab6b31g7t5285") }
+    let(:placement) { OpenStruct.new(availability_zone: "us-east-2c") }
+
     let(:instance1) do
       OpenStruct.new(
         architecture: "x86_64",
@@ -29,7 +37,10 @@ describe Chef::Knife::Ec2ServerList do
         instance_id: "i-00fe186450a2e8e97",
         instance_type: "t2.micro",
         platform: "windows",
-        name: "image-test",
+        tags: tags,
+        state: state,
+        security_groups: [security_groups],
+        placement: placement,
         description: "test windows winrm image",
         block_device_mappings: [block_device_mappings]
       )
@@ -59,7 +70,7 @@ describe Chef::Knife::Ec2ServerList do
     end
 
     let(:server_instances) { OpenStruct.new(instances: [instance1, instance2, instance3]) }
-    let(:ec2_servers)      { OpenStruct.new(reservations: server_instances) }
+    let(:ec2_servers)      { OpenStruct.new(reservations: [server_instances]) }
     let(:ec2_connection)   { Aws::EC2::Client.new(stub_responses: { describe_instances: ec2_servers }) }
 
     before (:each) do
@@ -91,12 +102,12 @@ describe Chef::Knife::Ec2ServerList do
         end
 
         it "shows the output without Tags and Availability Zone in summary format" do
-          output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
-            "Image", "SSH Key", "Security Groups", "State"]
+          output_column = ["Instance ID", "Public IP", "Private IP", "Flavor", "Image", "SSH Key", "Security Groups", "State"]
+          servers_list = ["i-00fe186450a2e8e97", nil, nil, "t2.micro", "ami-005bdb005fb00e791", nil, "kitchen-fabcfy4np", "running"]
           output_column_count = output_column.length
           allow(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
           allow(knife_ec2_list).to receive(:validate_aws_config!)
-          expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
+          expect(knife_ec2_list.ui).to receive(:list).with(output_column + servers_list, :uneven_columns_across, output_column_count)
           knife_ec2_list.run
         end
       end
@@ -128,10 +139,10 @@ describe Chef::Knife::Ec2ServerList do
       context "when single tag is passed" do
         it "shows single tag field in the output" do
           knife_ec2_list.config[:tags] = "tag1"
-          output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
-            "Image", "SSH Key", "Security Groups", "Tag:tag1", "State"]
+          output_column = ["Instance ID", "Public IP", "Private IP", "Flavor", "Image", "SSH Key", "Security Groups", "Tag:tag1", "State"]
+          servers_list = ["i-00fe186450a2e8e97", nil, nil, "t2.micro", "ami-005bdb005fb00e791", nil, "kitchen-fabcfy4np", nil, "running"]
           output_column_count = output_column.length
-          expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
+          expect(knife_ec2_list.ui).to receive(:list).with(output_column + servers_list, :uneven_columns_across, output_column_count)
           knife_ec2_list.run
         end
       end
@@ -139,10 +150,10 @@ describe Chef::Knife::Ec2ServerList do
       context "when multiple tags are passed" do
         it "shows multiple tags fields in the output" do
           knife_ec2_list.config[:tags] = "tag1,tag2"
-          output_column = ["Instance ID", "Public IP", "Private IP", "Flavor",
-            "Image", "SSH Key", "Security Groups", "Tag:tag1", "Tag:tag2", "State"]
+          output_column = ["Instance ID", "Public IP", "Private IP", "Flavor", "Image", "SSH Key", "Security Groups", "Tag:tag1", "Tag:tag2", "State"]
+          servers_list = ["i-00fe186450a2e8e97", nil, nil, "t2.micro", "ami-005bdb005fb00e791", nil, "kitchen-fabcfy4np", nil, nil, "running"]
           output_column_count = output_column.length
-          expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
+          expect(knife_ec2_list.ui).to receive(:list).with(output_column + servers_list, :uneven_columns_across, output_column_count)
           knife_ec2_list.run
         end
       end
@@ -158,10 +169,28 @@ describe Chef::Knife::Ec2ServerList do
 
       it "shows the availability zones in the output" do
         knife_ec2_list.config[:az] = true
-        output_column = ["Instance ID", "Public IP", "Private IP", "Flavor", "AZ",
-            "Image", "SSH Key", "Security Groups", "State"]
+        output_column = ["Instance ID", "Public IP", "Private IP", "Flavor", "AZ", "Image", "SSH Key", "Security Groups", "State"]
+        servers_list = ["i-00fe186450a2e8e97", nil, nil, "t2.micro", "us-east-2c", "ami-005bdb005fb00e791", nil, "kitchen-fabcfy4np", "running"]
         output_column_count = output_column.length
-        expect(knife_ec2_list.ui).to receive(:list).with(output_column, :uneven_columns_across, output_column_count)
+        expect(knife_ec2_list.ui).to receive(:list).with(output_column + servers_list, :uneven_columns_across, output_column_count)
+        knife_ec2_list.run
+      end
+    end
+
+    context "sets the Name tag by default" do
+      before do
+        knife_ec2_list.config[:format] = "summary"
+        allow(knife_ec2_list.ui).to receive(:warn)
+        allow(ec2_connection).to receive(:servers).and_return([])
+        allow(knife_ec2_list).to receive(:validate_aws_config!)
+      end
+
+      it "shows the name in the output" do
+        knife_ec2_list.config[:name] = true
+        output_column = ["Instance ID", "Name", "Public IP", "Private IP", "Flavor", "Image", "SSH Key", "Security Groups", "State"]
+        servers_list = ["i-00fe186450a2e8e97", "ec2-test", nil, nil, "t2.micro", "ami-005bdb005fb00e791", nil, "kitchen-fabcfy4np", "running"]
+        output_column_count = output_column.length
+        expect(knife_ec2_list.ui).to receive(:list).with(output_column + servers_list, :uneven_columns_across, output_column_count)
         knife_ec2_list.run
       end
     end
