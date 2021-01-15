@@ -2915,6 +2915,19 @@ describe Chef::Knife::Ec2ServerCreate do
 
       it_behaves_like "invalid password"
     end
+
+    context "when user does not pass password" do
+      before do
+        knife_ec2_create.config[:connection_password] = nil
+      end
+
+      it "does not raise an error" do
+        expect(knife_ec2_create.ui).not_to receive(:error).with(
+          "Complexity requirement not met. Password length should be 8-40 characters and include: 1 uppercase, 1 lowercase, 1 digit and 1 special character"
+        )
+        expect { knife_ec2_create.plugin_validate_options! }.not_to raise_error
+      end
+    end
   end
 
   describe "--primary_eni option" do

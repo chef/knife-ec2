@@ -714,7 +714,7 @@ class Chef
           exit 1
         end
 
-        if winrm?
+        if winrm? && !config[:connection_password].nil?
           reg = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,40}$/
           unless config[:connection_password]&.match?(reg)
             ui.error("Complexity requirements are not met. Password length should be 8-40 characters and include: 1 uppercase, 1 lowercase, 1 digit, and 1 special character")
