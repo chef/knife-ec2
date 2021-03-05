@@ -522,7 +522,7 @@ class Chef
 
       def s3_validation_key
         @s3_validation_key ||= begin
-          Chef::Knife::S3Source.fetch(config[:validation_key_url])
+          Chef::Knife::S3Source.fetch(config[:validation_key_url], config)
         end
       end
 
@@ -530,7 +530,7 @@ class Chef
         @s3_secret ||= begin
           return false unless config[:s3_secret]
 
-          Chef::Knife::S3Source.fetch(config[:s3_secret])
+          Chef::Knife::S3Source.fetch(config[:s3_secret], config)
         end
       end
 
