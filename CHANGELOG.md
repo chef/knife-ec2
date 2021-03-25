@@ -4,10 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release -->
+<!-- latest_release 2.1.4 -->
+## [v2.1.4](https://github.com/chef/knife-ec2/tree/v2.1.4) (2021-03-25)
+
+#### Merged Pull Requests
+- S3Source does not extend any Chef classes, so config is not an inherited attribute [#667](https://github.com/chef/knife-ec2/pull/667) ([signe](https://github.com/signe))
 <!-- latest_release -->
 
-<!-- release_rollup -->
+<!-- release_rollup since=2.1.3 -->
+### Changes not yet released to rubygems.org
+
+#### Merged Pull Requests
+- S3Source does not extend any Chef classes, so config is not an inherited attribute [#667](https://github.com/chef/knife-ec2/pull/667) ([signe](https://github.com/signe)) <!-- 2.1.4 -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
