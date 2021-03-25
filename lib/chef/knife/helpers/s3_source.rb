@@ -17,11 +17,12 @@
 class Chef
   class Knife
     class S3Source
-      attr_accessor :url
+      attr_accessor :url, :config
 
-      def self.fetch(url)
+      def self.fetch(url, config)
         source = Chef::Knife::S3Source.new
         source.url = url
+        source.config = config
         source.body
       end
 

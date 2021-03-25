@@ -14,20 +14,22 @@ describe "Check Dependencies", exclude: Object.constants.include?(:Aws) do
 
   it "lazy loads Aws::S3::Client without required config" do
     begin
-      Chef::Knife::S3Source.fetch("test")
+      knife_config = {}
+      Chef::Knife::S3Source.fetch("test", knife_config)
     rescue Exception => e
-      expect(e).to be_a_kind_of(NoMethodError)
+      expect(e).to be_a_kind_of(ArgumentError)
     end
   end
 
   it "lazy loads Aws::S3::Client with required config" do
     begin
-      Chef::Config[:knife][:aws_access_key_id] = "aws_access_key_id"
-      Chef::Config[:knife][:aws_secret_access_key] = "aws_secret_access_key"
-      Chef::Config[:knife][:region] = "test-region"
-      Chef::Knife::S3Source.fetch("test")
+      knife_config = {}
+      knife_config[:aws_access_key_id] = "aws_access_key_id"
+      knife_config[:aws_secret_access_key] = "aws_secret_access_key"
+      knife_config[:region] = "test-region"
+      Chef::Knife::S3Source.fetch("/test/testfile", knife_config)
     rescue Exception => e
-      expect(e).to be_a_kind_of(ArgumentError)
+      expect(e).to be_a_kind_of(Aws::Errors::NoSuchEndpointError)
     end
   end
 end
