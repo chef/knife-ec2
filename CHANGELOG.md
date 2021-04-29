@@ -4,10 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release -->
+<!-- latest_release 2.1.5 -->
+## [v2.1.5](https://github.com/chef/knife-ec2/tree/v2.1.5) (2021-04-29)
+
+#### Merged Pull Requests
+- Upgrade to GitHub-native Dependabot [#668](https://github.com/chef/knife-ec2/pull/668) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot]))
 <!-- latest_release -->
 
-<!-- release_rollup -->
+<!-- release_rollup since=2.1.4 -->
+### Changes not yet released to rubygems.org
+
+#### Merged Pull Requests
+- Upgrade to GitHub-native Dependabot [#668](https://github.com/chef/knife-ec2/pull/668) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot])) <!-- 2.1.5 -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
