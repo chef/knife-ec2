@@ -161,12 +161,12 @@ class Chef
 
       option :ebs_volume_type,
         long: "--ebs-volume-type TYPE",
-        description: "Possible values are standard (magnetic) | io1 | gp2 | sc1 | st1. Default is gp2",
-        default: "gp2"
+        description: "Possible values are standard (magnetic) | io1 | io2 | gp2 | gp3 | sc1 | st1. Default is gp3",
+        default: "gp3"
 
       option :ebs_provisioned_iops,
         long: "--provisioned-iops IOPS",
-        description: "IOPS rate, only used when ebs volume type is 'io1'",
+        description: "IOPS rate, only used when ebs volume type is 'io1' or 'io2'",
         default: nil
 
       option :validation_key_url,
@@ -616,18 +616,18 @@ class Chef
           end
         end
 
-        if config[:ebs_provisioned_iops] && (config[:ebs_volume_type] != "io1")
-          ui.error("--provisioned-iops option is only supported for volume type of 'io1'")
+        if config[:ebs_provisioned_iops] && !%w{io1 io2}.include?(config[:ebs_volume_type])
+          ui.error("--provisioned-iops option is only supported for volume type of 'io1' or 'io2'")
           exit 1
         end
 
-        if (config[:ebs_volume_type] == "io1") && config[:ebs_provisioned_iops].nil?
-          ui.error("--provisioned-iops option is required when using volume type of 'io1'")
+        if %w{io1 io2}.include?(config[:ebs_volume_type]) && config[:ebs_provisioned_iops].nil?
+          ui.error("--provisioned-iops option is required when using volume type of 'io1' or 'io2'")
           exit 1
         end
 
-        if config[:ebs_volume_type] && ! %w{gp2 io1 standard st1 sc1}.include?(config[:ebs_volume_type])
-          ui.error("--ebs-volume-type must be 'standard' or 'io1' or 'gp2' or 'st1' or 'sc1'")
+        if config[:ebs_volume_type] && ! %w{gp2 gp3 io1 io2 standard st1 sc1}.include?(config[:ebs_volume_type])
+          ui.error("--ebs-volume-type must be 'standard' or 'io1' 'io2' or 'gp2' or 'gp3' or 'st1' or 'sc1'")
           msg opt_parser
           exit 1
         end
@@ -682,10 +682,12 @@ class Chef
           # validation for ebs_size and ebs_volume_type and ebs_encrypted
           if !config[:ebs_size]
             errors << "--ebs-encrypted option requires valid --ebs-size to be specified."
-          elsif (config[:ebs_volume_type] == "gp2") && ! config[:ebs_size].to_i.between?(1, 16384)
-            errors << "--ebs-size should be in between 1-16384 for 'gp2' ebs volume type."
+          elsif (%w{gp2 gp3}.include?(config[:ebs_volume_type])) && ! config[:ebs_size].to_i.between?(1, 16384)
+            errors << "--ebs-size should be in between 1-16384 for 'gp2' and 'gp3' ebs volume type."
           elsif (config[:ebs_volume_type] == "io1") && ! config[:ebs_size].to_i.between?(4, 16384)
             errors << "--ebs-size should be in between 4-16384 for 'io1' ebs volume type."
+          elsif (config[:ebs_volume_type] == "io2") && ! config[:ebs_size].to_i.between?(4, 65536)
+            errors << "--ebs-size should be in between 4-65536 for 'io2' ebs volume type."
           elsif (config[:ebs_volume_type] == "standard") && ! config[:ebs_size].to_i.between?(1, 1024)
             errors << "--ebs-size should be in between 1-1024 for 'standard' ebs volume type."
           end
@@ -953,7 +955,7 @@ class Chef
                ebs: {
                   delete_on_termination: delete_term,
                   volume_size: ebs_size,
-                  volume_type: config[:ebs_volume_type], # accepts standard, io1, gp2, sc1, st1
+                  volume_type: config[:ebs_volume_type], # accepts standard, io1, io2, gp2, gp3, sc1, st1
                 },
              }]
           attributes[:block_device_mappings][0][:ebs][:iops] = iops_rate unless iops_rate.nil? || iops_rate.empty?
