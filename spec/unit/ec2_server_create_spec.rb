@@ -207,7 +207,7 @@ describe Chef::Knife::Ec2ServerCreate do
     allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
     expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances_classic)
     allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
-    allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers_classic)
+    allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers_classic)
     allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
 
     expect { knife_ec2_create.run }.not_to raise_error
@@ -252,7 +252,7 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(ec2_connection).to receive(:request_spot_instances).with(spot_instance_server_def).and_return(spot_response)
       knife_ec2_create.config[:yes] = true
       allow(knife_ec2_create).to receive(:spot_instances_wait_until_ready).with("sp-00653ds54543").and_return(spot_response)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       knife_ec2_create.run
       expect(spot_response.type).to eq("persistent")
     end
@@ -265,7 +265,7 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(ec2_connection).to receive(:request_spot_instances).with(spot_instance_server_def).and_return(spot_response)
       knife_ec2_create.config[:yes] = true
       allow(knife_ec2_create).to receive(:spot_instances_wait_until_ready).with("sp-00653ds54543").and_return(spot_response)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       knife_ec2_create.run
     end
 
@@ -274,7 +274,7 @@ describe Chef::Knife::Ec2ServerCreate do
       knife_ec2_create.config.delete(:spot_price)
       allow(knife_ec2_create).to receive(:ami).and_return(ami)
       expect(ec2_connection).to receive(:run_instances).and_return(server_instances)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
       knife_ec2_create.run
     end
@@ -354,7 +354,7 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
       knife_ec2_create.config[:yes] = true
       allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
       allow(knife_ec2_create).to receive(:msg_pair)
       @eip = "111.111.111.111"
@@ -371,7 +371,7 @@ describe Chef::Knife::Ec2ServerCreate do
     it "creates an EC2 instance in EC2 classic, assigns existing EIP via public_ip and bootstraps it" do
       knife_ec2_create.config[:associate_eip] = @eip
       allow(ec2_server_attribs).to receive(:public_ip_address).and_return(@eip)
-      expect(ec2_connection).to receive(:associate_address).with(instance_id: "i-00fe186450a2e8e97", public_ip: "111.111.111.111")
+      expect(ec2_connection).to receive(:associate_address).with({ instance_id: "i-00fe186450a2e8e97", public_ip: "111.111.111.111" })
 
       knife_ec2_create.run
       expect(knife_ec2_create.server).to_not be_nil
@@ -382,7 +382,7 @@ describe Chef::Knife::Ec2ServerCreate do
 
       knife_ec2_create.config[:associate_eip] = @eip
       allow(ec2_server_attribs).to receive(:public_ip_address).and_return(@eip)
-      expect(ec2_connection).to receive(:associate_address).with(instance_id: "i-00fe186450a2e8e97", allocation_id: "eipalloc-12345678")
+      expect(ec2_connection).to receive(:associate_address).with({ instance_id: "i-00fe186450a2e8e97", allocation_id: "eipalloc-12345678" })
 
       knife_ec2_create.run
       expect(knife_ec2_create.server).to_not be_nil
@@ -391,7 +391,7 @@ describe Chef::Knife::Ec2ServerCreate do
     it "creates an EC2 instance, enables ClassicLink and bootstraps it" do
       knife_ec2_create.config[:classic_link_vpc_id] = @vpc_id
       knife_ec2_create.config[:classic_link_vpc_security_group_ids] = @vpc_security_group_ids
-      expect(ec2_connection).to receive(:attach_classic_link_vpc).with(instance_id: ec2_server_attribs[:id], groups: @vpc_security_group_ids, vpc_id: @vpc_id)
+      expect(ec2_connection).to receive(:attach_classic_link_vpc).with({ instance_id: ec2_server_attribs[:id], groups: @vpc_security_group_ids, vpc_id: @vpc_id })
       knife_ec2_create.run
       expect(knife_ec2_create.server).to_not be_nil
     end
@@ -467,7 +467,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
       allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
       allow(knife_ec2_create).to receive(:msg_pair)
       knife_ec2_create.config[:image] = "ami-005bdb005fb00e791"
@@ -492,7 +492,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
       allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
       allow(knife_ec2_create).to receive(:msg_pair)
       allow(knife_ec2_create).to receive(:puts)
@@ -540,7 +540,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
       allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
       allow(knife_ec2_create).to receive(:msg_pair)
       allow(knife_ec2_create).to receive(:puts)
@@ -783,7 +783,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
       allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
       allow(knife_ec2_create).to receive(:is_image_windows?).and_return(false)
       allow(knife_ec2_create).to receive(:tunnel_test_ssh).and_return(true)
@@ -851,7 +851,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
       allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
     end
     it "configures the bootstrap to use the configured node name if provided" do
@@ -910,7 +910,7 @@ describe Chef::Knife::Ec2ServerCreate do
       allow(knife_ec2_create).to receive(:server_attributes).and_return(server_attributes)
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
       allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
       allow(knife_ec2_create).to receive(:msg_pair)
       allow(knife_ec2_create).to receive(:puts)
@@ -1265,7 +1265,7 @@ describe Chef::Knife::Ec2ServerCreate do
         allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
       end
 
-      let(:validation_error) { "--ebs-volume-type must be 'standard' or 'io1' or 'gp2' or 'st1' or 'sc1'" }
+      let(:validation_error) { "--ebs-volume-type must be 'standard' or 'io1' 'io2' or 'gp2' or 'gp3' or 'st1' or 'sc1'" }
 
       it "raise error if invalid ebs_volume_type specified" do
         knife_ec2_create.config[:ebs_volume_type] = "invalid"
@@ -1343,7 +1343,7 @@ describe Chef::Knife::Ec2ServerCreate do
         knife_ec2_create.config[:ebs_volume_type] = "gp2"
         knife_ec2_create.config[:flavor] = "m3.medium"
         knife_ec2_create.config[:ebs_encrypted] = true
-        expect(knife_ec2_create.ui).to receive(:error).with(" --ebs-size should be in between 1-16384 for 'gp2' ebs volume type.")
+        expect(knife_ec2_create.ui).to receive(:error).with(" --ebs-size should be in between 1-16384 for 'gp2' and 'gp3' ebs volume type.")
         expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
       end
 
@@ -1745,45 +1745,45 @@ describe Chef::Knife::Ec2ServerCreate do
 
     it "configures a ssh gateway with no user and the default port when the SSH Config is empty" do
       allow(Net::SSH::Config).to receive(:for).and_return({})
-      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, port: 22)
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, { port: 22 })
       knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
 
     it "configures a ssh gateway with the user specified in the SSH Config" do
       allow(Net::SSH::Config).to receive(:for).and_return({ user: gateway_user })
-      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, gateway_user, port: 22)
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, gateway_user, { port: 22 })
       knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
 
     it "configures a ssh gateway with the user specified in the ssh gateway string" do
       allow(Net::SSH::Config).to receive(:for).and_return({ user: gateway_user })
-      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, "override_user", port: 22)
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, "override_user", { port: 22 })
       knife_ec2_create.configure_ssh_gateway("override_user@#{gateway_host}")
     end
 
     it "configures a ssh gateway with the port specified in the ssh gateway string" do
       allow(Net::SSH::Config).to receive(:for).and_return({})
-      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, port: "24")
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, { port: "24" })
       knife_ec2_create.configure_ssh_gateway("#{gateway_host}:24")
     end
 
     it "configures a ssh gateway with the keys specified in the SSH Config" do
       allow(Net::SSH::Config).to receive(:for).and_return({ keys: ["configuredkey"] })
-      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, port: 22, keys: ["configuredkey"])
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, { port: 22, keys: ["configuredkey"] })
       knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
 
     it "configures the ssh gateway with the key specified in the config" do
       knife_ec2_create.config[:ssh_gateway_identity] = "/home/fireman/.ssh/gateway.pem"
       expect(Net::SSH::Config).to receive(:for).and_return({ keys: ["configuredkey"] })
-      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, port: 22, keys: ["/home/fireman/.ssh/gateway.pem"])
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, { port: 22, keys: ["/home/fireman/.ssh/gateway.pem"] })
       knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
 
     it "prefers the knife config over the ssh config for the gateway keys" do
       knife_ec2_create.config[:ssh_gateway_identity] = "/home/fireman/.ssh/gateway.pem"
       allow(Net::SSH::Config).to receive(:for).and_return({ keys: ["not_this_key_dude"] })
-      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, port: 22, keys: ["/home/fireman/.ssh/gateway.pem"])
+      expect(Net::SSH::Gateway).to receive(:new).with(gateway_host, nil, { port: 22, keys: ["/home/fireman/.ssh/gateway.pem"] })
       knife_ec2_create.configure_ssh_gateway(gateway_host)
     end
   end
@@ -2749,7 +2749,7 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(ec2_connection).to receive(:run_instances).with(server_attributes).and_return(server_instances)
       knife_ec2_create.config[:yes] = true
       allow(knife_ec2_create).to receive(:instances_wait_until_ready).with("i-00fe186450a2e8e97").and_return(true)
-      allow(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"] ).and_return(ec2_servers)
+      allow(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       allow(knife_ec2_create).to receive(:server).and_return(ec2_server_attribs)
     end
 

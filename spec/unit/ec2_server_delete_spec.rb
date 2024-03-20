@@ -59,7 +59,7 @@ describe Chef::Knife::Ec2ServerDelete do
     end
 
     it "should use invoke aws api to delete instance if instance id is passed" do
-      expect(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"]).and_return(ec2_servers)
+      expect(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
       knife_ec2_delete.name_args = ["i-00fe186450a2e8e97"]
       expect(knife_ec2_delete).to receive(:validate_aws_config!)
       expect(knife_ec2_delete).to receive(:validate_instances!)
@@ -85,7 +85,7 @@ describe Chef::Knife::Ec2ServerDelete do
 
     describe "when --purge is passed" do
       it "should use the node name if its set" do
-        expect(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"]).and_return(ec2_servers)
+        expect(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
         knife_ec2_delete.name_args = ["i-00fe186450a2e8e97"]
         expect(knife_ec2_delete).to receive(:validate_aws_config!)
         expect(ec2_connection).to receive(:terminate_instances)
@@ -97,7 +97,7 @@ describe Chef::Knife::Ec2ServerDelete do
       end
 
       it "should search for the node name using the instance id when node name is not specified" do
-        expect(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"]).and_return(ec2_servers)
+        expect(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
         knife_ec2_delete.name_args = ["i-00fe186450a2e8e97"]
         expect(knife_ec2_delete).to receive(:validate_aws_config!)
         expect(ec2_connection).to receive(:terminate_instances)
@@ -114,7 +114,7 @@ describe Chef::Knife::Ec2ServerDelete do
       end
 
       it "should use  the instance id if search does not return anything" do
-        expect(ec2_connection).to receive(:describe_instances).with(instance_ids: ["i-00fe186450a2e8e97"]).and_return(ec2_servers)
+        expect(ec2_connection).to receive(:describe_instances).with({ instance_ids: ["i-00fe186450a2e8e97"] }).and_return(ec2_servers)
         knife_ec2_delete.name_args = ["i-00fe186450a2e8e97"]
         expect(knife_ec2_delete).to receive(:validate_aws_config!)
         expect(ec2_connection).to receive(:terminate_instances)

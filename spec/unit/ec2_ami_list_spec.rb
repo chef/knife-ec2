@@ -141,9 +141,10 @@ describe Chef::Knife::Ec2AmiList do
       context "When owner is invalid" do
         it "raises error" do
           allow(knife_ec2_ami_list).to receive(:puts)
-          expect(lambda { knife_ec2_ami_list.parse_options(["--owner", "xyz"]) }).to raise_error(SystemExit)
+          expect { knife_ec2_ami_list.parse_options(["--owner", "xyz"]) }.to raise_error(SystemExit)
         end
       end
+
     end
 
     context "when --platform is passed" do
@@ -233,7 +234,7 @@ describe Chef::Knife::Ec2AmiList do
       context "When platform is invalid" do
         it "raises error" do
           allow(knife_ec2_ami_list).to receive(:puts)
-          expect(lambda { knife_ec2_ami_list.parse_options(["--platform", "xyz"]) }).to raise_error(SystemExit)
+          expect { knife_ec2_ami_list.parse_options(["--platform", "xyz"]) }.to raise_error(SystemExit)
         end
       end
     end
