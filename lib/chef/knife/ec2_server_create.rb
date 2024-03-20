@@ -495,13 +495,11 @@ class Chef
       end
 
       def validation_key_path
-        @validation_key_path ||= begin
-          if URI(config[:validation_key_url]).scheme == "file"
-            URI(config[:validation_key_url]).path
-          else
-            validation_key_tmpfile.path
-          end
-        end
+        @validation_key_path ||= if URI(config[:validation_key_url]).scheme == "file"
+                                   URI(config[:validation_key_url]).path
+                                 else
+                                   validation_key_tmpfile.path
+                                 end
       end
 
       # @return [Tempfile]
@@ -521,9 +519,7 @@ class Chef
       end
 
       def s3_validation_key
-        @s3_validation_key ||= begin
-          Chef::Knife::S3Source.fetch(config[:validation_key_url], config)
-        end
+        @s3_validation_key ||= Chef::Knife::S3Source.fetch(config[:validation_key_url], config)
       end
 
       def s3_secret
@@ -759,8 +755,8 @@ class Chef
         user = connection_user.split("\\")
         if (user[0] == ".") || (user[0] == "") || (user.length == 1)
           user_related_commands = <<~EOH
-            net user /add #{connection_user.delete('.\\')} #{windows_password} #{@allow_long_password};
-            net localgroup Administrators /add #{connection_user.delete('.\\')};
+            net user /add #{connection_user.delete(".\\")} #{windows_password} #{@allow_long_password};
+            net localgroup Administrators /add #{connection_user.delete(".\\")};
           EOH
         end
         <<~EOH
@@ -1141,15 +1137,13 @@ class Chef
       # Otherwise assign public DNS or public IP.
       # @return [String]
       def connect_attribute
-        @connect_attribute ||= begin
-          if !!config[:server_connect_attribute]
-            config[:server_connect_attribute]
-          elsif vpc_mode? && !(subnet_public_ip_on_launch? || config[:associate_public_ip] || config[:associate_eip])
-            "private_ip_address"
-          else
-            server.public_dns_name ? "public_dns_name" : "public_ip_address"
-          end
-        end
+        @connect_attribute ||= if !!config[:server_connect_attribute]
+                                 config[:server_connect_attribute]
+                               elsif vpc_mode? && !(subnet_public_ip_on_launch? || config[:associate_public_ip] || config[:associate_eip])
+                                 "private_ip_address"
+                               else
+                                 server.public_dns_name ? "public_dns_name" : "public_ip_address"
+                               end
       end
 
       def create_tags(hashed_tags)
