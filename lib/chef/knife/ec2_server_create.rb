@@ -25,6 +25,10 @@ class Chef
   class Knife
     class Ec2ServerCreate < Chef::Knife::Bootstrap
 
+      GP_VOLUME_TYPES = %w{gp2 gp3}.freeze
+      IOPS_VOLUME_TYPES = %w{io1 io2}.freeze
+      EBS_VOLUME_TYPES = (%w{standard st1 sc1} + GP_VOLUME_TYPES + IOPS_VOLUME_TYPES).freeze
+
       include Knife::Ec2Base
 
       deps do
@@ -161,12 +165,12 @@ class Chef
 
       option :ebs_volume_type,
         long: "--ebs-volume-type TYPE",
-        description: "Possible values are standard (magnetic) | io1 | io2 | gp2 | gp3 | sc1 | st1. Default is gp3",
+        description: "Possible values are #{EBS_VOLUME_TYPES.join(" | ")}. Default is gp3",
         default: "gp3"
 
       option :ebs_provisioned_iops,
         long: "--provisioned-iops IOPS",
-        description: "IOPS rate, only used when ebs volume type is 'io1' or 'io2'",
+        description: "IOPS rate, only used when ebs volume type is '#{IOPS_VOLUME_TYPES.join(' or ')}'",
         default: nil
 
       option :validation_key_url,
@@ -612,18 +616,18 @@ class Chef
           end
         end
 
-        if config[:ebs_provisioned_iops] && !%w{io1 io2}.include?(config[:ebs_volume_type])
-          ui.error("--provisioned-iops option is only supported for volume type of 'io1' or 'io2'")
+        if config[:ebs_provisioned_iops] && !IOPS_VOLUME_TYPES.include?(config[:ebs_volume_type])
+          ui.error("--provisioned-iops option is only supported for volume type of '#{IOPS_VOLUME_TYPES.join(' or ')}'")
           exit 1
         end
 
-        if %w{io1 io2}.include?(config[:ebs_volume_type]) && config[:ebs_provisioned_iops].nil?
-          ui.error("--provisioned-iops option is required when using volume type of 'io1' or 'io2'")
+        if IOPS_VOLUME_TYPES.include?(config[:ebs_volume_type]) && config[:ebs_provisioned_iops].nil?
+          ui.error("--provisioned-iops option is required when using volume type of '#{IOPS_VOLUME_TYPES.join(' or ')}'")
           exit 1
         end
 
-        if config[:ebs_volume_type] && ! %w{gp2 gp3 io1 io2 standard st1 sc1}.include?(config[:ebs_volume_type])
-          ui.error("--ebs-volume-type must be 'standard' or 'io1' 'io2' or 'gp2' or 'gp3' or 'st1' or 'sc1'")
+        if config[:ebs_volume_type] && ! EBS_VOLUME_TYPES.include?(config[:ebs_volume_type])
+          ui.error("--ebs-volume-type must be '#{EBS_VOLUME_TYPES.join("' or '")}'")
           msg opt_parser
           exit 1
         end
@@ -678,8 +682,8 @@ class Chef
           # validation for ebs_size and ebs_volume_type and ebs_encrypted
           if !config[:ebs_size]
             errors << "--ebs-encrypted option requires valid --ebs-size to be specified."
-          elsif (%w{gp2 gp3}.include?(config[:ebs_volume_type])) && ! config[:ebs_size].to_i.between?(1, 16384)
-            errors << "--ebs-size should be in between 1-16384 for 'gp2' and 'gp3' ebs volume type."
+          elsif (GP_VOLUME_TYPES.include?(config[:ebs_volume_type])) && ! config[:ebs_size].to_i.between?(1, 16384)
+            errors << "--ebs-size should be in between 1-16384 for '#{GP_VOLUME_TYPES.join("' or '")}' ebs volume type."
           elsif (config[:ebs_volume_type] == "io1") && ! config[:ebs_size].to_i.between?(4, 16384)
             errors << "--ebs-size should be in between 4-16384 for 'io1' ebs volume type."
           elsif (config[:ebs_volume_type] == "io2") && ! config[:ebs_size].to_i.between?(4, 65536)

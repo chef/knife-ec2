@@ -1265,7 +1265,7 @@ describe Chef::Knife::Ec2ServerCreate do
         allow(knife_ec2_create).to receive(:validate_nics!).and_return(true)
       end
 
-      let(:validation_error) { "--ebs-volume-type must be 'standard' or 'io1' 'io2' or 'gp2' or 'gp3' or 'st1' or 'sc1'" }
+      let(:validation_error) { "--ebs-volume-type must be 'standard' or 'st1' or 'sc1' or 'gp2' or 'gp3' or 'io1' or 'io2'" }
 
       it "raise error if invalid ebs_volume_type specified" do
         knife_ec2_create.config[:ebs_volume_type] = "invalid"
@@ -1343,7 +1343,7 @@ describe Chef::Knife::Ec2ServerCreate do
         knife_ec2_create.config[:ebs_volume_type] = "gp2"
         knife_ec2_create.config[:flavor] = "m3.medium"
         knife_ec2_create.config[:ebs_encrypted] = true
-        expect(knife_ec2_create.ui).to receive(:error).with(" --ebs-size should be in between 1-16384 for 'gp2' and 'gp3' ebs volume type.")
+        expect(knife_ec2_create.ui).to receive(:error).with(" --ebs-size should be in between 1-16384 for 'gp2' or 'gp3' ebs volume type.")
         expect { knife_ec2_create.plugin_validate_options! }.to raise_error SystemExit
       end
 
