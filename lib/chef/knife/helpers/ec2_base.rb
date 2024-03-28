@@ -234,13 +234,11 @@ class Chef
     # if default location exists on disk fallback to that
     # @return [String, nil] location to aws credentials file or nil if none exists
     def aws_cred_file_location
-      @cred_file ||= begin
-        if !config[:aws_credential_file].nil?
-          config[:aws_credential_file]
-        else
-          Chef::Util::PathHelper.home(".aws", "credentials") if ::File.exist?(Chef::Util::PathHelper.home(".aws", "credentials"))
-        end
-      end
+      @cred_file ||= if !config[:aws_credential_file].nil?
+                       config[:aws_credential_file]
+                     else
+                       Chef::Util::PathHelper.home(".aws", "credentials") if ::File.exist?(Chef::Util::PathHelper.home(".aws", "credentials"))
+                     end
     end
 
     # @return [String]
