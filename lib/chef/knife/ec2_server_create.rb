@@ -170,7 +170,7 @@ class Chef
 
       option :ebs_provisioned_iops,
         long: "--provisioned-iops IOPS",
-        description: "IOPS rate, only used when ebs volume type is '#{IOPS_VOLUME_TYPES.join(' or ')}'",
+        description: "IOPS rate, only used when ebs volume type is '#{IOPS_VOLUME_TYPES.join(" or ")}'",
         default: nil
 
       option :validation_key_url,
@@ -617,12 +617,12 @@ class Chef
         end
 
         if config[:ebs_provisioned_iops] && !IOPS_VOLUME_TYPES.include?(config[:ebs_volume_type])
-          ui.error("--provisioned-iops option is only supported for volume type of '#{IOPS_VOLUME_TYPES.join(' or ')}'")
+          ui.error("--provisioned-iops option is only supported for volume type of '#{IOPS_VOLUME_TYPES.join(" or ")}'")
           exit 1
         end
 
         if IOPS_VOLUME_TYPES.include?(config[:ebs_volume_type]) && config[:ebs_provisioned_iops].nil?
-          ui.error("--provisioned-iops option is required when using volume type of '#{IOPS_VOLUME_TYPES.join(' or ')}'")
+          ui.error("--provisioned-iops option is required when using volume type of '#{IOPS_VOLUME_TYPES.join(" or ")}'")
           exit 1
         end
 
