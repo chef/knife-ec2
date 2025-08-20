@@ -14,7 +14,7 @@ Gem::Specification.new do |s|
   s.files        = %w{LICENSE} + Dir.glob("lib/**/*")
   s.required_ruby_version = ">= 3.1"
 
-  s.add_dependency "knife", "~> 18.0"
+  s.add_dependency "knife", github: "chef/knife", branch: "main"
   s.add_dependency "aws-sdk-s3", "~> 1.43"
   s.add_dependency "aws-sdk-ec2", "~> 1.95"
 
