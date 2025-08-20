@@ -1,5 +1,7 @@
 source "https://rubygems.org"
 
+gem "knife", github: "chef/knife", branch: "main"
+
 gemspec
 
 group :debug do
