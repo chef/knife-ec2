@@ -14,6 +14,9 @@ steps:
 - label: run-specs-ruby-3.1
   command:
     - .expeditor/run_linux_tests.sh rake
+  env:
+    CHEF_LICENSE: accept-no-persist
+
   expeditor:
     executor:
       docker:
