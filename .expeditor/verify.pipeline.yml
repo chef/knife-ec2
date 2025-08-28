@@ -21,3 +21,11 @@ steps:
     executor:
       docker:
         image: ruby:3.1-buster
+
+- label: run-specs-ruby-3.4
+  command:
+    - .expeditor/run_linux_tests.sh rake
+  expeditor:
+    executor:
+      docker:
+        image: ruby:3.4
