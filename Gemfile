@@ -2,6 +2,9 @@ source "https://rubygems.org"
 
 gemspec
 
+# Runtime dependencies
+gem "syslog"
+
 group :debug do
   gem "pry"
   gem "pry-byebug"
