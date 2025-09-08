@@ -2,8 +2,6 @@ source "https://rubygems.org"
 
 gemspec
 
-# Runtime dependencies
-gem "syslog"
 
 group :debug do
   gem "pry"
@@ -12,6 +10,8 @@ group :debug do
 end
 
 group :test do
+  gem "syslog"
+  gem "abbrev"
   gem "chefstyle"
   gem "rake"
   gem "rspec", "~> 3.0"
