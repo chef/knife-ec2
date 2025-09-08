@@ -18,5 +18,12 @@ Gem::Specification.new do |s|
   s.add_dependency "aws-sdk-s3", "~> 1.43"
   s.add_dependency "aws-sdk-ec2", "~> 1.95"
 
+  # These gems were removed from Ruby standard library from version 3.4
+  # See: https://stdgems.org/new-in/3.4
+  if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.4")
+    s.add_dependency "abbrev", "~> 0.1"
+    s.add_dependency "syslog", "~> 0.3"
+  end
+
   s.require_paths = ["lib"]
 end
