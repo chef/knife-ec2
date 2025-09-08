@@ -16,7 +16,6 @@ steps:
     - .expeditor/run_linux_tests.sh rake
   env:
     CHEF_LICENSE: accept-no-persist
-
   expeditor:
     executor:
       docker:
@@ -25,6 +24,8 @@ steps:
 - label: run-specs-ruby-3.4
   command:
     - .expeditor/run_linux_tests.sh rake
+  env:
+    CHEF_LICENSE: accept-no-persist
   expeditor:
     executor:
       docker:
