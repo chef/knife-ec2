@@ -4,10 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release -->
+<!-- latest_release 2.1.7 -->
+## [v2.1.7](https://github.com/chef/knife-ec2/tree/v2.1.7) (2025-09-16)
+
+#### Merged Pull Requests
+- Fix test cases for ruby 3.1 and 3.4 [#684](https://github.com/chef/knife-ec2/pull/684) ([sanjain-progress](https://github.com/sanjain-progress))
 <!-- latest_release -->
 
-<!-- release_rollup -->
+<!-- release_rollup since=2.1.6 -->
+### Changes not yet released to rubygems.org
+
+#### Merged Pull Requests
+- Fix test cases for ruby 3.1 and 3.4 [#684](https://github.com/chef/knife-ec2/pull/684) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.1.7 -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
