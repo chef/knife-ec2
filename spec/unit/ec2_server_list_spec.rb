@@ -163,7 +163,7 @@ describe Chef::Knife::Ec2ServerList do
       before do
         knife_ec2_list.config[:format] = "summary"
         allow(knife_ec2_list.ui).to receive(:warn)
-        allow(ec2_connection).to receive(:servers).and_return([])
+        allow(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
         allow(knife_ec2_list).to receive(:validate_aws_config!)
       end
 
@@ -181,7 +181,7 @@ describe Chef::Knife::Ec2ServerList do
       before do
         knife_ec2_list.config[:format] = "summary"
         allow(knife_ec2_list.ui).to receive(:warn)
-        allow(ec2_connection).to receive(:servers).and_return([])
+        allow(ec2_connection).to receive(:describe_instances).and_return(ec2_servers)
         allow(knife_ec2_list).to receive(:validate_aws_config!)
       end
 

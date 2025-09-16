@@ -388,6 +388,20 @@ describe Chef::Knife::Ec2ServerCreate do
       expect(knife_ec2_create.server).to_not be_nil
     end
 
+    around do |example|
+      # Save original method
+      original_fetch_license = Chef::Knife::Bootstrap.instance_method(:fetch_license)
+
+      # Remove license check temporarily
+      Chef::Knife::Bootstrap.send(:define_method, :fetch_license) { true }
+
+      # Run example
+      example.run
+
+      # Restore original method
+      Chef::Knife::Bootstrap.send(:define_method, :fetch_license, original_fetch_license)
+    end
+
     it "creates an EC2 instance, enables ClassicLink and bootstraps it" do
       knife_ec2_create.config[:classic_link_vpc_id] = @vpc_id
       knife_ec2_create.config[:classic_link_vpc_security_group_ids] = @vpc_security_group_ids
@@ -397,19 +411,47 @@ describe Chef::Knife::Ec2ServerCreate do
     end
 
     it "retries if it receives Aws::EC2::Errors::Error" do
+      # Mock bootstrap to bypass licensing
+      bootstrap = double("bootstrap")
+      allow(knife_ec2_create).to receive(:bootstrap_for_node).and_return(bootstrap)
+      allow(bootstrap).to receive(:run)
+      allow(bootstrap).to receive(:fetch_license).and_return(true)
+
+      # Mock server and error handling
+      allow(knife_ec2_create).to receive(:server).and_return(instance1)
       expect(knife_ec2_create).to receive(:create_tags).and_raise(Aws::EC2::Errors::Error.new(self, "Default"))
       expect(knife_ec2_create).to receive(:create_tags).and_return(true)
       expect(knife_ec2_create).to receive(:sleep).and_return(true)
-      expect(knife_ec2_create.ui).to receive(:warn).with(/retrying/)
+
+      # Allow both the retry warning and the license warning
+      allow(knife_ec2_create.ui).to receive(:warn)
+      expect(knife_ec2_create.ui).to receive(:warn).with(/retrying/).once
+
       knife_ec2_create.run
     end
 
+    # This allowed our test to focus on its actual purpose: validating that the validation key gets written correctly
     it "actually writes to the validation key tempfile" do
       knife_ec2_create.config[:validation_key_url] = @validation_key_url
 
-      allow(knife_ec2_create).to receive_message_chain(:validation_key_tmpfile, :path).and_return(@validation_key_file)
+      # Mock file operations
+      tempfile = double("tempfile")
+      allow(tempfile).to receive(:path).and_return(@validation_key_file)
+      allow(tempfile).to receive(:close!)
+      allow(knife_ec2_create).to receive(:validation_key_tmpfile).and_return(tempfile)
+
+      # Mock bootstrap with licensing bypass
+      bootstrap = double("bootstrap")
+      allow(knife_ec2_create).to receive(:bootstrap_for_node).and_return(bootstrap)
+      allow(bootstrap).to receive(:run)
+      allow(bootstrap).to receive(:fetch_license).and_return(true)
+
+      # Mock S3 fetch
       allow(Chef::Knife::S3Source).to receive(:fetch).with(@validation_key_url).and_return(@validation_key_body)
+
+      # Expect file write
       expect(File).to receive(:open).with(@validation_key_file, "w")
+
       knife_ec2_create.run
     end
   end
