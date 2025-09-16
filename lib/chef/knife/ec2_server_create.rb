@@ -341,7 +341,7 @@ class Chef
 
         # Update Name tag after instance creation if chef_node_name contains %s
         if config[:chef_node_name] && config[:chef_node_name].include?("%s")
-          config[:chef_node_name]  = evaluate_node_name(config[:chef_node_name])
+          config[:chef_node_name] = evaluate_node_name(config[:chef_node_name])
         end
 
         puts("\n")
@@ -993,8 +993,8 @@ class Chef
           attributes[:tag_specifications] = [
             {
               resource_type: "instance",
-              tags: tags
-            }
+              tags: tags,
+            },
           ]
         end
         attributes
