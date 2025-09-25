@@ -2,9 +2,7 @@ source 'https://rubygems.org'
 
 gemspec
 
-source "https://artifactory-internal.ps.chef.co/artifactory/api/gems/omnibus-gems-local" do
-    gem "knife", ">= 19.0"
-end
+# gem 'knife', git: 'https://github.com/chef/knife.git', branch: 'main'
 
 group :debug do
   gem 'pry'
