@@ -334,9 +334,15 @@ class Chef
         msg_pair("IAM Profile", config[:iam_instance_profile])
 
         msg_pair("AWS Tags", printed_aws_tags)
+
         msg_pair("Volume Tags", printed_volume_tags)
         msg_pair("SSH Key", server.key_name)
         msg_pair("T2/T3 Unlimited", printed_t2_t3_unlimited)
+
+        # Update Name tag after instance creation if chef_node_name contains %s
+        if config[:chef_node_name] && config[:chef_node_name].include?("%s")
+          config[:chef_node_name] = evaluate_node_name(config[:chef_node_name])
+        end
 
         puts("\n")
 
@@ -981,6 +987,16 @@ class Chef
               cpu_credits: config[:cpu_credits],
             }
         end
+        # Add tag_specifications for instance tags at creation time
+        tags = hashed_tags.map { |k, v| { key: k, value: v } }
+        unless tags.empty?
+          attributes[:tag_specifications] = [
+            {
+              resource_type: "instance",
+              tags: tags,
+            },
+          ]
+        end
         attributes
       end
 
@@ -1448,9 +1464,9 @@ class Chef
         # Always set the Name tag
         unless ht.key?("Name")
           if config[:chef_node_name]
-            ht["Name"] = evaluate_node_name(config[:chef_node_name])
+            ht["Name"] = config[:chef_node_name]
           else
-            ht["Name"] = server.id
+            ht["Name"] = server&.id
           end
         end
 
@@ -1475,3 +1491,4 @@ class Chef
     end
   end
 end
+

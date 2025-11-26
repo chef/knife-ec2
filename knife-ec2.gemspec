@@ -17,6 +17,7 @@ Gem::Specification.new do |s|
   s.add_dependency "knife", "~> 18.0"
   s.add_dependency "aws-sdk-s3", "~> 1.43"
   s.add_dependency "aws-sdk-ec2", "~> 1.95"
-
+  s.add_dependency "abbrev", "~> 0.1"
+  s.add_dependency "syslog", "~> 0.3"
   s.require_paths = ["lib"]
 end
