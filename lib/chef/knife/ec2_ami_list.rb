@@ -93,18 +93,23 @@ class Chef
 
       def ami_hashes
         all_data = {}
-        ec2_connection.describe_images(image_params).images.each do |v|
+        response = ec2_connection.describe_images(image_params)
+        response.images.each do |v|
           v_data = {}
           if config[:search]
-            next unless v.description.downcase.include?(config[:search].downcase)
+            next unless v.description.to_s.downcase.include?(config[:search].downcase)
           end
 
           %w{image_id platform description architecture}.each do |id|
-            v_data[id] = v.send(id)
+            v_data[id] = v.respond_to?(id) ? v.send(id) : v[id]
           end
 
-          v_data["name"] = v.name.split(/\W+/).first
-          v_data["size"] = v.block_device_mappings[0].ebs.volume_size.to_s
+          name = v.respond_to?(:name) ? v.name : v[:name]
+          v_data["name"] = name ? name.split(/\W+/).first : nil
+
+          mappings = v.respond_to?(:block_device_mappings) ? v.block_device_mappings : v[:block_device_mappings]
+          v_data["size"] = mappings && mappings[0] && mappings[0][:ebs] ? mappings[0][:ebs][:volume_size].to_s : nil
+
           all_data[v_data["image_id"]] = v_data
         end
         all_data

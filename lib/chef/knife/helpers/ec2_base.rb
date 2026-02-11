@@ -184,8 +184,17 @@ class Chef
       # Name tag value return.
       # @return [String]
       def find_name_tag(tags)
-        name_tag = tags.find { |tag| tag[:key] == "Name" }
-        name_tag ? name_tag[:value] : nil
+        name_tag = tags.find do |tag|
+          key_value = tag.respond_to?(:key) ? tag.key : (tag[:key] || tag["key"])
+          key_value == "Name"
+        end
+        if name_tag
+          if name_tag.respond_to?(:value)
+            name_tag.value
+          else
+            name_tag[:value] || name_tag["value"]
+          end
+        end
       end
 
       # Platform value return for Windows AMIs; otherwise, it is blank.

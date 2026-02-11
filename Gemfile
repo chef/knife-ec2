@@ -9,6 +9,8 @@ group :debug do
 end
 
 group :test do
+  gem "syslog"
+  gem "abbrev"
   gem "chefstyle"
   gem "rake"
   gem "rspec", "~> 3.0"
