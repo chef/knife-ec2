@@ -4,17 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 2.1.9 -->
-## [v2.1.9](https://github.com/chef/knife-ec2/tree/v2.1.9) (2025-09-16)
+<!-- latest_release 2.1.10 -->
+## [v2.1.10](https://github.com/chef/knife-ec2/tree/v2.1.10) (2026-02-11)
 
 #### Merged Pull Requests
-- Support aws tag at the time of EC2 instance creation in knife-ec2 [#679](https://github.com/chef/knife-ec2/pull/679) ([sanjain-progress](https://github.com/sanjain-progress))
+- update knife version [#686](https://github.com/chef/knife-ec2/pull/686) ([sanjain-progress](https://github.com/sanjain-progress))
 <!-- latest_release -->
 
 <!-- release_rollup since=2.1.6 -->
 ### Changes not yet released to rubygems.org
 
 #### Merged Pull Requests
+- update knife version [#686](https://github.com/chef/knife-ec2/pull/686) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.1.10 -->
 - Support aws tag at the time of EC2 instance creation in knife-ec2 [#679](https://github.com/chef/knife-ec2/pull/679) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.1.9 -->
 - Support for ruby3.4 [#681](https://github.com/chef/knife-ec2/pull/681) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.1.8 -->
 - Fix test cases for ruby 3.1 and 3.4 [#684](https://github.com/chef/knife-ec2/pull/684) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.1.7 -->

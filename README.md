@@ -2,14 +2,6 @@
 [![Gem Version](https://badge.fury.io/rb/knife-ec2.svg)](https://rubygems.org/gems/knife-ec2)
 [![Build status](https://badge.buildkite.com/6dce7349d1291de0f8a8c68a78cb6829067d5e44bec7c4c552.svg?branch=master)](https://buildkite.com/chef-oss/chef-knife-ec2-master-verify)
 
-**Umbrella Project**: [Knife](https://github.com/chef/chef-oss-practices/blob/master/projects/knife.md)
-
-**Project State**: [Active](https://github.com/chef/chef-oss-practices/blob/master/repo-management/repo-states.md#active)
-
-**Issues [Response Time Maximum](https://github.com/chef/chef-oss-practices/blob/master/repo-management/repo-states.md)**: 14 days
-
-**Pull Request [Response Time Maximum](https://github.com/chef/chef-oss-practices/blob/master/repo-management/repo-states.md)**: 14 days
-
 This is the official Chef Knife plugin for Amazon EC2. This plugin gives knife the ability to create, bootstrap, and manage EC2 instances.
 - Documentation: [https://github.com/chef/knife-ec2/blob/master/README.md](https://github.com/chef/knife-ec2/blob/master/README.md)
 - Source: [https://github.com/chef/knife-ec2/tree/master](https://github.com/chef/knife-ec2/tree/master)
@@ -327,9 +319,8 @@ rake docs
 
 For information on contributing to this project please see our [Contributing Documentation](https://github.com/chef/chef/blob/master/CONTRIBUTING.md)
 
-## License & Copyright
+## License 
 
-- Copyright:: Copyright (c) 2009-2019 Chef Software, Inc.
 - License:: Apache License, Version 2.0
 
 ```text
@@ -345,3 +336,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ```
+
+# Copyright
+
+See [COPYRIGHT.md](./COPYRIGHT.md).
