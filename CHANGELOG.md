@@ -4,17 +4,18 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 2.1.11 -->
-## [v2.1.11](https://github.com/chef/knife-ec2/tree/v2.1.11) (2026-02-12)
+<!-- latest_release 2.2.0 -->
+## [v2.2.0](https://github.com/chef/knife-ec2/tree/v2.2.0) (2026-02-13)
 
 #### Merged Pull Requests
-- CHEF-25716 - Replace CONTRIBUTING.md file with standard template for Workstation [#682](https://github.com/chef/knife-ec2/pull/682) ([nandanhegde73](https://github.com/nandanhegde73))
+- Update version in Blackduck config [#690](https://github.com/chef/knife-ec2/pull/690) ([sanjain-progress](https://github.com/sanjain-progress))
 <!-- latest_release -->
 
 <!-- release_rollup since=2.1.6 -->
 ### Changes not yet released to rubygems.org
 
 #### Merged Pull Requests
+- Update version in Blackduck config [#690](https://github.com/chef/knife-ec2/pull/690) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.2.0 -->
 - CHEF-25716 - Replace CONTRIBUTING.md file with standard template for Workstation [#682](https://github.com/chef/knife-ec2/pull/682) ([nandanhegde73](https://github.com/nandanhegde73)) <!-- 2.1.11 -->
 - update knife version [#686](https://github.com/chef/knife-ec2/pull/686) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.1.10 -->
 - Support aws tag at the time of EC2 instance creation in knife-ec2 [#679](https://github.com/chef/knife-ec2/pull/679) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.1.9 -->
