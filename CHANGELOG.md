@@ -4,32 +4,29 @@ Note: this log contains only changes from knife-ec2 release 0.8.0 and later
 -- it does not contain the changes from prior releases. To view change history
 prior to release 0.8.0, please visit the [source repository](https://github.com/chef/knife-ec2/commits).
 
-<!-- latest_release 2.2.0 -->
-## [v2.2.0](https://github.com/chef/knife-ec2/tree/v2.2.0) (2026-02-13)
-
-#### Merged Pull Requests
-- Update version in Blackduck config [#690](https://github.com/chef/knife-ec2/pull/690) ([sanjain-progress](https://github.com/sanjain-progress))
+<!-- latest_release -->
 <!-- latest_release -->
 
-<!-- release_rollup since=2.1.6 -->
-### Changes not yet released to rubygems.org
-
-#### Merged Pull Requests
-- Update version in Blackduck config [#690](https://github.com/chef/knife-ec2/pull/690) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.2.0 -->
-- CHEF-25716 - Replace CONTRIBUTING.md file with standard template for Workstation [#682](https://github.com/chef/knife-ec2/pull/682) ([nandanhegde73](https://github.com/nandanhegde73)) <!-- 2.1.11 -->
-- update knife version [#686](https://github.com/chef/knife-ec2/pull/686) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.1.10 -->
-- Support aws tag at the time of EC2 instance creation in knife-ec2 [#679](https://github.com/chef/knife-ec2/pull/679) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.1.9 -->
-- Support for ruby3.4 [#681](https://github.com/chef/knife-ec2/pull/681) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.1.8 -->
-- Fix test cases for ruby 3.1 and 3.4 [#684](https://github.com/chef/knife-ec2/pull/684) ([sanjain-progress](https://github.com/sanjain-progress)) <!-- 2.1.7 -->
+<!-- release_rollup -->
 <!-- release_rollup -->
 
 <!-- latest_stable_release -->
+## [v2.2.0](https://github.com/chef/knife-ec2/tree/v2.2.0) (2026-02-16)
+
+#### Merged Pull Requests
+- Fix test cases for ruby 3.1 and 3.4 [#684](https://github.com/chef/knife-ec2/pull/684) ([sanjain-progress](https://github.com/sanjain-progress))
+- Support for ruby3.4 [#681](https://github.com/chef/knife-ec2/pull/681) ([sanjain-progress](https://github.com/sanjain-progress))
+- Support aws tag at the time of EC2 instance creation in knife-ec2 [#679](https://github.com/chef/knife-ec2/pull/679) ([sanjain-progress](https://github.com/sanjain-progress))
+- update knife version [#686](https://github.com/chef/knife-ec2/pull/686) ([sanjain-progress](https://github.com/sanjain-progress))
+- CHEF-25716 - Replace CONTRIBUTING.md file with standard template for Workstation [#682](https://github.com/chef/knife-ec2/pull/682) ([nandanhegde73](https://github.com/nandanhegde73))
+- Update version in Blackduck config [#690](https://github.com/chef/knife-ec2/pull/690) ([sanjain-progress](https://github.com/sanjain-progress))
+<!-- latest_stable_release -->
+
 ## [v2.1.6](https://github.com/chef/knife-ec2/tree/v2.1.6) (2024-04-19)
 
 #### Merged Pull Requests
 - Upgrade to GitHub-native Dependabot [#668](https://github.com/chef/knife-ec2/pull/668) ([dependabot-preview[bot]](https://github.com/dependabot-preview[bot]))
 - Added support for the gp3 and io2 ebs volume types [#677](https://github.com/chef/knife-ec2/pull/677) ([ashiqueps](https://github.com/ashiqueps))
-<!-- latest_stable_release -->
 
 ## [v2.1.4](https://github.com/chef/knife-ec2/tree/v2.1.4) (2021-03-25)
 
