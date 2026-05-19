@@ -87,6 +87,7 @@ jobs:
       # scc-output-filename: 'scc-output.txt'
       perform-language-linting: false    # Perform language-specific linting and pre-compilation checks
       perform-trufflehog-scan: true
+      fail-trufflehog-on-secrets-found: true
       perform-trivy-scan: true
              
       # perform application build and unit testing, will use custom repository properties when implemented for chef-primary-application, chef-build-profile, and chef-build-language
